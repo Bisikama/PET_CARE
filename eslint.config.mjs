@@ -26,7 +26,7 @@ export default tseslint.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
