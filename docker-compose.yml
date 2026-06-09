@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pet_care_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: petcarevip
+      POSTGRES_DB: pet_care
+    ports:
+      - "5434:5432"  # Dùng cổng 5434 ở máy local tránh trùng cổng 5432 của PostgreSQL Windows
+    volumes:
+      # Ánh xạ thư mục dữ liệu trực tiếp vào ổ D (trong thư mục dự án)
+      - ./pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
