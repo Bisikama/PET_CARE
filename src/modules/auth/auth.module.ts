@@ -10,19 +10,9 @@ import { PrismaModule } from '../../database/prisma.module';
 import { EmailService } from './email.service';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({}),
-    UsersModule,
-    PrismaModule,
-  ],
+  imports: [PassportModule, JwtModule.register({}), UsersModule],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    EmailService,
-    AccessTokenStrategy,
-    RefreshTokenStrategy,
-  ],
+  providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

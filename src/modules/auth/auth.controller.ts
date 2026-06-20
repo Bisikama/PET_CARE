@@ -56,14 +56,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng nhập bằng email và mật khẩu' })
-  @ApiBody({ type: LoginDto })
-  @ApiOkResponse({ description: 'Trả access token và set refresh token vào HTTP-only cookie' })
-  @ApiUnauthorizedResponse({ description: 'Sai thông tin đăng nhập hoặc email chưa xác thực' })
-  async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: express.Response,
-  ) {
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.login(dto);
     res.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,
