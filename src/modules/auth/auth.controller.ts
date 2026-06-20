@@ -1,13 +1,25 @@
 import { Body, Controller, Post, Res, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCookieAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import * as express from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { SendEmailOtpDto } from './dto/send-email-otp.dto';
+import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -15,8 +27,30 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Đăng ký tài khoản và gửi OTP xác thực email' })
+  @ApiBody({ type: RegisterDto })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @Public()
+  @Post('send-email-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi lại mã OTP xác thực email' })
+  @ApiBody({ type: SendEmailOtpDto })
+  @ApiOkResponse({ description: 'Mã OTP đã được gửi đến email' })
+  async sendEmailOtp(@Body() dto: SendEmailOtpDto) {
+    return this.authService.sendEmailVerificationOtp(dto);
+  }
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xác thực email bằng mã OTP' })
+  @ApiBody({ type: VerifyEmailOtpDto })
+  @ApiOkResponse({ description: 'Xác thực email thành công' })
+  async verifyEmail(@Body() dto: VerifyEmailOtpDto) {
+    return this.authService.verifyEmailOtp(dto);
   }
 
   @Public()
@@ -38,6 +72,9 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Đăng xuất tài khoản hiện tại' })
+  @ApiOkResponse({ description: 'Đăng xuất thành công' })
   async logout(
     @GetCurrentUserId() userId: number,
     @Res({ passthrough: true }) res: express.Response,
@@ -51,6 +88,9 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiCookieAuth('refreshToken')
+  @ApiOperation({ summary: 'Làm mới access token bằng refresh token trong cookie' })
+  @ApiOkResponse({ description: 'Trả access token mới và cập nhật refresh token cookie' })
   async refresh(
     @GetCurrentUserId() userId: number,
     @GetCurrentUser('refreshToken') refreshToken: string,

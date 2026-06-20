@@ -435,3 +435,20 @@ enum user_role {
   PROVIDER
   ADMIN
 }
+
+model EmailOtp {
+  id         Int       @id @default(autoincrement())
+  email      String
+  codeHash   String
+  purpose    String    @default("EMAIL_VERIFICATION")
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  userId     Int?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+}

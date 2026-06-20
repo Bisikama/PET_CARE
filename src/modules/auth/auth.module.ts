@@ -6,6 +6,8 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { PrismaModule } from '../../database/prisma.module';
+import { EmailService } from './email.service';
 
 @Module({
   imports: [PassportModule, JwtModule.register({}), UsersModule],

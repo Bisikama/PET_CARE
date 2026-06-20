@@ -7,12 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AccessTokenGuard } from './common/guards/access-token.guard';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,
-    UsersModule,
-    AuthModule,
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, UsersModule, AuthModule],
   controllers: [],
   providers: [
     {
