@@ -22,10 +22,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: express.Response,
-  ) {
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: express.Response) {
     const result = await this.authService.login(dto);
     res.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,

@@ -1,34 +1,437 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  USER
+model booking_checklist_items {
+  id                          String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                  String                       @db.Uuid
+  template_id                 String?                      @db.Uuid
+  title                       String                       @db.VarChar(255)
+  status                      checklist_item_status?       @default(PENDING)
+  note                        String?
+  completed_at                DateTime?                    @db.Timestamp(6)
+  created_at                  DateTime?                    @default(now()) @db.Timestamp(6)
+  bookings                    bookings                     @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  service_checklist_templates service_checklist_templates? @relation(fields: [template_id], references: [id], onUpdate: NoAction)
+}
+
+model booking_media {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id  String     @db.Uuid
+  uploaded_by String     @db.Uuid
+  media_url   String
+  media_type  media_type
+  caption     String?
+  created_at  DateTime?  @default(now()) @db.Timestamp(6)
+  bookings    bookings   @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users      @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model booking_status_logs {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id String          @db.Uuid
+  old_status booking_status?
+  new_status booking_status
+  changed_by String?         @db.Uuid
+  note       String?
+  created_at DateTime?       @default(now()) @db.Timestamp(6)
+  bookings   bookings        @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users?          @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model bookings {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id             String                    @db.Uuid
+  provider_id             String?                   @db.Uuid
+  pet_id                  String                    @db.Uuid
+  address_id              String                    @db.Uuid
+  provider_service_id     String                    @db.Uuid
+  booking_date            DateTime                  @db.Date
+  start_time              DateTime                  @db.Time(6)
+  end_time                DateTime                  @db.Time(6)
+  status                  booking_status            @default(PENDING)
+  total_price             Decimal                   @default(0) @db.Decimal(12, 2)
+  customer_note           String?
+  provider_note           String?
+  cancellation_reason     String?
+  accepted_at             DateTime?                 @db.Timestamp(6)
+  started_at              DateTime?                 @db.Timestamp(6)
+  completed_at            DateTime?                 @db.Timestamp(6)
+  cancelled_at            DateTime?                 @db.Timestamp(6)
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  booking_checklist_items booking_checklist_items[]
+  booking_media           booking_media[]
+  booking_status_logs     booking_status_logs[]
+  customer_addresses      customer_addresses        @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                   users                     @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pets                    pets                      @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider_profiles       provider_profiles?        @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider_services       provider_services         @relation(fields: [provider_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chat_rooms              chat_rooms?
+  complaints              complaints[]
+  notifications           notifications[]
+  payments                payments?
+  reviews                 reviews[]
+
+  @@index([booking_date], map: "idx_bookings_booking_date")
+  @@index([customer_id], map: "idx_bookings_customer_id")
+  @@index([provider_id], map: "idx_bookings_provider_id")
+  @@index([provider_id, booking_date, start_time, end_time], map: "idx_bookings_schedule_conflict", where: raw("(status = ANY (ARRAY['ACCEPTED'::booking_status, 'CONFIRMED'::booking_status, 'PAID'::booking_status, 'IN_PROGRESS'::booking_status]))"))
+  @@index([status], map: "idx_bookings_status")
+}
+
+model chat_messages {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chat_room_id String       @db.Uuid
+  sender_id    String       @db.Uuid
+  message_type message_type @default(TEXT)
+  content      String?
+  media_url    String?
+  is_read      Boolean?     @default(false)
+  created_at   DateTime?    @default(now()) @db.Timestamp(6)
+  chat_rooms   chat_rooms   @relation(fields: [chat_room_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users        @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([chat_room_id], map: "idx_chat_messages_room_id")
+}
+
+model chat_rooms {
+  id                                       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                               String          @unique @db.Uuid
+  customer_id                              String          @db.Uuid
+  provider_user_id                         String          @db.Uuid
+  is_active                                Boolean?        @default(true)
+  created_at                               DateTime?       @default(now()) @db.Timestamp(6)
+  chat_messages                            chat_messages[]
+  bookings                                 bookings        @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_chat_rooms_customer_idTousers      users           @relation("chat_rooms_customer_idTousers", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_chat_rooms_provider_user_idTousers users           @relation("chat_rooms_provider_user_idTousers", fields: [provider_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model complaint_evidences {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaint_id String      @db.Uuid
+  uploaded_by  String      @db.Uuid
+  file_url     String
+  media_type   media_type?
+  description  String?
+  created_at   DateTime?   @default(now()) @db.Timestamp(6)
+  complaints   complaints  @relation(fields: [complaint_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users       @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model complaints {
+  id                                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                             String                @db.Uuid
+  complainant_id                         String                @db.Uuid
+  accused_id                             String?               @db.Uuid
+  title                                  String                @db.VarChar(255)
+  description                            String
+  status                                 complaint_status?     @default(OPEN)
+  admin_id                               String?               @db.Uuid
+  resolution_note                        String?
+  resolved_at                            DateTime?             @db.Timestamp(6)
+  created_at                             DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at                             DateTime?             @default(now()) @db.Timestamp(6)
+  complaint_evidences                    complaint_evidences[]
+  users_complaints_accused_idTousers     users?                @relation("complaints_accused_idTousers", fields: [accused_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_complaints_admin_idTousers       users?                @relation("complaints_admin_idTousers", fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bookings                               bookings              @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_complaints_complainant_idTousers users                 @relation("complaints_complainant_idTousers", fields: [complainant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status], map: "idx_complaints_status")
+}
+
+model customer_addresses {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id   String     @db.Uuid
+  label         String?    @db.VarChar(100)
+  receiver_name String?    @db.VarChar(100)
+  phone         String?    @db.VarChar(20)
+  address_line  String
+  ward          String?    @db.VarChar(100)
+  district      String?    @db.VarChar(100)
+  city          String?    @db.VarChar(100)
+  latitude      Decimal?   @db.Decimal(10, 7)
+  longitude     Decimal?   @db.Decimal(10, 7)
+  is_default    Boolean?   @default(false)
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  bookings      bookings[]
+  users         users      @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model notifications {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String            @db.Uuid
+  type               notification_type
+  title              String            @db.VarChar(255)
+  content            String?
+  related_booking_id String?           @db.Uuid
+  is_read            Boolean?          @default(false)
+  created_at         DateTime?         @default(now()) @db.Timestamp(6)
+  bookings           bookings?         @relation(fields: [related_booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([is_read], map: "idx_notifications_is_read")
+  @@index([user_id], map: "idx_notifications_user_id")
+}
+
+model payments {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id        String             @unique @db.Uuid
+  customer_id       String             @db.Uuid
+  provider_id       String?            @db.Uuid
+  amount            Decimal            @db.Decimal(12, 2)
+  platform_fee      Decimal?           @default(0) @db.Decimal(12, 2)
+  provider_amount   Decimal?           @default(0) @db.Decimal(12, 2)
+  method            payment_method
+  status            payment_status     @default(PENDING)
+  transaction_code  String?            @db.VarChar(255)
+  paid_at           DateTime?          @db.Timestamp(6)
+  released_at       DateTime?          @db.Timestamp(6)
+  refunded_at       DateTime?          @db.Timestamp(6)
+  created_at        DateTime?          @default(now()) @db.Timestamp(6)
+  bookings          bookings           @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users              @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider_profiles provider_profiles? @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pets {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id   String     @db.Uuid
+  name          String     @db.VarChar(100)
+  species       String     @db.VarChar(50)
+  breed         String?    @db.VarChar(100)
+  age           Int?
+  weight        Decimal?   @db.Decimal(5, 2)
+  gender        String?    @db.VarChar(20)
+  health_note   String?
+  behavior_note String?
+  avatar_url    String?
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?  @default(now()) @db.Timestamp(6)
+  bookings      bookings[]
+  users         users      @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([customer_id], map: "idx_pets_customer_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model provider_availability {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id       String            @db.Uuid
+  day_of_week       Int               @db.SmallInt
+  start_time        DateTime          @db.Time(6)
+  end_time          DateTime          @db.Time(6)
+  is_available      Boolean?          @default(true)
+  created_at        DateTime?         @default(now()) @db.Timestamp(6)
+  provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([provider_id], map: "idx_provider_availability_provider_id")
+}
+
+model provider_profiles {
+  id                       String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                  String                  @unique @db.Uuid
+  provider_type            provider_type
+  bio                      String?
+  experience_years         Int?                    @default(0)
+  identity_card_url        String?
+  certificate_url          String?
+  service_area             String?
+  base_location            String?
+  status                   provider_status         @default(PENDING)
+  rating_avg               Decimal?                @default(0) @db.Decimal(3, 2)
+  total_reviews            Int?                    @default(0)
+  total_completed_bookings Int?                    @default(0)
+  created_at               DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at               DateTime?               @default(now()) @db.Timestamp(6)
+  bookings                 bookings[]
+  payments                 payments[]
+  provider_availability    provider_availability[]
+  users                    users                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  provider_services        provider_services[]
+
+  @@index([status], map: "idx_provider_profiles_status")
+  @@index([provider_type], map: "idx_provider_profiles_type")
+  @@index([user_id], map: "idx_provider_profiles_user_id")
+}
+
+model provider_services {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id        String            @db.Uuid
+  service_id         String            @db.Uuid
+  price              Decimal           @db.Decimal(12, 2)
+  custom_description String?
+  is_active          Boolean?          @default(true)
+  created_at         DateTime?         @default(now()) @db.Timestamp(6)
+  bookings           bookings[]
+  provider_profiles  provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services           services          @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([provider_id, service_id])
+  @@index([provider_id], map: "idx_provider_services_provider_id")
+  @@index([service_id], map: "idx_provider_services_service_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reviews {
+  id                               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                       String    @db.Uuid
+  reviewer_id                      String    @db.Uuid
+  reviewee_id                      String    @db.Uuid
+  rating                           Int       @db.SmallInt
+  comment                          String?
+  created_at                       DateTime? @default(now()) @db.Timestamp(6)
+  bookings                         bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_reviews_reviewee_idTousers users     @relation("reviews_reviewee_idTousers", fields: [reviewee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_reviews_reviewer_idTousers users     @relation("reviews_reviewer_idTousers", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([booking_id, reviewer_id, reviewee_id])
+}
+
+model service_checklist_templates {
+  id                      String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_id              String                    @db.Uuid
+  title                   String                    @db.VarChar(255)
+  description             String?
+  is_required             Boolean?                  @default(true)
+  sort_order              Int?                      @default(0)
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  booking_checklist_items booking_checklist_items[]
+  services                services                  @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model services {
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                        String                        @db.VarChar(150)
+  description                 String?
+  category                    String?                       @db.VarChar(100)
+  base_price                  Decimal                       @default(0) @db.Decimal(12, 2)
+  duration_minutes            Int                           @default(60)
+  is_active                   Boolean?                      @default(true)
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  provider_services           provider_services[]
+  service_checklist_templates service_checklist_templates[]
+}
+
+model users {
+  id                                            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name                                     String                @db.VarChar(100)
+  email                                         String                @unique @db.VarChar(150)
+  phone                                         String?               @db.VarChar(20)
+  password_hash                                 String
+  refreshtoken                                  String?
+  avatar_url                                    String?
+  role                                          user_role             @default(CUSTOMER)
+  is_active                                     Boolean               @default(true)
+  created_at                                    DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at                                    DateTime?             @default(now()) @db.Timestamp(6)
+  booking_media                                 booking_media[]
+  booking_status_logs                           booking_status_logs[]
+  bookings                                      bookings[]
+  chat_messages                                 chat_messages[]
+  chat_rooms_chat_rooms_customer_idTousers      chat_rooms[]          @relation("chat_rooms_customer_idTousers")
+  chat_rooms_chat_rooms_provider_user_idTousers chat_rooms[]          @relation("chat_rooms_provider_user_idTousers")
+  complaint_evidences                           complaint_evidences[]
+  complaints_complaints_accused_idTousers       complaints[]          @relation("complaints_accused_idTousers")
+  complaints_complaints_admin_idTousers         complaints[]          @relation("complaints_admin_idTousers")
+  complaints_complaints_complainant_idTousers   complaints[]          @relation("complaints_complainant_idTousers")
+  customer_addresses                            customer_addresses[]
+  notifications                                 notifications[]
+  payments                                      payments[]
+  pets                                          pets[]
+  provider_profiles                             provider_profiles?
+  reviews_reviews_reviewee_idTousers            reviews[]             @relation("reviews_reviewee_idTousers")
+  reviews_reviews_reviewer_idTousers            reviews[]             @relation("reviews_reviewer_idTousers")
+
+  @@index([role], map: "idx_users_role")
+}
+
+enum booking_status {
+  PENDING
+  ACCEPTED
+  CONFIRMED
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  REFUNDED
+}
+
+enum checklist_item_status {
+  PENDING
+  DONE
+  SKIPPED
+}
+
+enum complaint_status {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum media_type {
+  IMAGE
+  VIDEO
+}
+
+enum message_type {
+  TEXT
+  IMAGE
+  VIDEO
+  SYSTEM
+}
+
+enum notification_type {
+  BOOKING_CREATED
+  BOOKING_ACCEPTED
+  BOOKING_CANCELLED
+  PAYMENT_SUCCESS
+  NEW_MESSAGE
+  COMPLAINT_UPDATED
+  SYSTEM
+}
+
+enum payment_method {
+  CASH
+  MOMO
+  VNPAY
+  BANK_TRANSFER
+}
+
+enum payment_status {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  HELD
+  RELEASED
+}
+
+enum provider_status {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum provider_type {
+  SITTER
+  GROOMER
+  VET
+}
+
+enum user_role {
+  CUSTOMER
+  PROVIDER
   ADMIN
-  STAFF
-}
-
-model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String
-  name         String?
-  role         Role     @default(USER)
-  refreshToken String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  posts        Post[]
-}
-
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean? @default(false)
-  authorId  Int?
-  author    User?    @relation(fields: [authorId], references: [id])
 }

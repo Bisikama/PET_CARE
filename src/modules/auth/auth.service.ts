@@ -94,7 +94,9 @@ export class AuthService {
 
     if (process.env.NODE_ENV === 'production') {
       if (!accessSecret || !refreshSecret) {
-        throw new Error('JWT secrets (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET) must be defined in production!');
+        throw new Error(
+          'JWT secrets (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET) must be defined in production!',
+        );
       }
     }
 

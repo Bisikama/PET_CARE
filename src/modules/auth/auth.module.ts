@@ -8,17 +8,9 @@ import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 
 @Module({
-  imports: [
-    PassportModule,
-    JwtModule.register({}),
-    UsersModule,
-  ],
+  imports: [PassportModule, JwtModule.register({}), UsersModule],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    AccessTokenStrategy,
-    RefreshTokenStrategy,
-  ],
+  providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}
