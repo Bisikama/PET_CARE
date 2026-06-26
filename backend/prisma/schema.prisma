@@ -54,7 +54,7 @@ model bookings {
   booking_date            DateTime                  @db.Date
   start_time              DateTime                  @db.Time(6)
   end_time                DateTime                  @db.Time(6)
-  status                  booking_status            @default(PENDING)
+  status                  booking_status            @default(PENDING_PAYMENT)
   total_price             Decimal                   @default(0) @db.Decimal(12, 2)
   customer_note           String?
   provider_note           String?
@@ -82,7 +82,7 @@ model bookings {
   @@index([booking_date], map: "idx_bookings_booking_date")
   @@index([customer_id], map: "idx_bookings_customer_id")
   @@index([provider_id], map: "idx_bookings_provider_id")
-  @@index([provider_id, booking_date, start_time, end_time], map: "idx_bookings_schedule_conflict", where: raw("(status = ANY (ARRAY['ACCEPTED'::booking_status, 'CONFIRMED'::booking_status, 'PAID'::booking_status, 'IN_PROGRESS'::booking_status]))"))
+  @@index([provider_id, booking_date, start_time, end_time], map: "idx_bookings_schedule_conflict", where: raw("(status = ANY (ARRAY['ACCEPTED'::booking_status, 'IN_PROGRESS'::booking_status, 'PENDING_PROVIDER_ACCEPTANCE'::booking_status, 'AWAITING_CUSTOMER_CONFIRMATION'::booking_status]))"))
   @@index([status], map: "idx_bookings_status")
 }
 
@@ -246,7 +246,7 @@ model provider_profiles {
   certificate_url          String?
   service_area             String?
   base_location            String?
-  status                   provider_status         @default(PENDING)
+  status                   provider_status         @default(DRAFT)
   rating_avg               Decimal?                @default(0) @db.Decimal(3, 2)
   total_reviews            Int?                    @default(0)
   total_completed_bookings Int?                    @default(0)
@@ -356,15 +356,15 @@ model User {
 }
 
 enum booking_status {
-  PENDING
+  PENDING_PAYMENT
+  PENDING_PROVIDER_ACCEPTANCE
   ACCEPTED
-  CONFIRMED
-  PAID
   IN_PROGRESS
+  AWAITING_CUSTOMER_CONFIRMATION
   COMPLETED
+  REJECTED
   CANCELLED
-  DISPUTED
-  REFUNDED
+  EXPIRED
 }
 
 enum checklist_item_status {
@@ -411,15 +411,20 @@ enum payment_method {
 
 enum payment_status {
   PENDING
-  PAID
-  FAILED
+  VOIDED
+  PAID_HELD_IN_ESCROW
+  RELEASE_PENDING
+  REFUND_PENDING
+  RELEASED_TO_PROVIDER
   REFUNDED
-  HELD
-  RELEASED
+  PARTIALLY_SETTLED
+  FAILED
 }
 
 enum provider_status {
-  PENDING
+  DRAFT
+  PENDING_REVIEW
+  NEED_RESUBMIT
   APPROVED
   REJECTED
   SUSPENDED
@@ -437,4 +442,61 @@ enum Role {
   ADMIN
 
   @@map("user_role")
+}
+
+enum provider_document_status {
+  PENDING
+  APPROVED
+  REJECTED
+  NEED_RESUBMIT
+  EXPIRED
+  REVOKED
+}
+
+enum provider_capability {
+  IDENTITY_VERIFIED
+  GROOMING_CERTIFIED
+  VET_STUDENT_VERIFIED
+  VET_VERIFIED
+}
+
+enum trust_tier {
+  STANDARD_PROVIDER
+  TRUSTED_PROVIDER
+}
+
+enum availability_slot_status {
+  AVAILABLE
+  HELD_FOR_PAYMENT
+  RESERVED_FOR_PROVIDER_RESPONSE
+  BOOKED
+  BLOCKED
+}
+
+enum reschedule_request_status {
+  PENDING
+  AWAITING_PRICE_ADJUSTMENT
+  APPROVED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  FAILED_SLOT_UNAVAILABLE
+}
+
+enum dispute_status {
+  OPEN
+  WAITING_FOR_EVIDENCE
+  UNDER_REVIEW
+  DECIDED
+  CLOSED
+  WITHDRAWN
+}
+
+enum booking_incident_status {
+  REPORTED
+  PROVIDER_RESPONDED
+  UNDER_REVIEW
+  CONFIRMED
+  REJECTED
+  RESOLVED
 }
