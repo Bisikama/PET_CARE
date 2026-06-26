@@ -8,8 +8,10 @@ import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
+import { PrismaModule } from '../../database/prisma.module';
+
 @Module({
-  imports: [PassportModule, JwtModule.register({}), UsersModule],
+  imports: [PassportModule, JwtModule.register({}), UsersModule, PrismaModule],
   controllers: [AuthController],
   providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy, RolesGuard],
   exports: [AuthService],

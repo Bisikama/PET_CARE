@@ -64,6 +64,22 @@ describe('AuthController (e2e)', () => {
       password,
     });
 
+  const loginWithDevice = (
+    deviceName: string,
+    deviceId?: string,
+    email = customer.email,
+    password = customer.password,
+  ) => {
+    const req = request(app.getHttpServer()).post('/auth/login').set('User-Agent', deviceName);
+    if (deviceId) {
+      req.set('x-device-id', deviceId);
+    }
+    return req.send({
+      email,
+      password,
+    });
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -169,6 +185,57 @@ describe('AuthController (e2e)', () => {
       expect(response.body.data.user).not.toHaveProperty('refreshToken');
       expect(getCookies(response).join(';')).toContain('HttpOnly');
       expect(getRefreshCookie(response)).not.toBe('');
+    });
+
+    it('allows independent refresh-token sessions on multiple devices', async () => {
+      const firstDeviceLogin = await loginWithDevice('auth-e2e-browser-a', 'device-a-id').expect(200);
+      const secondDeviceLogin = await loginWithDevice('auth-e2e-browser-b', 'device-b-id').expect(200);
+      const firstDeviceCookie = getRefreshCookie(firstDeviceLogin);
+      const secondDeviceCookie = getRefreshCookie(secondDeviceLogin);
+
+      const user = await prisma.user.findUniqueOrThrow({ where: { email: customer.email } });
+      const sessionCount = await prisma.refresh_tokens.count({
+        where: { user_id: user.id },
+      });
+
+      expect(firstDeviceCookie).not.toBe('');
+      expect(secondDeviceCookie).not.toBe('');
+      expect(firstDeviceCookie).not.toBe(secondDeviceCookie);
+      expect(sessionCount).toBeGreaterThanOrEqual(2);
+
+      // Verify stored metadata
+      const sessions = await prisma.refresh_tokens.findMany({
+        where: { user_id: user.id },
+        orderBy: { created_at: 'asc' },
+      });
+
+      expect(sessions).toContainEqual(
+        expect.objectContaining({
+          device_info: 'auth-e2e-browser-a',
+          device_id: 'device-a-id',
+          ip_address: expect.any(String),
+          last_active_at: expect.any(Date),
+        }),
+      );
+
+      expect(sessions).toContainEqual(
+        expect.objectContaining({
+          device_info: 'auth-e2e-browser-b',
+          device_id: 'device-b-id',
+          ip_address: expect.any(String),
+          last_active_at: expect.any(Date),
+        }),
+      );
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', firstDeviceCookie)
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', secondDeviceCookie)
+        .expect(200);
     });
 
     it('rejects login if user isActive is false', async () => {
@@ -290,22 +357,27 @@ describe('AuthController (e2e)', () => {
   });
 
   describe('POST /auth/logout', () => {
-    it('invalidates the refresh token', async () => {
-      const loginResponse = await login().expect(200);
-      const refreshCookie = getRefreshCookie(loginResponse);
+    it('invalidates only the current device refresh token', async () => {
+      const firstDeviceLogin = await loginWithDevice('auth-e2e-logout-browser-a').expect(200);
+      const secondDeviceLogin = await loginWithDevice('auth-e2e-logout-browser-b').expect(200);
+      const firstDeviceCookie = getRefreshCookie(firstDeviceLogin);
+      const secondDeviceCookie = getRefreshCookie(secondDeviceLogin);
 
       await request(app.getHttpServer())
         .post('/auth/logout')
-        .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+        .set('Authorization', `Bearer ${firstDeviceLogin.body.data.accessToken}`)
+        .set('Cookie', firstDeviceCookie)
         .expect(200);
-
-      const user = await prisma.user.findUnique({ where: { email: customer.email } });
-      expect(user?.refreshToken).toBeNull();
 
       await request(app.getHttpServer())
         .post('/auth/refresh')
-        .set('Cookie', refreshCookie)
+        .set('Cookie', firstDeviceCookie)
         .expect(403);
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', secondDeviceCookie)
+        .expect(200);
     });
   });
 });
