@@ -12,6 +12,8 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.setGlobalPrefix('api'); // Set a global prefix for all routes
+
   // Register cookie-parser to read/write HTTP-only cookies
   app.use(cookieParser());
 
