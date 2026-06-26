@@ -19,7 +19,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: process.env.NODE_ENV === 'test' ? 1000 : 10,
       },
     ]),
     PrismaModule,
