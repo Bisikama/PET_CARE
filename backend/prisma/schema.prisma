@@ -330,9 +330,9 @@ model User {
   refreshToken                                  String?               @map("refreshtoken")
   avatarUrl                                     String?               @map("avatar_url")
   role                                          Role                  @default(CUSTOMER)
-  isActive                                      Boolean               @map("is_active") @default(true)
-  createdAt                                     DateTime?             @map("created_at") @default(now()) @db.Timestamp(6)
-  updatedAt                                     DateTime?             @map("updated_at") @default(now()) @db.Timestamp(6)
+  isActive                                      Boolean               @default(true) @map("is_active")
+  createdAt                                     DateTime?             @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                     DateTime?             @default(now()) @map("updated_at") @db.Timestamp(6)
   booking_media                                 booking_media[]
   booking_status_logs                           booking_status_logs[]
   bookings                                      bookings[]
