@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import * as express from 'express';
@@ -12,6 +22,10 @@ import { clearRefreshTokenCookie, setRefreshTokenCookie } from './utils/refresh-
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+
+type RequestWithCookies = Omit<express.Request, 'cookies'> & {
+  cookies?: Record<string, string>;
+};
 
 @UseGuards(ThrottlerGuard)
 @Controller('auth')
@@ -28,8 +42,15 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: express.Response) {
-    const result = await this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Req() request: express.Request,
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const userAgent = request.headers['user-agent'];
+    const ipAddress = (request.headers['x-forwarded-for'] as string) || request.ip;
+    const deviceId = (request.headers['x-device-id'] as string) || (request.headers['device-id'] as string);
+    const result = await this.authService.login(dto, userAgent, ipAddress, deviceId);
     setRefreshTokenCookie(response, result.tokens.refreshToken);
 
     return {
@@ -60,10 +81,13 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
-    @GetCurrentUserId() userId: string,
+    @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    await this.authService.logout(userId);
+    const refreshToken = request.cookies?.refreshToken;
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
     clearRefreshTokenCookie(response);
     return { message: 'Logged out successfully' };
   }
@@ -75,9 +99,13 @@ export class AuthController {
   async refresh(
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
+    @Req() request: express.Request,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const tokens = await this.authService.refreshTokens(userId, refreshToken);
+    const userAgent = request.headers['user-agent'];
+    const ipAddress = (request.headers['x-forwarded-for'] as string) || request.ip;
+    const deviceId = (request.headers['x-device-id'] as string) || (request.headers['device-id'] as string);
+    const tokens = await this.authService.refreshTokens(userId, refreshToken, userAgent, ipAddress, deviceId);
     setRefreshTokenCookie(response, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
   }

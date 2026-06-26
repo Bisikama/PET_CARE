@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -33,7 +35,7 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, userAgent?: string, ipAddress?: string, deviceId?: string) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user || !user.isActive) {
       throw new ForbiddenException('Invalid email or password');
@@ -45,7 +47,7 @@ export class AuthService {
     }
 
     const tokens = await this.getTokens(user.id, user.email, user.role);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    await this.saveRefreshToken(user.id, tokens.refreshToken, userAgent, ipAddress, deviceId);
 
     return {
       tokens,
@@ -62,24 +64,54 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
-  async logout(userId: string) {
-    await this.usersService.update(userId, { refreshToken: null });
+  async logout(refreshToken: string) {
+    const tokenHash = this.hashToken(refreshToken);
+    await this.prisma.refresh_tokens
+      .delete({
+        where: { token_hash: tokenHash },
+      })
+      .catch(() => {});
   }
 
-  async refreshTokens(userId: string, refreshToken: string) {
+  async logoutAll(userId: string) {
+    await this.prisma.refresh_tokens.deleteMany({
+      where: { user_id: userId },
+    });
+  }
+
+  async refreshTokens(
+    userId: string,
+    refreshToken: string,
+    userAgent?: string,
+    ipAddress?: string,
+    deviceId?: string,
+  ) {
     const user = await this.usersService.findById(userId);
-    if (!user || !user.isActive || !user.refreshToken) {
+    if (!user || !user.isActive) {
       throw new ForbiddenException('Access denied');
     }
 
-    const hashedToken = this.hashToken(refreshToken);
-    const refreshTokenMatches = await bcrypt.compare(hashedToken, user.refreshToken);
-    if (!refreshTokenMatches) {
+    const tokenHash = this.hashToken(refreshToken);
+    const tokenRecord = await this.prisma.refresh_tokens.findUnique({
+      where: { token_hash: tokenHash },
+    });
+
+    if (!tokenRecord || tokenRecord.user_id !== userId || tokenRecord.expires_at < new Date()) {
+      if (tokenRecord) {
+        await this.prisma.refresh_tokens.delete({ where: { id: tokenRecord.id } }).catch(() => {});
+      }
       throw new ForbiddenException('Access denied');
     }
+
+    // Delete the rotated token
+    await this.prisma.refresh_tokens
+      .delete({
+        where: { id: tokenRecord.id },
+      })
+      .catch(() => {});
 
     const tokens = await this.getTokens(user.id, user.email, user.role);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    await this.saveRefreshToken(user.id, tokens.refreshToken, userAgent, ipAddress, deviceId);
     return tokens;
   }
 
@@ -87,10 +119,38 @@ export class AuthService {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
-  private async updateRefreshToken(userId: string, refreshToken: string) {
-    const hashedToken = this.hashToken(refreshToken);
-    const refreshTokenHash = await bcrypt.hash(hashedToken, 12);
-    await this.usersService.update(userId, { refreshToken: refreshTokenHash });
+  private async saveRefreshToken(
+    userId: string,
+    refreshToken: string,
+    userAgent?: string,
+    ipAddress?: string,
+    deviceId?: string,
+  ) {
+    const tokenHash = this.hashToken(refreshToken);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Passive cleanup of expired tokens for this user
+    await this.prisma.refresh_tokens
+      .deleteMany({
+        where: {
+          user_id: userId,
+          expires_at: { lt: new Date() },
+        },
+      })
+      .catch(() => {});
+
+    await this.prisma.refresh_tokens.create({
+      data: {
+        user_id: userId,
+        token_hash: tokenHash,
+        device_info: userAgent,
+        ip_address: ipAddress,
+        device_id: deviceId,
+        last_active_at: new Date(),
+        expires_at: expiresAt,
+      },
+    });
   }
 
   private async getTokens(userId: string, email: string, role: Role) {
@@ -106,7 +166,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private toPublicUser(user: Omit<User, 'passwordHash' | 'refreshToken'>) {
+  private toPublicUser(user: Omit<User, 'passwordHash'>) {
     return {
       id: user.id,
       fullName: user.fullName,
