@@ -1,12 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `Post` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
-CREATE TYPE "booking_status" AS ENUM ('PENDING', 'ACCEPTED', 'CONFIRMED', 'PAID', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DISPUTED', 'REFUNDED');
+CREATE TYPE "booking_status" AS ENUM ('PENDING_PAYMENT', 'PENDING_PROVIDER_ACCEPTANCE', 'ACCEPTED', 'IN_PROGRESS', 'AWAITING_CUSTOMER_CONFIRMATION', 'COMPLETED', 'REJECTED', 'CANCELLED', 'EXPIRED');
 
 -- CreateEnum
 CREATE TYPE "checklist_item_status" AS ENUM ('PENDING', 'DONE', 'SKIPPED');
@@ -27,10 +20,10 @@ CREATE TYPE "notification_type" AS ENUM ('BOOKING_CREATED', 'BOOKING_ACCEPTED', 
 CREATE TYPE "payment_method" AS ENUM ('CASH', 'MOMO', 'VNPAY', 'BANK_TRANSFER');
 
 -- CreateEnum
-CREATE TYPE "payment_status" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUNDED', 'HELD', 'RELEASED');
+CREATE TYPE "payment_status" AS ENUM ('PENDING', 'VOIDED', 'PAID_HELD_IN_ESCROW', 'RELEASE_PENDING', 'REFUND_PENDING', 'RELEASED_TO_PROVIDER', 'REFUNDED', 'PARTIALLY_SETTLED', 'FAILED');
 
 -- CreateEnum
-CREATE TYPE "provider_status" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED');
+CREATE TYPE "provider_status" AS ENUM ('DRAFT', 'PENDING_REVIEW', 'NEED_RESUBMIT', 'APPROVED', 'REJECTED', 'SUSPENDED');
 
 -- CreateEnum
 CREATE TYPE "provider_type" AS ENUM ('SITTER', 'GROOMER', 'VET');
@@ -38,14 +31,26 @@ CREATE TYPE "provider_type" AS ENUM ('SITTER', 'GROOMER', 'VET');
 -- CreateEnum
 CREATE TYPE "user_role" AS ENUM ('CUSTOMER', 'PROVIDER', 'ADMIN');
 
--- DropForeignKey
-ALTER TABLE "Post" DROP CONSTRAINT "Post_authorId_fkey";
+-- CreateEnum
+CREATE TYPE "provider_document_status" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'NEED_RESUBMIT', 'EXPIRED', 'REVOKED');
 
--- DropTable
-DROP TABLE "Post";
+-- CreateEnum
+CREATE TYPE "provider_capability" AS ENUM ('IDENTITY_VERIFIED', 'GROOMING_CERTIFIED', 'VET_STUDENT_VERIFIED', 'VET_VERIFIED');
 
--- DropTable
-DROP TABLE "User";
+-- CreateEnum
+CREATE TYPE "trust_tier" AS ENUM ('STANDARD_PROVIDER', 'TRUSTED_PROVIDER');
+
+-- CreateEnum
+CREATE TYPE "availability_slot_status" AS ENUM ('AVAILABLE', 'HELD_FOR_PAYMENT', 'RESERVED_FOR_PROVIDER_RESPONSE', 'BOOKED', 'BLOCKED');
+
+-- CreateEnum
+CREATE TYPE "reschedule_request_status" AS ENUM ('PENDING', 'AWAITING_PRICE_ADJUSTMENT', 'APPROVED', 'REJECTED', 'EXPIRED', 'CANCELLED', 'FAILED_SLOT_UNAVAILABLE');
+
+-- CreateEnum
+CREATE TYPE "dispute_status" AS ENUM ('OPEN', 'WAITING_FOR_EVIDENCE', 'UNDER_REVIEW', 'DECIDED', 'CLOSED', 'WITHDRAWN');
+
+-- CreateEnum
+CREATE TYPE "booking_incident_status" AS ENUM ('REPORTED', 'PROVIDER_RESPONDED', 'UNDER_REVIEW', 'CONFIRMED', 'REJECTED', 'RESOLVED');
 
 -- CreateTable
 CREATE TABLE "booking_checklist_items" (
@@ -98,7 +103,7 @@ CREATE TABLE "bookings" (
     "booking_date" DATE NOT NULL,
     "start_time" TIME(6) NOT NULL,
     "end_time" TIME(6) NOT NULL,
-    "status" "booking_status" NOT NULL DEFAULT 'PENDING',
+    "status" "booking_status" NOT NULL DEFAULT 'PENDING_PAYMENT',
     "total_price" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "customer_note" TEXT,
     "provider_note" TEXT,
@@ -266,7 +271,7 @@ CREATE TABLE "provider_profiles" (
     "certificate_url" TEXT,
     "service_area" TEXT,
     "base_location" TEXT,
-    "status" "provider_status" NOT NULL DEFAULT 'PENDING',
+    "status" "provider_status" NOT NULL DEFAULT 'DRAFT',
     "rating_avg" DECIMAL(3,2) DEFAULT 0,
     "total_reviews" INTEGER DEFAULT 0,
     "total_completed_bookings" INTEGER DEFAULT 0,
@@ -336,7 +341,6 @@ CREATE TABLE "users" (
     "email" VARCHAR(150) NOT NULL,
     "phone" VARCHAR(20),
     "password_hash" TEXT NOT NULL,
-    "refreshtoken" TEXT,
     "avatar_url" TEXT,
     "role" "user_role" NOT NULL DEFAULT 'CUSTOMER',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
@@ -344,6 +348,21 @@ CREATE TABLE "users" (
     "updated_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "refresh_tokens" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL,
+    "token_hash" TEXT NOT NULL,
+    "device_info" VARCHAR(255),
+    "ip_address" VARCHAR(45),
+    "device_id" VARCHAR(255),
+    "last_active_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expires_at" TIMESTAMP(6) NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -356,7 +375,7 @@ CREATE INDEX "idx_bookings_customer_id" ON "bookings"("customer_id");
 CREATE INDEX "idx_bookings_provider_id" ON "bookings"("provider_id");
 
 -- CreateIndex
-CREATE INDEX "idx_bookings_schedule_conflict" ON "bookings"("provider_id", "booking_date", "start_time", "end_time") WHERE (status = ANY (ARRAY['ACCEPTED'::booking_status, 'CONFIRMED'::booking_status, 'PAID'::booking_status, 'IN_PROGRESS'::booking_status]));
+CREATE INDEX "idx_bookings_schedule_conflict" ON "bookings"("provider_id", "booking_date", "start_time", "end_time") WHERE (status = ANY (ARRAY['ACCEPTED'::booking_status, 'IN_PROGRESS'::booking_status, 'PENDING_PROVIDER_ACCEPTANCE'::booking_status, 'AWAITING_CUSTOMER_CONFIRMATION'::booking_status]));
 
 -- CreateIndex
 CREATE INDEX "idx_bookings_status" ON "bookings"("status");
@@ -414,6 +433,12 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE INDEX "idx_users_role" ON "users"("role");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "refresh_tokens_token_hash_key" ON "refresh_tokens"("token_hash");
+
+-- CreateIndex
+CREATE INDEX "refresh_tokens_user_id_idx" ON "refresh_tokens"("user_id");
 
 -- AddForeignKey
 ALTER TABLE "booking_checklist_items" ADD CONSTRAINT "booking_checklist_items_booking_id_fkey" FOREIGN KEY ("booking_id") REFERENCES "bookings"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -525,3 +550,6 @@ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_reviewer_id_fkey" FOREIGN KEY ("re
 
 -- AddForeignKey
 ALTER TABLE "service_checklist_templates" ADD CONSTRAINT "service_checklist_templates_service_id_fkey" FOREIGN KEY ("service_id") REFERENCES "services"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
