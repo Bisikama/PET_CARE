@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import * as express from 'express';
@@ -27,6 +28,7 @@ type RequestWithCookies = Omit<express.Request, 'cookies'> & {
   cookies?: Record<string, string>;
 };
 
+@ApiTags('Auth')
 @UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
@@ -35,6 +37,7 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new customer user' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -42,6 +45,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log in with email and password' })
   async login(
     @Body() dto: LoginDto,
     @Req() request: express.Request,
@@ -60,6 +64,8 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
   async getMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -67,6 +73,8 @@ export class AuthController {
   @Roles(Role.PROVIDER)
   @UseGuards(RolesGuard)
   @Get('provider/me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current provider profile' })
   async getProviderMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -74,12 +82,16 @@ export class AuthController {
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
   @Get('admin/me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current admin profile' })
   async getAdminMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Log out current user' })
   async logout(
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: express.Response,
@@ -96,6 +108,8 @@ export class AuthController {
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
   async refresh(
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
