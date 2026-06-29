@@ -28,7 +28,7 @@ import { AUTH_MESSAGES } from '../../common/constants/success-messages.constant'
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { GoogleIdTokenDto } from './dto/google-id-token.dto';
-import { AccessTokenGuard } from 'src/common/guards/access-token.guard';
+import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 
 type RequestWithCookies = Omit<express.Request, 'cookies'> & {
   cookies?: Record<string, string>;
