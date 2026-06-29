@@ -1,8 +1,17 @@
 import axios from 'axios';
 import { getAuthToken } from './auth';
 
+const getBaseURL = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!envUrl) {
+    return 'http://localhost:3000/api';
+  }
+  return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+};
+
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+  baseURL: getBaseURL(),
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

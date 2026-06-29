@@ -12,6 +12,7 @@ export const ROUTES = {
 export const API_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
+  ME: '/auth/me',
   PROFILE: '/auth/profile',
   PETS: '/pets',
   BOOKINGS: '/bookings',
