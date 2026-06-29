@@ -17,6 +17,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from '../../database/prisma.service';
 import { SupabaseAuthService } from './supabase-auth.service';
+import { AUTH_ERRORS } from '../../common/constants/error-messages.constant';
+import { AUTH_MESSAGES } from '../../common/constants/success-messages.constant';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +34,7 @@ export class AuthService {
     const normalizedEmail = this.supabaseAuthService.normalizeEmail(dto.email);
     const existingUser = await this.usersService.findByEmail(normalizedEmail);
     if (existingUser) {
-      throw new ConflictException('ACCOUNT_ALREADY_EXISTS');
+      throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
     }
 
     const { user: remoteUser, session } = await this.supabaseAuthService.signUpEmail(
@@ -43,7 +45,7 @@ export class AuthService {
 
     if (!remoteUser?.identities || remoteUser.identities.length === 0) {
       return {
-        message: 'Nếu email hợp lệ, vui lòng kiểm tra Gmail để tiếp tục.',
+        message: AUTH_MESSAGES.REGISTER_CHECK_EMAIL,
         requiresEmailConfirmation: true,
       };
     }
@@ -63,11 +65,11 @@ export class AuthService {
     } catch (err: any) {
       const reqId = crypto.randomUUID();
       console.error(`[${reqId}] Local profile create failed for ${normalizedEmail}`, err);
-      throw new InternalServerErrorException('AUTH_LOCAL_PROFILE_CREATE_FAILED');
+      throw new InternalServerErrorException(AUTH_ERRORS.LOCAL_PROFILE_CREATE_FAILED);
     }
 
     return {
-      message: 'Đăng ký thành công. Vui lòng kiểm tra Gmail để nhập mã OTP xác nhận.',
+      message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
       requiresEmailConfirmation: true,
     };
   }
@@ -81,13 +83,13 @@ export class AuthService {
   ) {
     const { user: remoteUser } = await this.supabaseAuthService.verifySignupOtp(email, otp);
     if (!remoteUser) {
-      throw new BadRequestException('AUTH_OTP_INVALID_OR_EXPIRED');
+      throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
     }
 
     const localUser = await this.findOrCreateSupabaseUser(remoteUser);
 
     if (!localUser.isActive) {
-      throw new ForbiddenException('ACCOUNT_LOCKED');
+      throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
     const tokens = await this.getTokens(localUser.id, localUser.email, localUser.role);
@@ -111,10 +113,10 @@ export class AuthService {
         );
 
         if (remoteUser.id !== user.supabaseId) {
-          throw new ConflictException('ACCOUNT_IDENTITY_CONFLICT');
+          throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
         }
         if (!remoteUser.email_confirmed_at) {
-          throw new ForbiddenException('EMAIL_NOT_VERIFIED');
+          throw new ForbiddenException(AUTH_ERRORS.EMAIL_NOT_VERIFIED);
         }
 
         if (!user.emailVerifiedAt && remoteUser.email_confirmed_at) {
@@ -125,10 +127,10 @@ export class AuthService {
       } else if (!user.supabaseId && user.passwordHash) {
         const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
         if (!passwordMatches) {
-          throw new UnauthorizedException('AUTH_INVALID_CREDENTIALS');
+          throw new UnauthorizedException(AUTH_ERRORS.INVALID_CREDENTIALS);
         }
       } else {
-        throw new ConflictException('ACCOUNT_AUTH_SETUP_INCOMPLETE');
+        throw new ConflictException(AUTH_ERRORS.ACCOUNT_AUTH_SETUP_INCOMPLETE);
       }
     } else {
       let remoteUser;
@@ -136,18 +138,18 @@ export class AuthService {
         const result = await this.supabaseAuthService.signInEmail(normalizedEmail, dto.password);
         remoteUser = result.user;
       } catch (err) {
-        throw new UnauthorizedException('AUTH_INVALID_CREDENTIALS');
+        throw new UnauthorizedException(AUTH_ERRORS.INVALID_CREDENTIALS);
       }
 
       if (!remoteUser.email_confirmed_at) {
-        throw new ForbiddenException('EMAIL_NOT_VERIFIED');
+        throw new ForbiddenException(AUTH_ERRORS.EMAIL_NOT_VERIFIED);
       }
 
       user = await this.findOrCreateSupabaseUser(remoteUser);
     }
 
     if (!user.isActive) {
-      throw new ForbiddenException('ACCOUNT_LOCKED');
+      throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
     const tokens = await this.getTokens(user.id, user.email, user.role);
@@ -168,7 +170,7 @@ export class AuthService {
       }
     }
     return {
-      message: 'Nếu tài khoản cần xác nhận, mã OTP đã được gửi tới Gmail.',
+      message: AUTH_MESSAGES.OTP_RESENT_SUCCESS,
     };
   }
 
@@ -182,7 +184,7 @@ export class AuthService {
     const { user: remoteUser } = await this.supabaseAuthService.signInGoogleIdToken(idToken, nonce);
 
     if (!remoteUser.email) {
-      throw new UnauthorizedException('GOOGLE_ID_TOKEN_INVALID');
+      throw new UnauthorizedException(AUTH_ERRORS.GOOGLE_ID_TOKEN_INVALID);
     }
 
     const localUser = await this.findOrCreateSupabaseUser(
@@ -191,7 +193,7 @@ export class AuthService {
     );
 
     if (!localUser.isActive) {
-      throw new ForbiddenException('ACCOUNT_LOCKED');
+      throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
     const tokens = await this.getTokens(localUser.id, localUser.email, localUser.role);
@@ -223,10 +225,10 @@ export class AuthService {
 
     if (user) {
       if (user.supabaseId && user.supabaseId !== remoteUser.id) {
-        throw new ConflictException('ACCOUNT_IDENTITY_CONFLICT');
+        throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
       }
       if (!user.supabaseId && user.passwordHash) {
-        throw new ConflictException('LEGACY_ACCOUNT_LINK_REQUIRED');
+        throw new ConflictException(AUTH_ERRORS.LEGACY_ACCOUNT_LINK_REQUIRED);
       }
       if (!user.supabaseId && !user.passwordHash) {
         user = await this.usersService.update(user.id, {
@@ -259,7 +261,7 @@ export class AuthService {
         }
         if (user) return user;
       }
-      throw new InternalServerErrorException('AUTH_LOCAL_PROFILE_CREATE_FAILED');
+      throw new InternalServerErrorException(AUTH_ERRORS.LOCAL_PROFILE_CREATE_FAILED);
     }
 
     return user;
@@ -267,11 +269,11 @@ export class AuthService {
 
   async getProfile(userId: string) {
     if (!userId) {
-      throw new UnauthorizedException('AUTH_USER_CONTEXT_INVALID');
+      throw new UnauthorizedException(AUTH_ERRORS.USER_CONTEXT_INVALID);
     }
     const user = await this.usersService.findPublicById(userId);
     if (!user || !user.isActive) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException(AUTH_ERRORS.ACCESS_DENIED);
     }
     return user;
   }
@@ -300,7 +302,7 @@ export class AuthService {
   ) {
     const user = await this.usersService.findById(userId);
     if (!user || !user.isActive) {
-      throw new ForbiddenException('ACCOUNT_LOCKED');
+      throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
     const tokenHash = this.hashToken(refreshToken);
@@ -312,7 +314,7 @@ export class AuthService {
       if (tokenRecord) {
         await this.prisma.refresh_tokens.delete({ where: { id: tokenRecord.id } }).catch(() => { });
       }
-      throw new ForbiddenException('ACCOUNT_LOCKED');
+      throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
     await this.prisma.refresh_tokens

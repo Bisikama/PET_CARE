@@ -8,6 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import ws from 'ws';
+import { AUTH_ERRORS } from '../../common/constants/error-messages.constant';
+
 
 @Injectable()
 export class SupabaseAuthService {
@@ -52,7 +54,7 @@ export class SupabaseAuthService {
 
     if (error) {
       if (error.message.includes('already registered')) {
-        throw new ConflictException('ACCOUNT_ALREADY_EXISTS');
+        throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
       }
       throw new InternalServerErrorException(`Supabase signup failed: ${error.message}`);
     }
@@ -69,7 +71,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new BadRequestException('AUTH_OTP_INVALID_OR_EXPIRED');
+      throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
     }
 
     return data;
@@ -83,7 +85,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new UnauthorizedException('AUTH_INVALID_CREDENTIALS');
+      throw new UnauthorizedException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
     return data;
@@ -97,7 +99,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new InternalServerErrorException('AUTH_PROVIDER_UNAVAILABLE');
+      throw new InternalServerErrorException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
 
     return data;
@@ -111,7 +113,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new UnauthorizedException('GOOGLE_ID_TOKEN_INVALID');
+      throw new UnauthorizedException(AUTH_ERRORS.GOOGLE_ID_TOKEN_INVALID);
     }
 
     return data;
@@ -120,7 +122,7 @@ export class SupabaseAuthService {
   async getUserByAccessToken(accessToken: string) {
     const { data, error } = await this.supabase.auth.getUser(accessToken);
     if (error) {
-      throw new UnauthorizedException('Invalid Supabase access token');
+      throw new UnauthorizedException(AUTH_ERRORS.INVALID_SUPABASE_TOKEN);
     }
     return data;
   }

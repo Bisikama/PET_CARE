@@ -23,6 +23,8 @@ import { clearRefreshTokenCookie, setRefreshTokenCookie } from './utils/refresh-
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { AUTH_MESSAGES } from '../../common/constants/success-messages.constant';
+
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { GoogleIdTokenDto } from './dto/google-id-token.dto';
@@ -183,7 +185,7 @@ export class AuthController {
       await this.authService.logout(refreshToken);
     }
     clearRefreshTokenCookie(response);
-    return { message: 'Logged out successfully' };
+    return { message: AUTH_MESSAGES.LOGOUT_SUCCESS };
   }
 
   @Public()
