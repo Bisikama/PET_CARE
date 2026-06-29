@@ -326,7 +326,9 @@ model User {
   fullName                                      String                @map("full_name") @db.VarChar(100)
   email                                         String                @unique @db.VarChar(150)
   phone                                         String?               @db.VarChar(20)
-  passwordHash                                  String                @map("password_hash")
+  passwordHash                                  String?               @map("password_hash")
+  supabaseId                                    String?               @unique @map("supabase_id") @db.Uuid
+  emailVerifiedAt                               DateTime?             @map("email_verified_at") @db.Timestamp(6)
   avatarUrl                                     String?               @map("avatar_url")
   role                                          Role                  @default(CUSTOMER)
   isActive                                      Boolean               @default(true) @map("is_active")
