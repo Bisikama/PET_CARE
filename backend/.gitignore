@@ -65,3 +65,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /test/test_cli.md
 #hoppscotch
 pet_care_auth_api_collection.json
+
+/docs/*
