@@ -1,6 +1,6 @@
 # PET_CARE Backend — Architecture & Development Guide
 
-> **Tài liệu bắt buộc dành cho tất cả Backend Engineer trước khi sửa hoặc tạo code.**
+> **Tài liệu bắt buộc dành cho Backend Engineer trước khi sửa hoặc tạo code.**
 >
 > Mục tiêu: toàn bộ backend PET_CARE phải phát triển theo cùng một kiến trúc, tránh code chồng chéo, gọi Prisma trực tiếp sai layer, làm vỡ Swagger/API contract, hoặc tạo migration không được phê duyệt.
 
@@ -151,15 +151,15 @@ Không bắt buộc tạo toàn bộ các folder ở trên. Ví dụ:
 
 ## 5. Trách nhiệm của từng layer
 
-| Layer | Được phép làm | Không được làm |
-|---|---|---|
-| `controller` | Route, HTTP method, DTO validation, Guard, Swagger, lấy user ID từ JWT, gọi Use Case, trả response | Prisma query, Supabase/Payment/Storage call, ownership logic, pricing, state transition |
-| `dto` | Validate dữ liệu HTTP, Swagger schema | Business logic, Prisma type, quyền sở hữu |
-| `application/use-cases` | Business rule, ownership, state transition, orchestration, gọi Port/Gateway | DTO/Express/Swagger import, PrismaService direct, HTTP cookie handling |
-| `application/services` | Logic nghiệp vụ dùng chung giữa nhiều Use Case trong cùng feature | Controller logic hoặc Prisma direct nếu không có lý do đặc biệt |
-| `application/ports` | Interface/plain contract mà Use Case cần | Prisma type hoặc SDK type rò rỉ ra ngoài nếu có thể tránh |
-| `infrastructure/persistence` | Prisma query, mapping persistence, transaction detail | Route/DTO/Swagger/business rule lớn |
-| `common` | Guard, decorator, filter, interceptor, constant dùng chung | Logic đặc thù của một feature |
+| Layer                        | Được phép làm                                                                                      | Không được làm                                                                          |
+| ---------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `controller`                 | Route, HTTP method, DTO validation, Guard, Swagger, lấy user ID từ JWT, gọi Use Case, trả response | Prisma query, Supabase/Payment/Storage call, ownership logic, pricing, state transition |
+| `dto`                        | Validate dữ liệu HTTP, Swagger schema                                                              | Business logic, Prisma type, quyền sở hữu                                               |
+| `application/use-cases`      | Business rule, ownership, state transition, orchestration, gọi Port/Gateway                        | DTO/Express/Swagger import, PrismaService direct, HTTP cookie handling                  |
+| `application/services`       | Logic nghiệp vụ dùng chung giữa nhiều Use Case trong cùng feature                                  | Controller logic hoặc Prisma direct nếu không có lý do đặc biệt                         |
+| `application/ports`          | Interface/plain contract mà Use Case cần                                                           | Prisma type hoặc SDK type rò rỉ ra ngoài nếu có thể tránh                               |
+| `infrastructure/persistence` | Prisma query, mapping persistence, transaction detail                                              | Route/DTO/Swagger/business rule lớn                                                     |
+| `common`                     | Guard, decorator, filter, interceptor, constant dùng chung                                         | Logic đặc thù của một feature                                                           |
 
 ---
 

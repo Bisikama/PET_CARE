@@ -20,11 +20,7 @@ export class AuthSessionService {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
-  async saveRefreshToken(
-    userId: string,
-    refreshToken: string,
-    context?: DeviceContext,
-  ) {
+  async saveRefreshToken(userId: string, refreshToken: string, context?: DeviceContext) {
     const tokenHash = this.hashToken(refreshToken);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);

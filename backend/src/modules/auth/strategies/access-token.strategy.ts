@@ -5,7 +5,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
 import { AUTH_ERRORS } from '../../../common/constants/error-messages.constant';
 
-
 type JwtPayload = {
   sub: string;
   email: string;

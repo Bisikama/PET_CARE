@@ -2,10 +2,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
 type AuthenticatedUser = {
-  id: string;
-  email: string;
-  role: string;
-  isActive: boolean;
+  id?: string;
 };
 
 type RequestWithUser = Request & {
