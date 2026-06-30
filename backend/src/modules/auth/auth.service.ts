@@ -37,7 +37,7 @@ export class AuthService {
     private readonly googleIdTokenSignInUseCase: GoogleIdTokenSignInUseCase,
     private readonly refreshAuthSessionUseCase: RefreshAuthSessionUseCase,
     private readonly authSessionService: AuthSessionService,
-  ) { }
+  ) {}
 
   async register(dto: RegisterDto) {
     return this.registerUserUseCase.execute({
@@ -109,7 +109,7 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     const tokenHash = this.authSessionService.hashToken(refreshToken);
-    await this.refreshTokenRepository.deleteByHash(tokenHash).catch(() => { });
+    await this.refreshTokenRepository.deleteByHash(tokenHash).catch(() => {});
   }
 
   async logoutAll(userId: string) {

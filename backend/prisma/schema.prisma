@@ -45,40 +45,53 @@ model booking_status_logs {
 }
 
 model bookings {
-  id                       String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id              String                @db.Uuid
-  provider_id              String?               @db.Uuid
-  address_id               String                @db.Uuid
-  requested_slot_id        String                @db.Uuid
-  requested_date           DateTime              @db.Date
-  service_duration_minutes Int
-  travel_duration_minutes  Int                   @default(0)
-  buffer_minutes           Int                   @default(0)
-  estimated_start_at       DateTime              @db.Timestamp(6)
-  estimated_end_at         DateTime              @db.Timestamp(6)
-  status                   booking_status        @default(PENDING_PAYMENT)
-  total_price              Decimal               @default(0) @db.Decimal(12, 2)
-  customer_note            String?
-  provider_note            String?
-  cancellation_reason      String?
-  accepted_at              DateTime?             @db.Timestamp(6)
-  started_at               DateTime?             @db.Timestamp(6)
-  completed_at             DateTime?             @db.Timestamp(6)
-  cancelled_at             DateTime?             @db.Timestamp(6)
-  created_at               DateTime?             @default(now()) @db.Timestamp(6)
-  updated_at               DateTime?             @default(now()) @db.Timestamp(6)
-  booking_media            booking_media[]
-  booking_status_logs      booking_status_logs[]
-  customer_addresses       customer_addresses    @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                    User                  @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  provider_profiles        provider_profiles?    @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  time_slots               time_slots            @relation(fields: [requested_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  booking_pets             booking_pets[]
-  chat_rooms               chat_rooms?
-  complaints               complaints[]
-  notifications            notifications[]
-  payments                 payments?
-  reviews                  reviews[]
+  id                           String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id                  String                 @db.Uuid
+  provider_id                  String?                @db.Uuid
+  address_id                   String                 @db.Uuid
+  requested_slot_id            String                 @db.Uuid
+  provider_working_slot_id     String?                @db.Uuid
+  requested_date               DateTime               @db.Date
+  service_duration_minutes     Int
+  travel_duration_minutes      Int                    @default(0)
+  buffer_minutes               Int                    @default(0)
+  estimated_start_at           DateTime               @db.Timestamp(6)
+  estimated_end_at             DateTime               @db.Timestamp(6)
+  status                       booking_status         @default(PENDING_PAYMENT)
+  total_price                  Decimal                @default(0) @db.Decimal(12, 2)
+  customer_note                String?
+  provider_note                String?
+  cancellation_reason          String?
+  accepted_at                  DateTime?              @db.Timestamp(6)
+  started_at                   DateTime?              @db.Timestamp(6)
+  completed_at                 DateTime?              @db.Timestamp(6)
+  cancelled_at                 DateTime?              @db.Timestamp(6)
+  created_at                   DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at                   DateTime?              @default(now()) @db.Timestamp(6)
+  address_snapshot             Json?
+  cancellation_policy_snapshot Json?
+  price_snapshot               Json?
+  cancelled_by                 String?                @db.Uuid
+  cancellation_requested_by    String?                @db.Uuid
+  customer_confirmed_at        DateTime?              @db.Timestamp(6)
+  completion_requested_at      DateTime?              @db.Timestamp(6)
+  booking_media                booking_media[]
+  booking_status_logs          booking_status_logs[]
+  customer_addresses           customer_addresses     @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                        User                   @relation("customer_bookings", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cancelled_by_user            User?                  @relation("cancelled_bookings", fields: [cancelled_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cancellation_requested_by_user User?                 @relation("cancellation_requested_bookings", fields: [cancellation_requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider_profiles            provider_profiles?     @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  time_slots                   time_slots             @relation(fields: [requested_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider_working_slots       provider_working_slots? @relation(fields: [provider_working_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  booking_pets                 booking_pets[]
+  chat_rooms                   chat_rooms?
+  complaints                   complaints[]
+  notifications                notifications[]
+  payments                     payments?
+  reviews                      reviews[]
+  booking_events               booking_events[]
+  booking_cancellations        booking_cancellations[]
 
   @@index([requested_date], map: "idx_bookings_requested_date")
   @@index([customer_id], map: "idx_bookings_customer_id")
@@ -140,6 +153,10 @@ model complaints {
   resolved_at                            DateTime?             @db.Timestamp(6)
   created_at                             DateTime?             @default(now()) @db.Timestamp(6)
   updated_at                             DateTime?             @default(now()) @db.Timestamp(6)
+  reason                                 dispute_reason?
+  decision                               dispute_decision?
+  decided_at                             DateTime?             @db.Timestamp(6)
+  admin_note                             String?
   complaint_evidences                    complaint_evidences[]
   users_complaints_accused_idTousers     User?                 @relation("complaints_accused_idTousers", fields: [accused_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users_complaints_admin_idTousers       User?                 @relation("complaints_admin_idTousers", fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -248,6 +265,9 @@ model provider_profiles {
   service_area             String?
   base_location            String?
   status                   provider_status         @default(DRAFT)
+  kyc_status               provider_document_status @default(PENDING)
+  credential_status        provider_document_status @default(PENDING)
+  screening_status         screening_status        @default(NOT_REQUIRED)
   rating_avg               Decimal?                @default(0) @db.Decimal(3, 2)
   total_reviews            Int?                    @default(0)
   total_completed_bookings Int?                    @default(0)
@@ -259,6 +279,9 @@ model provider_profiles {
   users                    User                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   provider_services        provider_services[]
   provider_working_days    provider_working_days[]
+  provider_documents       provider_documents[]
+  provider_service_areas   provider_service_areas[]
+  provider_trust_badges    provider_trust_badges[]
 
   @@index([status], map: "idx_provider_profiles_status")
   @@index([provider_type], map: "idx_provider_profiles_type")
@@ -266,34 +289,48 @@ model provider_profiles {
 }
 
 model provider_services {
-  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_id        String             @db.Uuid
-  service_id         String             @db.Uuid
-  price              Decimal            @db.Decimal(12, 2)
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id        String            @db.Uuid
+  service_id         String            @db.Uuid
+  price              Decimal           @db.Decimal(12, 2)
   custom_description String?
-  is_active          Boolean?           @default(true)
-  created_at         DateTime?          @default(now()) @db.Timestamp(6)
+  is_active          Boolean?          @default(true)
+  created_at         DateTime?         @default(now()) @db.Timestamp(6)
+  pet_species        String            @default("Dog") @db.VarChar(50)
+  min_weight         Decimal           @default(0) @db.Decimal(5, 2)
+  max_weight         Decimal           @default(100) @db.Decimal(5, 2)
+  status             capability_status @default(PENDING)
+  approved_by        String?           @db.Uuid
+  approved_at        DateTime?         @db.Timestamp(6)
+  reject_reason      String?
+  updated_at         DateTime?         @default(now()) @db.Timestamp(6)
   booking_services   booking_services[]
-  provider_profiles  provider_profiles  @relation(fields: [provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  services           services           @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  provider_profiles  provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services           services          @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  approver           User?             @relation("approved_capabilities", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([provider_id, service_id])
+  @@unique([provider_id, service_id, pet_species, min_weight, max_weight])
   @@index([provider_id], map: "idx_provider_services_provider_id")
   @@index([service_id], map: "idx_provider_services_service_id")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model reviews {
-  id                               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  booking_id                       String    @db.Uuid
-  reviewer_id                      String    @db.Uuid
-  reviewee_id                      String    @db.Uuid
-  rating                           Int       @db.SmallInt
+  id                               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id                       String        @db.Uuid
+  reviewer_id                      String        @db.Uuid
+  reviewee_id                      String        @db.Uuid
+  rating                           Int           @db.SmallInt
   comment                          String?
-  created_at                       DateTime? @default(now()) @db.Timestamp(6)
-  bookings                         bookings  @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_reviews_reviewee_idTousers User      @relation("reviews_reviewee_idTousers", fields: [reviewee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_reviews_reviewer_idTousers User      @relation("reviews_reviewer_idTousers", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at                       DateTime?     @default(now()) @db.Timestamp(6)
+  is_hidden                        Boolean       @default(false)
+  hidden_reason                    String?
+  hidden_by                        String?       @db.Uuid
+  hidden_at                        DateTime?     @db.Timestamp(6)
+  bookings                         bookings      @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_reviews_reviewee_idTousers User          @relation("reviews_reviewee_idTousers", fields: [reviewee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_reviews_reviewer_idTousers User          @relation("reviews_reviewer_idTousers", fields: [reviewer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  hidden_by_user                   User?         @relation("reviews_hidden_byTousers", fields: [hidden_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  review_media                     review_media[]
 
   @@unique([booking_id, reviewer_id, reviewee_id])
 }
@@ -318,9 +355,12 @@ model services {
   base_price                  Decimal                       @default(0) @db.Decimal(12, 2)
   duration_minutes            Int                           @default(60)
   is_active                   Boolean?                      @default(true)
+  cancellation_policy_id      String?                       @db.Uuid
   created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
   provider_services           provider_services[]
   service_checklist_templates service_checklist_templates[]
+  pricing_rules               service_pricing_rules[]
+  cancellation_policy         cancellation_policies?        @relation(fields: [cancellation_policy_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 }
 
 model User {
@@ -334,11 +374,16 @@ model User {
   avatarUrl                                     String?               @map("avatar_url")
   role                                          Role                  @default(CUSTOMER)
   isActive                                      Boolean               @default(true) @map("is_active")
+  status                                        user_status           @default(ACTIVE)
+  suspended_reason                              String?
+  suspended_at                                  DateTime?             @db.Timestamp(6)
   createdAt                                     DateTime?             @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt                                     DateTime?             @default(now()) @map("updated_at") @db.Timestamp(6)
   booking_media                                 booking_media[]
   booking_status_logs                           booking_status_logs[]
-  bookings                                      bookings[]
+  bookings                                      bookings[]            @relation("customer_bookings")
+  cancelled_bookings                            bookings[]            @relation("cancelled_bookings")
+  cancellation_requested_bookings               bookings[]            @relation("cancellation_requested_bookings")
   chat_messages                                 chat_messages[]
   chat_rooms_chat_rooms_customer_idTousers      chat_rooms[]          @relation("chat_rooms_customer_idTousers")
   chat_rooms_chat_rooms_provider_user_idTousers chat_rooms[]          @relation("chat_rooms_provider_user_idTousers")
@@ -354,21 +399,305 @@ model User {
   refresh_tokens                                refresh_tokens[]
   reviews_reviews_reviewee_idTousers            reviews[]             @relation("reviews_reviewee_idTousers")
   reviews_reviews_reviewer_idTousers            reviews[]             @relation("reviews_reviewer_idTousers")
+  reviews_reviews_hidden_byTousers              reviews[]             @relation("reviews_hidden_byTousers")
+  provider_documents_reviewed                   provider_documents[]  @relation("reviewed_documents")
+  approved_capabilities                         provider_services[]   @relation("approved_capabilities")
+  booking_events                                booking_events[]
+  booking_cancellations_requested               booking_cancellations[] @relation("requested_cancellations")
+  booking_cancellations_reviewed                booking_cancellations[] @relation("reviewed_cancellations")
+  support_tickets_user                          support_tickets[]     @relation("user_tickets")
+  support_tickets_assigned                      support_tickets[]     @relation("assigned_tickets")
+  support_ticket_messages                       support_ticket_messages[]
+  granted_badges                                provider_trust_badges[] @relation("granted_badges")
+  audit_logs                                    audit_logs[]
 
   @@index([role], map: "idx_users_role")
   @@map("users")
+}
+
+model provider_documents {
+  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id   String                   @db.Uuid
+  document_type provider_document_type
+  file_url      String
+  status        provider_document_status @default(PENDING)
+  issued_at     DateTime?                @db.Timestamp(6)
+  expired_at    DateTime?                @db.Timestamp(6)
+  reviewed_by   String?                  @db.Uuid
+  reviewed_at   DateTime?                @db.Timestamp(6)
+  reject_reason String?
+  note          String?
+  created_at    DateTime                 @default(now()) @db.Timestamp(6)
+  updated_at    DateTime                 @default(now()) @updatedAt @db.Timestamp(6)
+
+  provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+  reviewer          User?             @relation("reviewed_documents", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model provider_service_areas {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id String   @db.Uuid
+  city        String   @db.VarChar(100)
+  district    String   @db.VarChar(100)
+  ward        String   @db.VarChar(100)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+
+  provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+
+  @@unique([provider_id, city, district, ward])
+}
+
+model service_pricing_rules {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  service_id       String    @db.Uuid
+  pet_species      String    @db.VarChar(50)
+  min_weight       Decimal?  @db.Decimal(5, 2)
+  max_weight       Decimal?  @db.Decimal(5, 2)
+  price            Decimal   @db.Decimal(12, 2)
+  duration_minutes Int
+  is_active        Boolean   @default(true)
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+
+  services services @relation(fields: [service_id], references: [id], onDelete: Cascade)
+}
+
+model cancellation_policies {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(100)
+  description String?
+  rules_json  Json
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  services    services[]
+}
+
+model booking_events {
+  id         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id String             @db.Uuid
+  actor_id   String?            @db.Uuid
+  event_type booking_event_type
+  note       String?
+  metadata   Json?
+  created_at DateTime           @default(now()) @db.Timestamp(6)
+
+  bookings bookings @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  actor    User?    @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model booking_cancellations {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id      String              @db.Uuid
+  requested_by    String              @db.Uuid
+  reason          String
+  note            String?
+  status          cancellation_status @default(PENDING)
+  policy_snapshot Json?
+  refund_amount   Decimal?            @db.Decimal(12, 2)
+  penalty_amount  Decimal?            @db.Decimal(12, 2)
+  reviewed_by     String?             @db.Uuid
+  reviewed_at     DateTime?           @db.Timestamp(6)
+  created_at      DateTime            @default(now()) @db.Timestamp(6)
+
+  bookings  bookings @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  requester User     @relation("requested_cancellations", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewer  User?    @relation("reviewed_cancellations", fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model support_tickets {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String                 @db.Uuid
+  category          support_ticket_category
+  title             String                 @db.VarChar(255)
+  description       String
+  status            support_ticket_status  @default(OPEN)
+  assigned_admin_id String?                @db.Uuid
+  resolved_at       DateTime?              @db.Timestamp(6)
+  created_at        DateTime               @default(now()) @db.Timestamp(6)
+  updated_at        DateTime               @default(now()) @updatedAt @db.Timestamp(6)
+
+  user                    User                      @relation("user_tickets", fields: [user_id], references: [id], onDelete: Cascade)
+  admin                   User?                     @relation("assigned_tickets", fields: [assigned_admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  support_ticket_messages support_ticket_messages[]
+}
+
+model support_ticket_messages {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticket_id  String   @db.Uuid
+  sender_id  String   @db.Uuid
+  content    String
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  support_tickets support_tickets @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  sender          User            @relation(fields: [sender_id], references: [id], onDelete: Cascade)
+}
+
+model trust_badges {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                  String                  @unique @db.VarChar(50)
+  name                  String                  @db.VarChar(100)
+  description           String?
+  is_active             Boolean                 @default(true)
+  provider_trust_badges provider_trust_badges[]
+}
+
+model provider_trust_badges {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id String    @db.Uuid
+  badge_id    String    @db.Uuid
+  granted_by  String?   @db.Uuid
+  granted_at  DateTime  @default(now()) @db.Timestamp(6)
+  revoked_at  DateTime? @db.Timestamp(6)
+  reason      String?
+
+  provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+  trust_badges      trust_badges      @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+  granter           User?             @relation("granted_badges", fields: [granted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([provider_id, badge_id])
+}
+
+model audit_logs {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_id    String?   @db.Uuid
+  action      String    @db.VarChar(100)
+  target_type String    @db.VarChar(100)
+  target_id   String?   @db.Uuid
+  old_value   Json?
+  new_value   Json?
+  reason      String?
+  ip_address  String?   @db.VarChar(45)
+  user_agent  String?
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+
+  actor User? @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model review_media {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_id  String     @db.Uuid
+  media_url  String
+  media_type media_type
+  created_at DateTime   @default(now()) @db.Timestamp(6)
+
+  reviews reviews @relation(fields: [review_id], references: [id], onDelete: Cascade)
+}
+
+model refresh_tokens {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @db.Uuid
+  token_hash     String   @unique
+  device_info    String?  @db.VarChar(255)
+  ip_address     String?  @db.VarChar(45)
+  device_id      String?  @db.VarChar(255)
+  last_active_at DateTime @default(now()) @db.Timestamp(6)
+  expires_at     DateTime @db.Timestamp(6)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  users          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model time_slots {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(50)
+  start_time String   @db.VarChar(5)
+  end_time   String   @db.VarChar(5)
+  slot_order Int      @default(0)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  provider_working_slots provider_working_slots[]
+  bookings               bookings[]
+}
+
+model provider_working_days {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id  String       @db.Uuid
+  work_date    DateTime     @db.Date
+  working_mode working_mode @default(FULL_TIME)
+  created_at   DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?    @default(now()) @db.Timestamp(6)
+
+  provider_profiles      provider_profiles      @relation(fields: [provider_id], references: [id], onDelete: Cascade)
+  provider_working_slots provider_working_slots[]
+
+  @@unique([provider_id, work_date])
+  @@index([provider_id])
+  @@index([work_date])
+}
+
+model provider_working_slots {
+  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  working_day_id String                   @db.Uuid
+  slot_id        String                   @db.Uuid
+  status         availability_slot_status @default(BLOCKED)
+  held_until     DateTime?                @db.Timestamp(6)
+  reserved_until DateTime?                @db.Timestamp(6)
+  created_at     DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?                @default(now()) @db.Timestamp(6)
+
+  provider_working_days provider_working_days @relation(fields: [working_day_id], references: [id], onDelete: Cascade)
+  time_slots            time_slots            @relation(fields: [slot_id], references: [id], onDelete: Cascade)
+  bookings              bookings[]
+
+  @@unique([working_day_id, slot_id])
+}
+
+model booking_pets {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id    String   @db.Uuid
+  pet_id        String   @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  pet_name      String?  @db.VarChar(100)
+  species       String?  @db.VarChar(50)
+  breed         String?  @db.VarChar(100)
+  age           Int?
+  weight        Decimal? @db.Decimal(5, 2)
+  gender        String?  @db.VarChar(20)
+  health_note   String?
+  behavior_note String?
+  avatar_url    String?
+
+  bookings         bookings           @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  pets             pets               @relation(fields: [pet_id], references: [id], onDelete: Restrict)
+  booking_services booking_services[]
+
+  @@unique([booking_id, pet_id])
+}
+
+model booking_services {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_pet_id      String   @db.Uuid
+  provider_service_id String   @db.Uuid
+  price               Decimal  @db.Decimal(12, 2)
+  duration_minutes    Int
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  service_name        String?  @db.VarChar(150)
+  service_description String?
+  service_category    String?  @db.VarChar(100)
+
+  booking_pets            booking_pets              @relation(fields: [booking_pet_id], references: [id], onDelete: Cascade)
+  provider_services       provider_services         @relation(fields: [provider_service_id], references: [id], onDelete: Restrict)
+  booking_checklist_items booking_checklist_items[]
+
+  @@unique([booking_pet_id, provider_service_id])
 }
 
 enum booking_status {
   PENDING_PAYMENT
   PENDING_PROVIDER_ACCEPTANCE
   ACCEPTED
+  PROVIDER_ARRIVED
+  CHECKED_IN
   IN_PROGRESS
   AWAITING_CUSTOMER_CONFIRMATION
   COMPLETED
   REJECTED
+  PROVIDER_TIMEOUT
   CANCELLED
   EXPIRED
+  DISPUTED
 }
 
 enum checklist_item_status {
@@ -379,9 +708,12 @@ enum checklist_item_status {
 
 enum complaint_status {
   OPEN
+  WAITING_FOR_EVIDENCE
   UNDER_REVIEW
+  DECIDED
   RESOLVED
   REJECTED
+  CLOSED
 }
 
 enum media_type {
@@ -457,16 +789,11 @@ enum provider_document_status {
   REVOKED
 }
 
-enum provider_capability {
-  IDENTITY_VERIFIED
-  GROOMING_CERTIFIED
-  VET_STUDENT_VERIFIED
-  VET_VERIFIED
-}
-
-enum trust_tier {
-  STANDARD_PROVIDER
-  TRUSTED_PROVIDER
+enum screening_status {
+  NOT_REQUIRED
+  PENDING
+  PASSED
+  FAILED
 }
 
 enum availability_slot_status {
@@ -475,6 +802,7 @@ enum availability_slot_status {
   RESERVED_FOR_PROVIDER_RESPONSE
   BOOKED
   BLOCKED
+  COMPLETED
 }
 
 enum reschedule_request_status {
@@ -487,109 +815,89 @@ enum reschedule_request_status {
   FAILED_SLOT_UNAVAILABLE
 }
 
-enum dispute_status {
-  OPEN
-  WAITING_FOR_EVIDENCE
-  UNDER_REVIEW
-  DECIDED
-  CLOSED
-  WITHDRAWN
-}
-
-enum booking_incident_status {
-  REPORTED
-  PROVIDER_RESPONDED
-  UNDER_REVIEW
-  CONFIRMED
-  REJECTED
-  RESOLVED
-}
-
-model refresh_tokens {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id        String   @db.Uuid
-  token_hash     String   @unique
-  device_info    String?  @db.VarChar(255)
-  ip_address     String?  @db.VarChar(45)
-  device_id      String?  @db.VarChar(255)
-  last_active_at DateTime @default(now()) @db.Timestamp(6)
-  expires_at     DateTime @db.Timestamp(6)
-  created_at     DateTime @default(now()) @db.Timestamp(6)
-  users          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([user_id])
-}
-
 enum working_mode {
   FULL_TIME
   PART_TIME
 }
 
-model time_slots {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String   @db.VarChar(50)
-  start_time String   @db.VarChar(5)
-  end_time   String   @db.VarChar(5)
-  slot_order Int      @default(0)
-  created_at DateTime @default(now()) @db.Timestamp(6)
-
-  provider_working_slots provider_working_slots[]
-  bookings               bookings[]
+enum provider_document_type {
+  IDENTITY_CARD
+  GROOMING_CERTIFICATE
+  PET_CARE_CERTIFICATE
+  FIRST_AID_CERTIFICATE
+  BACKGROUND_SCREENING
+  OTHER
 }
 
-model provider_working_days {
-  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_id  String       @db.Uuid
-  work_date    DateTime     @db.Date
-  working_mode working_mode @default(FULL_TIME)
-  created_at   DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at   DateTime?    @default(now()) @db.Timestamp(6)
-
-  provider_profiles      provider_profiles      @relation(fields: [provider_id], references: [id], onDelete: Cascade)
-  provider_working_slots provider_working_slots[]
-
-  @@unique([provider_id, work_date])
-  @@index([provider_id])
-  @@index([work_date])
+enum capability_status {
+  PENDING
+  APPROVED
+  REJECTED
+  NEED_RESUBMIT
 }
 
-model provider_working_slots {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  working_day_id String    @db.Uuid
-  slot_id        String    @db.Uuid
-  is_available   Boolean   @default(true)
-  created_at     DateTime? @default(now()) @db.Timestamp(6)
-
-  provider_working_days provider_working_days @relation(fields: [working_day_id], references: [id], onDelete: Cascade)
-  time_slots            time_slots            @relation(fields: [slot_id], references: [id], onDelete: Cascade)
-
-  @@unique([working_day_id, slot_id])
+enum dispute_reason {
+  SERVICE_NOT_COMPLETED
+  BAD_SERVICE_QUALITY
+  PROVIDER_NO_SHOW
+  CUSTOMER_NO_SHOW
+  PET_INJURY
+  WRONG_ADDRESS
+  OTHER
 }
 
-model booking_pets {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  booking_id String   @db.Uuid
-  pet_id     String   @db.Uuid
-  created_at DateTime @default(now()) @db.Timestamp(6)
-
-  bookings         bookings           @relation(fields: [booking_id], references: [id], onDelete: Cascade)
-  pets             pets               @relation(fields: [pet_id], references: [id], onDelete: Restrict)
-  booking_services booking_services[]
-
-  @@unique([booking_id, pet_id])
+enum dispute_decision {
+  RELEASE_TO_PROVIDER
+  PARTIAL_REFUND
+  FULL_REFUND
+  REQUEST_MORE_EVIDENCE
+  REJECT_DISPUTE
 }
 
-model booking_services {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  booking_pet_id      String   @db.Uuid
-  provider_service_id String   @db.Uuid
-  price               Decimal  @db.Decimal(12, 2)
-  duration_minutes    Int
-  created_at          DateTime @default(now()) @db.Timestamp(6)
+enum user_status {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
 
-  booking_pets            booking_pets              @relation(fields: [booking_pet_id], references: [id], onDelete: Cascade)
-  provider_services       provider_services         @relation(fields: [provider_service_id], references: [id], onDelete: Restrict)
-  booking_checklist_items booking_checklist_items[]
+enum booking_event_type {
+  BOOKING_CREATED
+  PAYMENT_HELD
+  PROVIDER_ACCEPTED
+  PROVIDER_REJECTED
+  PROVIDER_ARRIVED
+  CHECKED_IN
+  SERVICE_STARTED
+  CHECKLIST_ITEM_COMPLETED
+  EVIDENCE_UPLOADED
+  COMPLETION_REQUESTED
+  CUSTOMER_CONFIRMED
+  AUTO_COMPLETED
+  CANCELLED
+  DISPUTE_OPENED
+}
 
-  @@unique([booking_pet_id, provider_service_id])
+enum cancellation_status {
+  PENDING
+  APPROVED
+  REJECTED
+  AUTO_APPROVED
+}
+
+enum support_ticket_category {
+  ACCOUNT
+  BOOKING_GUIDE
+  TECHNICAL_ERROR
+  NOTIFICATION
+  VOUCHER
+  OTHER
+}
+
+enum support_ticket_status {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }
