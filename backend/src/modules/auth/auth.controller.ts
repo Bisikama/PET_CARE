@@ -23,10 +23,12 @@ import { clearRefreshTokenCookie, setRefreshTokenCookie } from './utils/refresh-
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { AUTH_MESSAGES } from '../../common/constants/success-messages.constant';
+
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { GoogleIdTokenDto } from './dto/google-id-token.dto';
-import { AccessTokenGuard } from 'src/common/guards/access-token.guard';
+import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 
 type RequestWithCookies = Omit<express.Request, 'cookies'> & {
   cookies?: Record<string, string>;
@@ -36,7 +38,7 @@ type RequestWithCookies = Omit<express.Request, 'cookies'> & {
 @UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('register')
@@ -183,7 +185,7 @@ export class AuthController {
       await this.authService.logout(refreshToken);
     }
     clearRefreshTokenCookie(response);
-    return { message: 'Logged out successfully' };
+    return { message: AUTH_MESSAGES.LOGOUT_SUCCESS };
   }
 
   @Public()

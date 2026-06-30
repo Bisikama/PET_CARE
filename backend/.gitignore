@@ -66,4 +66,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 #hoppscotch
 pet_care_auth_api_collection.json
 
-/docs/*
+/docs/supabase_docs
