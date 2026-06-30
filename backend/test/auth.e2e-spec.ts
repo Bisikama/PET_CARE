@@ -188,8 +188,12 @@ describe('AuthController (e2e)', () => {
     });
 
     it('allows independent refresh-token sessions on multiple devices', async () => {
-      const firstDeviceLogin = await loginWithDevice('auth-e2e-browser-a', 'device-a-id').expect(200);
-      const secondDeviceLogin = await loginWithDevice('auth-e2e-browser-b', 'device-b-id').expect(200);
+      const firstDeviceLogin = await loginWithDevice('auth-e2e-browser-a', 'device-a-id').expect(
+        200,
+      );
+      const secondDeviceLogin = await loginWithDevice('auth-e2e-browser-b', 'device-b-id').expect(
+        200,
+      );
       const firstDeviceCookie = getRefreshCookie(firstDeviceLogin);
       const secondDeviceCookie = getRefreshCookie(secondDeviceLogin);
 

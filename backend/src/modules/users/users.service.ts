@@ -16,7 +16,7 @@ const publicUserSelect = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(data: Prisma.UserCreateInput) {
     return this.prisma.user.create({ data });
@@ -25,6 +25,12 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
+    });
+  }
+
+  async findBySupabaseId(supabaseId: string) {
+    return this.prisma.user.findUnique({
+      where: { supabaseId },
     });
   }
 

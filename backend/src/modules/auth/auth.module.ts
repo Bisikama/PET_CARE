@@ -10,10 +10,18 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 
 import { PrismaModule } from '../../database/prisma.module';
 
+import { SupabaseAuthService } from './supabase-auth.service';
+
 @Module({
   imports: [PassportModule, JwtModule.register({}), UsersModule, PrismaModule],
   controllers: [AuthController],
-  providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy, RolesGuard],
+  providers: [
+    AuthService,
+    SupabaseAuthService,
+    AccessTokenStrategy,
+    RefreshTokenStrategy,
+    RolesGuard,
+  ],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }
