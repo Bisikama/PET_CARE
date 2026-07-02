@@ -76,7 +76,11 @@ describe('AuthService', () => {
       message: 'Test message',
       requiresEmailConfirmation: true,
     });
-    const res = await service.register({ email: 'test@example.com', password: 'pass', fullName: 'Test Name' });
+    const res = await service.register({
+      email: 'test@example.com',
+      password: 'pass',
+      fullName: 'Test Name',
+    });
     expect(registerUserUseCase.execute).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'pass',
@@ -88,7 +92,13 @@ describe('AuthService', () => {
 
   it('AUTH-SB-01: VerifyEmailOtp delegates', async () => {
     verifyEmailOtpUseCase.execute.mockResolvedValue('result' as any);
-    const res = await service.verifyEmailOtp('test@example.com', '123456', 'agent', '1.1.1.1', 'dev');
+    const res = await service.verifyEmailOtp(
+      'test@example.com',
+      '123456',
+      'agent',
+      '1.1.1.1',
+      'dev',
+    );
     expect(verifyEmailOtpUseCase.execute).toHaveBeenCalledWith({
       email: 'test@example.com',
       otp: '123456',
@@ -99,7 +109,12 @@ describe('AuthService', () => {
 
   it('AUTH-SB-02: Login delegates', async () => {
     loginUserUseCase.execute.mockResolvedValue('result' as any);
-    const res = await service.login({ email: 'test@example.com', password: 'pwd' }, 'agent', '1.1.1.1', 'dev');
+    const res = await service.login(
+      { email: 'test@example.com', password: 'pwd' },
+      'agent',
+      '1.1.1.1',
+      'dev',
+    );
     expect(loginUserUseCase.execute).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'pwd',

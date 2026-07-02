@@ -3,10 +3,7 @@ import { RegisterUserUseCase } from './register-user.use-case';
 import { UsersService } from '../../../users/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { Role } from '@prisma/client';
-import {
-  ConflictException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 
@@ -55,7 +52,11 @@ describe('RegisterUserUseCase', () => {
 
     expect(supabaseAuthService.normalizeEmail).toHaveBeenCalledWith(' TEST@example.com ');
     expect(usersService.findByEmail).toHaveBeenCalledWith('test@example.com');
-    expect(supabaseAuthService.signUpEmail).toHaveBeenCalledWith('test@example.com', 'pass', 'Test Name');
+    expect(supabaseAuthService.signUpEmail).toHaveBeenCalledWith(
+      'test@example.com',
+      'pass',
+      'Test Name',
+    );
     expect(usersService.create).toHaveBeenCalledWith(
       expect.objectContaining({
         email: 'test@example.com',
@@ -64,7 +65,7 @@ describe('RegisterUserUseCase', () => {
         supabaseId: 'sb_id',
         role: Role.CUSTOMER,
         isActive: true,
-      })
+      }),
     );
     expect(result).toEqual({
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
@@ -76,9 +77,9 @@ describe('RegisterUserUseCase', () => {
     usersService.findByEmail.mockResolvedValue({ id: 'existing' } as any);
 
     await expect(
-      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' })
+      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
     ).rejects.toThrow(new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS));
-    
+
     expect(supabaseAuthService.signUpEmail).not.toHaveBeenCalled();
   });
 
@@ -104,10 +105,12 @@ describe('RegisterUserUseCase', () => {
 
   it('Supabase signup lỗi: giữ nguyên exception mapping', async () => {
     usersService.findByEmail.mockResolvedValue(null);
-    supabaseAuthService.signUpEmail.mockRejectedValue(new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS));
+    supabaseAuthService.signUpEmail.mockRejectedValue(
+      new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS),
+    );
 
     await expect(
-      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' })
+      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
     ).rejects.toThrow(new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS));
   });
 
@@ -120,7 +123,7 @@ describe('RegisterUserUseCase', () => {
     usersService.create.mockRejectedValue(new Error('Prisma error'));
 
     await expect(
-      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' })
+      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
     ).rejects.toThrow(new InternalServerErrorException(AUTH_ERRORS.LOCAL_PROFILE_CREATE_FAILED));
   });
 });

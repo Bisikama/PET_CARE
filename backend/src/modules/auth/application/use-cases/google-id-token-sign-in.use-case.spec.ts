@@ -40,34 +40,42 @@ describe('GoogleIdTokenSignInUseCase', () => {
   });
 
   it('1. Success path', async () => {
-    supabaseAuthService.signInGoogleIdToken.mockResolvedValue({ user: { email: 't@example.com', user_metadata: { full_name: 'Test' } } });
-    supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue({ id: 'u1', isActive: true });
-    
+    supabaseAuthService.signInGoogleIdToken.mockResolvedValue({
+      user: { email: 't@example.com', user_metadata: { full_name: 'Test' } },
+    });
+    supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue({
+      id: 'u1',
+      isActive: true,
+    });
+
     await useCase.execute({ idToken: 'token' });
-    
+
     expect(supabaseUserSyncService.findOrCreateSupabaseUser).toHaveBeenCalledWith(
       expect.objectContaining({ email: 't@example.com' }),
-      'Test'
+      'Test',
     );
     expect(authSessionService.saveRefreshToken).toHaveBeenCalled();
   });
 
   it('2. Provider invalid token mapping', async () => {
     supabaseAuthService.signInGoogleIdToken.mockRejectedValue(new Error('Provider Error'));
-    
+
     await expect(useCase.execute({ idToken: 'token' })).rejects.toThrow('Provider Error');
   });
 
   it('3. Remote user không có email', async () => {
     supabaseAuthService.signInGoogleIdToken.mockResolvedValue({ user: { email: null } });
-    
+
     await expect(useCase.execute({ idToken: 'token' })).rejects.toThrow(UnauthorizedException);
   });
 
   it('4. Inactive local user', async () => {
     supabaseAuthService.signInGoogleIdToken.mockResolvedValue({ user: { email: 't@example.com' } });
-    supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue({ id: 'u1', isActive: false });
-    
+    supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue({
+      id: 'u1',
+      isActive: false,
+    });
+
     await expect(useCase.execute({ idToken: 'token' })).rejects.toThrow(ForbiddenException);
     expect(authSessionService.saveRefreshToken).not.toHaveBeenCalled();
   });

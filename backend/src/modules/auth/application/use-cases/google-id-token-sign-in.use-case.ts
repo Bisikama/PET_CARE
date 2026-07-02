@@ -20,7 +20,10 @@ export class GoogleIdTokenSignInUseCase {
   ) {}
 
   async execute(input: GoogleIdTokenSignInInput) {
-    const { user: remoteUser } = await this.supabaseAuthService.signInGoogleIdToken(input.idToken, input.nonce);
+    const { user: remoteUser } = await this.supabaseAuthService.signInGoogleIdToken(
+      input.idToken,
+      input.nonce,
+    );
 
     if (!remoteUser.email) {
       throw new UnauthorizedException(AUTH_ERRORS.GOOGLE_ID_TOKEN_INVALID);
@@ -35,8 +38,16 @@ export class GoogleIdTokenSignInUseCase {
       throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
-    const tokens = await this.authSessionService.getTokens(localUser.id, localUser.email, localUser.role);
-    await this.authSessionService.saveRefreshToken(localUser.id, tokens.refreshToken, input.context);
+    const tokens = await this.authSessionService.getTokens(
+      localUser.id,
+      localUser.email,
+      localUser.role,
+    );
+    await this.authSessionService.saveRefreshToken(
+      localUser.id,
+      tokens.refreshToken,
+      input.context,
+    );
 
     return {
       tokens,

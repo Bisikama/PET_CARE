@@ -44,9 +44,15 @@ describe('VerifyEmailOtpUseCase', () => {
     authSessionService.getTokens.mockResolvedValue({ accessToken: 'acc', refreshToken: 'ref' });
     authSessionService.toPublicUser.mockReturnValue(localUser);
 
-    const res = await useCase.execute({ email: 'test@example.com', otp: '123456', context: { ipAddress: '1.1.1.1' } });
-    
-    expect(authSessionService.saveRefreshToken).toHaveBeenCalledWith('u1', 'ref', { ipAddress: '1.1.1.1' });
+    const res = await useCase.execute({
+      email: 'test@example.com',
+      otp: '123456',
+      context: { ipAddress: '1.1.1.1' },
+    });
+
+    expect(authSessionService.saveRefreshToken).toHaveBeenCalledWith('u1', 'ref', {
+      ipAddress: '1.1.1.1',
+    });
     expect(res.tokens.accessToken).toBe('acc');
     expect(res.user.id).toBe('u1');
   });
@@ -54,13 +60,17 @@ describe('VerifyEmailOtpUseCase', () => {
   it('2. OTP invalid/expired -> error mapping đúng', async () => {
     supabaseAuthService.verifySignupOtp.mockResolvedValue({ user: null, session: null });
 
-    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(BadRequestException);
+    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(
+      BadRequestException,
+    );
     expect(authSessionService.saveRefreshToken).not.toHaveBeenCalled();
   });
 
   it('3. Supabase không trả user -> behavior đúng', async () => {
     supabaseAuthService.verifySignupOtp.mockResolvedValue({});
-    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(BadRequestException);
+    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('4. Local user inactive -> đúng error', async () => {
@@ -68,7 +78,9 @@ describe('VerifyEmailOtpUseCase', () => {
     const localUser = { id: 'u1', isActive: false, role: Role.CUSTOMER, email: 'test@example.com' };
     supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue(localUser);
 
-    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(ForbiddenException);
+    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(
+      ForbiddenException,
+    );
     expect(authSessionService.saveRefreshToken).not.toHaveBeenCalled();
   });
 });

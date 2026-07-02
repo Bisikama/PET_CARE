@@ -180,6 +180,7 @@ model customer_addresses {
   longitude     Decimal?   @db.Decimal(10, 7)
   is_default    Boolean?   @default(false)
   created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  deleted_at    DateTime?  @db.Timestamp(6)
   bookings      bookings[]
   users         User       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
@@ -343,6 +344,7 @@ model service_checklist_templates {
   is_required             Boolean?                  @default(true)
   sort_order              Int?                      @default(0)
   created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  deleted_at              DateTime?                 @db.Timestamp(6)
   booking_checklist_items booking_checklist_items[]
   services                services                  @relation(fields: [service_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
@@ -357,6 +359,7 @@ model services {
   is_active                   Boolean?                      @default(true)
   cancellation_policy_id      String?                       @db.Uuid
   created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  deleted_at                  DateTime?                     @db.Timestamp(6)
   provider_services           provider_services[]
   service_checklist_templates service_checklist_templates[]
   pricing_rules               service_pricing_rules[]
@@ -442,10 +445,9 @@ model provider_service_areas {
   ward        String   @db.VarChar(100)
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now()) @db.Timestamp(6)
+  deleted_at  DateTime? @db.Timestamp(6)
 
   provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade)
-
-  @@unique([provider_id, city, district, ward])
 }
 
 model service_pricing_rules {
@@ -459,6 +461,7 @@ model service_pricing_rules {
   is_active        Boolean   @default(true)
   created_at       DateTime  @default(now()) @db.Timestamp(6)
   updated_at       DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at       DateTime? @db.Timestamp(6)
 
   services services @relation(fields: [service_id], references: [id], onDelete: Cascade)
 }
