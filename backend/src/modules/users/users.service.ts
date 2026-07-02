@@ -28,6 +28,12 @@ export class UsersService {
     });
   }
 
+  async findBySupabaseId(supabaseId: string) {
+    return this.prisma.user.findUnique({
+      where: { supabaseId },
+    });
+  }
+
   async findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
