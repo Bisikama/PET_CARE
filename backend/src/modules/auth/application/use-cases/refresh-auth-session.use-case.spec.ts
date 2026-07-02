@@ -40,10 +40,14 @@ describe('RefreshAuthSessionUseCase', () => {
 
   it('1. Refresh success: old token record delete trước khi persist token mới', async () => {
     usersService.findById.mockResolvedValue({ id: 'u1', isActive: true });
-    refreshTokenRepository.findByHash.mockResolvedValue({ id: 'r1', user_id: 'u1', expires_at: new Date(Date.now() + 10000) });
-    
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'r1',
+      user_id: 'u1',
+      expires_at: new Date(Date.now() + 10000),
+    });
+
     await useCase.execute({ userId: 'u1', rawRefreshToken: 'token' });
-    
+
     expect(refreshTokenRepository.deleteById).toHaveBeenCalledWith('r1');
     expect(authSessionService.saveRefreshToken).toHaveBeenCalled();
   });
@@ -51,30 +55,46 @@ describe('RefreshAuthSessionUseCase', () => {
   it('2. Token hash không tồn tại -> error đúng', async () => {
     usersService.findById.mockResolvedValue({ id: 'u1', isActive: true });
     refreshTokenRepository.findByHash.mockResolvedValue(null);
-    
-    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(ForbiddenException);
+
+    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(
+      ForbiddenException,
+    );
     expect(authSessionService.saveRefreshToken).not.toHaveBeenCalled();
   });
 
   it('3. Token thuộc user khác -> error đúng', async () => {
     usersService.findById.mockResolvedValue({ id: 'u1', isActive: true });
-    refreshTokenRepository.findByHash.mockResolvedValue({ id: 'r1', user_id: 'u2', expires_at: new Date(Date.now() + 10000) });
-    
-    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(ForbiddenException);
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'r1',
+      user_id: 'u2',
+      expires_at: new Date(Date.now() + 10000),
+    });
+
+    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(
+      ForbiddenException,
+    );
     expect(refreshTokenRepository.deleteById).toHaveBeenCalledWith('r1');
   });
 
   it('4. Token expired -> cleanup/error đúng', async () => {
     usersService.findById.mockResolvedValue({ id: 'u1', isActive: true });
-    refreshTokenRepository.findByHash.mockResolvedValue({ id: 'r1', user_id: 'u1', expires_at: new Date(Date.now() - 10000) });
-    
-    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(ForbiddenException);
+    refreshTokenRepository.findByHash.mockResolvedValue({
+      id: 'r1',
+      user_id: 'u1',
+      expires_at: new Date(Date.now() - 10000),
+    });
+
+    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(
+      ForbiddenException,
+    );
     expect(refreshTokenRepository.deleteById).toHaveBeenCalledWith('r1');
   });
 
   it('5. User inactive/not found -> error đúng', async () => {
     usersService.findById.mockResolvedValue({ id: 'u1', isActive: false });
-    
-    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(ForbiddenException);
+
+    await expect(useCase.execute({ userId: 'u1', rawRefreshToken: 'token' })).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

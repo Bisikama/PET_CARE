@@ -42,4 +42,4 @@ import { SupabaseUserSyncService } from './application/services/supabase-user-sy
   ],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

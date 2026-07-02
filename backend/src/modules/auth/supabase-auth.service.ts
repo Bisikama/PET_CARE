@@ -10,7 +10,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import ws from 'ws';
 import { AUTH_ERRORS } from '../../common/constants/error-messages.constant';
 
-
 @Injectable()
 export class SupabaseAuthService {
   private readonly supabase: SupabaseClient;

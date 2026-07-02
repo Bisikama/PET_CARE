@@ -30,7 +30,11 @@ export class RefreshAuthSessionUseCase {
     const tokenHash = this.authSessionService.hashToken(input.rawRefreshToken);
     const tokenRecord = await this.refreshTokenRepository.findByHash(tokenHash);
 
-    if (!tokenRecord || tokenRecord.user_id !== input.userId || tokenRecord.expires_at < new Date()) {
+    if (
+      !tokenRecord ||
+      tokenRecord.user_id !== input.userId ||
+      tokenRecord.expires_at < new Date()
+    ) {
       if (tokenRecord) {
         await this.refreshTokenRepository.deleteById(tokenRecord.id).catch(() => {});
       }
@@ -41,7 +45,7 @@ export class RefreshAuthSessionUseCase {
 
     const tokens = await this.authSessionService.getTokens(user.id, user.email, user.role);
     await this.authSessionService.saveRefreshToken(user.id, tokens.refreshToken, input.context);
-    
+
     return tokens;
   }
 }

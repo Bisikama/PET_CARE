@@ -20,7 +20,10 @@ export class VerifyEmailOtpUseCase {
   ) {}
 
   async execute(input: VerifyEmailOtpInput) {
-    const { user: remoteUser } = await this.supabaseAuthService.verifySignupOtp(input.email, input.otp);
+    const { user: remoteUser } = await this.supabaseAuthService.verifySignupOtp(
+      input.email,
+      input.otp,
+    );
     if (!remoteUser) {
       throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
     }
@@ -31,8 +34,16 @@ export class VerifyEmailOtpUseCase {
       throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }
 
-    const tokens = await this.authSessionService.getTokens(localUser.id, localUser.email, localUser.role);
-    await this.authSessionService.saveRefreshToken(localUser.id, tokens.refreshToken, input.context);
+    const tokens = await this.authSessionService.getTokens(
+      localUser.id,
+      localUser.email,
+      localUser.role,
+    );
+    await this.authSessionService.saveRefreshToken(
+      localUser.id,
+      tokens.refreshToken,
+      input.context,
+    );
 
     return {
       tokens,
