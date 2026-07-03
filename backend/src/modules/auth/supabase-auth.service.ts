@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   ConflictException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -55,7 +56,7 @@ export class SupabaseAuthService {
       if (error.message.includes('already registered')) {
         throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
       }
-      throw new InternalServerErrorException(`Supabase signup failed: ${error.message}`);
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
 
     return data;
@@ -98,7 +99,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new InternalServerErrorException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
 
     return data;
@@ -124,6 +125,53 @@ export class SupabaseAuthService {
       throw new UnauthorizedException(AUTH_ERRORS.INVALID_SUPABASE_TOKEN);
     }
     return data;
+  }
+
+  async resetPasswordForEmail(email: string, redirectTo: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const { error } = await this.supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+    if (error) {
+      console.error(`Supabase resetPassword error for ${email}:`, error);
+    }
+  }
+
+  async verifyRecoveryOtp(email: string, otp: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const { data, error } = await this.supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: otp,
+      type: 'recovery',
+    });
+
+    if (error || !data.session) {
+      throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
+    }
+
+    return data.session;
+  }
+
+  async updatePassword(accessToken: string, newPassword: string) {
+    const tempClient = createClient(
+      this.configService.getOrThrow<string>('SUPABASE_URL'),
+      this.configService.getOrThrow<string>('SUPABASE_PUBLISHABLE_KEY'),
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      },
+    );
+
+    const { error } = await tempClient.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
+    }
   }
 
   private generateRandomPassword(): string {

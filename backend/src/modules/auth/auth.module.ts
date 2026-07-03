@@ -18,6 +18,8 @@ import { GoogleIdTokenSignInUseCase } from './application/use-cases/google-id-to
 import { RefreshAuthSessionUseCase } from './application/use-cases/refresh-auth-session.use-case';
 import { AuthSessionService } from './application/services/auth-session.service';
 import { SupabaseUserSyncService } from './application/services/supabase-user-sync.service';
+import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 
 @Module({
   imports: [PassportModule, JwtModule.register({}), UsersModule, PrismaModule],
@@ -32,6 +34,8 @@ import { SupabaseUserSyncService } from './application/services/supabase-user-sy
     LoginUserUseCase,
     GoogleIdTokenSignInUseCase,
     RefreshAuthSessionUseCase,
+    ForgotPasswordUseCase,
+    ResetPasswordUseCase,
     AccessTokenStrategy,
     RefreshTokenStrategy,
     RolesGuard,

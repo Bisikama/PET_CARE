@@ -7,4 +7,6 @@ export const AUTH_MESSAGES = {
   OTP_RESENT_SUCCESS: 'Nếu tài khoản cần xác nhận, mã OTP đã được gửi tới Gmail.',
   LOGIN_SUCCESS: 'Đăng nhập thành công.',
   LOGOUT_SUCCESS: 'Đăng xuất thành công.',
+  FORGOT_PASSWORD_SUCCESS: 'Nếu email hợp lệ trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi.',
+  RESET_PASSWORD_SUCCESS: 'Đặt lại mật khẩu thành công.',
 } as const;

@@ -2,8 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RegisterUserUseCase } from './register-user.use-case';
 import { UsersService } from '../../../users/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
-import { Role } from '@prisma/client';
-import { ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 
@@ -16,6 +15,7 @@ describe('RegisterUserUseCase', () => {
     const mockUsersService = {
       findByEmail: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     };
 
     const mockSupabaseAuthService = {
@@ -36,13 +36,13 @@ describe('RegisterUserUseCase', () => {
     supabaseAuthService = module.get(SupabaseAuthService);
   });
 
-  it('Register thành công: normalize email, gọi signup, tạo local user, trả response', async () => {
+  it('Register thành công: normalize email, gọi signup, TẠO local user PENDING, trả response', async () => {
     usersService.findByEmail.mockResolvedValue(null);
     supabaseAuthService.signUpEmail.mockResolvedValue({
       user: { id: 'sb_id', email_confirmed_at: null, identities: [{ id: 'i1' }] } as any,
       session: null,
     });
-    usersService.create.mockResolvedValue({ id: 'u1' } as any);
+    usersService.create.mockResolvedValue({ id: 'new_local' } as any);
 
     const result = await useCase.execute({
       email: ' TEST@example.com ',
@@ -57,24 +57,23 @@ describe('RegisterUserUseCase', () => {
       'pass',
       'Test Name',
     );
-    expect(usersService.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'test@example.com',
-        fullName: 'Test Name',
-        passwordHash: null,
-        supabaseId: 'sb_id',
-        role: Role.CUSTOMER,
-        isActive: true,
-      }),
-    );
+    expect(usersService.create).toHaveBeenCalledWith({
+      supabaseId: 'sb_id',
+      email: 'test@example.com',
+      fullName: 'Test Name',
+      role: 'CUSTOMER',
+      status: 'PENDING_VERIFICATION',
+      isActive: true,
+      emailVerifiedAt: null,
+    });
     expect(result).toEqual({
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
       requiresEmailConfirmation: true,
     });
   });
 
-  it('Local email đã tồn tại: ném ConflictException', async () => {
-    usersService.findByEmail.mockResolvedValue({ id: 'existing' } as any);
+  it('Local email đã tồn tại và verified: ném 409 ACCOUNT_ALREADY_EXISTS', async () => {
+    usersService.findByEmail.mockResolvedValue({ id: 'existing', emailVerifiedAt: new Date() } as any);
 
     await expect(
       useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
@@ -83,24 +82,26 @@ describe('RegisterUserUseCase', () => {
     expect(supabaseAuthService.signUpEmail).not.toHaveBeenCalled();
   });
 
-  it('Supabase obfuscation: trả success, không tạo local user', async () => {
+  it('Local email đã tồn tại nhưng chưa verified: ném 409 EMAIL_CONFIRMATION_PENDING', async () => {
+    usersService.findByEmail.mockResolvedValue({ id: 'existing', emailVerifiedAt: null } as any);
+
+    await expect(
+      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
+    ).rejects.toThrow(new ConflictException(AUTH_ERRORS.EMAIL_CONFIRMATION_PENDING));
+
+    expect(supabaseAuthService.signUpEmail).not.toHaveBeenCalled();
+  });
+
+  it('Supabase obfuscation (identities empty): ném 409 ACCOUNT_ALREADY_EXISTS', async () => {
     usersService.findByEmail.mockResolvedValue(null);
     supabaseAuthService.signUpEmail.mockResolvedValue({
       user: { id: 'sb_id', identities: [] } as any,
       session: null,
     });
 
-    const result = await useCase.execute({
-      email: 'test@example.com',
-      password: 'pass',
-      fullName: 'Test',
-    });
-
-    expect(usersService.create).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      message: AUTH_MESSAGES.REGISTER_CHECK_EMAIL,
-      requiresEmailConfirmation: true,
-    });
+    await expect(
+      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
+    ).rejects.toThrow(new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS));
   });
 
   it('Supabase signup lỗi: giữ nguyên exception mapping', async () => {
@@ -112,18 +113,5 @@ describe('RegisterUserUseCase', () => {
     await expect(
       useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
     ).rejects.toThrow(new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS));
-  });
-
-  it('Local profile creation fail: giữ nguyên exception mapping', async () => {
-    usersService.findByEmail.mockResolvedValue(null);
-    supabaseAuthService.signUpEmail.mockResolvedValue({
-      user: { id: 'sb_id', identities: [{}] } as any,
-      session: null,
-    });
-    usersService.create.mockRejectedValue(new Error('Prisma error'));
-
-    await expect(
-      useCase.execute({ email: 'test@example.com', password: 'pass', fullName: 'Test' }),
-    ).rejects.toThrow(new InternalServerErrorException(AUTH_ERRORS.LOCAL_PROFILE_CREATE_FAILED));
   });
 });
