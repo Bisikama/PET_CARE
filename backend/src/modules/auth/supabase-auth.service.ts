@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   ConflictException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -55,7 +56,7 @@ export class SupabaseAuthService {
       if (error.message.includes('already registered')) {
         throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
       }
-      throw new InternalServerErrorException(`Supabase signup failed: ${error.message}`);
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
 
     return data;
@@ -98,7 +99,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new InternalServerErrorException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
 
     return data;
@@ -169,7 +170,7 @@ export class SupabaseAuthService {
     });
 
     if (error) {
-      throw new InternalServerErrorException('Failed to update password');
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
   }
 

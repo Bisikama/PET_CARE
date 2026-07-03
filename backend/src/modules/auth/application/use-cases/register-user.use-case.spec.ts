@@ -14,6 +14,8 @@ describe('RegisterUserUseCase', () => {
   beforeEach(async () => {
     const mockUsersService = {
       findByEmail: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     };
 
     const mockSupabaseAuthService = {
@@ -34,12 +36,13 @@ describe('RegisterUserUseCase', () => {
     supabaseAuthService = module.get(SupabaseAuthService);
   });
 
-  it('Register thành công: normalize email, gọi signup, không tạo local user, trả response', async () => {
+  it('Register thành công: normalize email, gọi signup, TẠO local user PENDING, trả response', async () => {
     usersService.findByEmail.mockResolvedValue(null);
     supabaseAuthService.signUpEmail.mockResolvedValue({
       user: { id: 'sb_id', email_confirmed_at: null, identities: [{ id: 'i1' }] } as any,
       session: null,
     });
+    usersService.create.mockResolvedValue({ id: 'new_local' } as any);
 
     const result = await useCase.execute({
       email: ' TEST@example.com ',
@@ -54,6 +57,15 @@ describe('RegisterUserUseCase', () => {
       'pass',
       'Test Name',
     );
+    expect(usersService.create).toHaveBeenCalledWith({
+      supabaseId: 'sb_id',
+      email: 'test@example.com',
+      fullName: 'Test Name',
+      role: 'CUSTOMER',
+      status: 'PENDING_VERIFICATION',
+      isActive: true,
+      emailVerifiedAt: null,
+    });
     expect(result).toEqual({
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
       requiresEmailConfirmation: true,

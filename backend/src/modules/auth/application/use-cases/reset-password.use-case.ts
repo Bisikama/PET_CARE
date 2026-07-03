@@ -3,6 +3,7 @@ import { SupabaseAuthService } from '../../supabase-auth.service';
 import { ResetPasswordDto } from '../../dto/reset-password.dto';
 import { UsersService } from '../../../users/users.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
+import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';
 import { REFRESH_TOKEN_REPOSITORY } from '../../auth.tokens';
 import type { IRefreshTokenRepository } from '../ports/refresh-token.repository.port';
 
@@ -13,11 +14,11 @@ export class ResetPasswordUseCase {
     private readonly usersService: UsersService,
     @Inject(REFRESH_TOKEN_REPOSITORY)
     private readonly refreshTokenRepository: IRefreshTokenRepository,
-  ) {}
+  ) { }
 
   async execute(input: ResetPasswordDto) {
     if (input.password !== input.confirmPassword) {
-      throw new BadRequestException('Mật khẩu xác nhận không khớp.');
+      throw new BadRequestException(AUTH_ERRORS.PASSWORD_CONFIRMATION_MISMATCH);
     }
 
     const normalizedEmail = this.supabaseAuthService.normalizeEmail(input.email);
@@ -37,6 +38,6 @@ export class ResetPasswordUseCase {
       await this.refreshTokenRepository.deleteAllByUserId(user.id);
     }
 
-    return { message: 'Đặt lại mật khẩu thành công.' };
+    return { message: AUTH_MESSAGES.RESET_PASSWORD_SUCCESS };
   }
 }

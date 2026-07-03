@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, ForbiddenException, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, UnauthorizedException, ServiceUnavailableException, InternalServerErrorException } from '@nestjs/common';
 import { LoginUserUseCase } from './login-user.use-case';
 import { UsersService } from '../../../users/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
@@ -110,7 +110,7 @@ describe('LoginUserUseCase (DATABASE-TRIGGER-FIRST)', () => {
     expect(supabaseAuthService.signInEmail).not.toHaveBeenCalled();
   });
 
-  it('LOGIN-STATE-06: Local verified nhưng Supabase chưa confirmed -> 409 AUTH_PROFILE_OUT_OF_SYNC', async () => {
+  it('LOGIN-STATE-06: Local verified nhưng Supabase chưa confirmed -> 500 AUTH_PROFILE_OUT_OF_SYNC', async () => {
     usersService.findByEmail.mockResolvedValue({
       id: 'u1',
       supabaseId: 'sb_id',
@@ -122,7 +122,7 @@ describe('LoginUserUseCase (DATABASE-TRIGGER-FIRST)', () => {
     });
 
     await expect(useCase.execute({ email: 'test@example.com', password: 'pass' })).rejects.toThrow(
-      new ConflictException(AUTH_ERRORS.AUTH_PROFILE_OUT_OF_SYNC),
+      new InternalServerErrorException(AUTH_ERRORS.AUTH_PROFILE_OUT_OF_SYNC),
     );
   });
 

@@ -2,8 +2,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  UnauthorizedException,
   ServiceUnavailableException,
+  InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../../../users/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
@@ -75,7 +76,7 @@ export class LoginUserUseCase {
 
     if (!remoteUser.email_confirmed_at) {
       console.warn(`[SYNC WARNING] Local user ${localUser.id} is verified but Supabase email_confirmed_at is null.`);
-      throw new ConflictException(AUTH_ERRORS.AUTH_PROFILE_OUT_OF_SYNC);
+      throw new InternalServerErrorException(AUTH_ERRORS.AUTH_PROFILE_OUT_OF_SYNC);
     }
 
     // Hợp lệ: tạo internal JWT + refresh token cookie

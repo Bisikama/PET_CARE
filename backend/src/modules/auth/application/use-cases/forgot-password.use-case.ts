@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseAuthService } from '../../supabase-auth.service';
+import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';
 
 @Injectable()
 export class ForgotPasswordUseCase {
@@ -19,7 +20,7 @@ export class ForgotPasswordUseCase {
     await this.supabaseAuthService.resetPasswordForEmail(email, redirectTo);
 
     return {
-      message: 'Nếu email hợp lệ trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi.',
+      message: AUTH_MESSAGES.FORGOT_PASSWORD_SUCCESS,
     };
   }
 }

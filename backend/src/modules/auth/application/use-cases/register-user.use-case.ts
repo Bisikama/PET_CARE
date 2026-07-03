@@ -15,7 +15,7 @@ export class RegisterUserUseCase {
   constructor(
     private readonly usersService: UsersService,
     private readonly supabaseAuthService: SupabaseAuthService,
-  ) {}
+  ) { }
 
   async execute(input: RegisterUserInput) {
     const normalizedEmail = this.supabaseAuthService.normalizeEmail(input.email);
@@ -39,8 +39,27 @@ export class RegisterUserUseCase {
       throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
     }
 
-    // Do NOT create local user here. The Postgres TRIGGER on auth.users will handle it.
-    // It will create a pending profile in public.users.
+    // Create or update local user directly to avoid AUTH_PROFILE_OUT_OF_SYNC
+    // if the database trigger fails or is delayed.
+    const userByEmail = await this.usersService.findByEmail(normalizedEmail);
+    if (!userByEmail) {
+      await this.usersService.create({
+        supabaseId: remoteUser.id,
+        email: normalizedEmail,
+        fullName: input.fullName || 'Unknown',
+        role: 'CUSTOMER',
+        status: 'PENDING_VERIFICATION',
+        isActive: true,
+        emailVerifiedAt: null,
+      });
+    } else {
+      await this.usersService.update(userByEmail.id, {
+        supabaseId: remoteUser.id,
+        fullName: input.fullName || userByEmail.fullName,
+        status: 'PENDING_VERIFICATION',
+        isActive: true,
+      });
+    }
 
     return {
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
