@@ -1,6 +1,4 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { Role } from '@prisma/client';
-import * as crypto from 'crypto';
 import { UsersService } from '../../../users/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
@@ -23,7 +21,11 @@ export class RegisterUserUseCase {
     const normalizedEmail = this.supabaseAuthService.normalizeEmail(input.email);
     const existingUser = await this.usersService.findByEmail(normalizedEmail);
     if (existingUser) {
-      throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
+      if (existingUser.emailVerifiedAt) {
+        throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
+      } else {
+        throw new ConflictException(AUTH_ERRORS.EMAIL_CONFIRMATION_PENDING);
+      }
     }
 
     const { user: remoteUser } = await this.supabaseAuthService.signUpEmail(
@@ -33,29 +35,12 @@ export class RegisterUserUseCase {
     );
 
     if (!remoteUser?.identities || remoteUser.identities.length === 0) {
-      return {
-        message: AUTH_MESSAGES.REGISTER_CHECK_EMAIL,
-        requiresEmailConfirmation: true,
-      };
+      // Obfuscated user
+      throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
     }
 
-    try {
-      await this.usersService.create({
-        email: normalizedEmail,
-        fullName: input.fullName,
-        passwordHash: null,
-        supabaseId: remoteUser.id,
-        emailVerifiedAt: remoteUser.email_confirmed_at
-          ? new Date(remoteUser.email_confirmed_at)
-          : null,
-        role: Role.CUSTOMER,
-        isActive: true,
-      });
-    } catch (err: any) {
-      const reqId = crypto.randomUUID();
-      console.error(`[${reqId}] Local profile create failed for ${normalizedEmail}`, err);
-      throw new InternalServerErrorException(AUTH_ERRORS.LOCAL_PROFILE_CREATE_FAILED);
-    }
+    // Do NOT create local user here. The Postgres TRIGGER on auth.users will handle it.
+    // It will create a pending profile in public.users.
 
     return {
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,

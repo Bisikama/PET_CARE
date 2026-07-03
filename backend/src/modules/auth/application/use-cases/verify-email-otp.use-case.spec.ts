@@ -1,23 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { VerifyEmailOtpUseCase } from './verify-email-otp.use-case';
 import { SupabaseAuthService } from '../../supabase-auth.service';
-import { SupabaseUserSyncService } from '../services/supabase-user-sync.service';
+import { UsersService } from '../../../users/users.service';
 import { AuthSessionService } from '../services/auth-session.service';
 import { Role } from '@prisma/client';
 
 describe('VerifyEmailOtpUseCase', () => {
   let useCase: VerifyEmailOtpUseCase;
   let supabaseAuthService: jest.Mocked<any>;
-  let supabaseUserSyncService: jest.Mocked<any>;
+  let usersService: jest.Mocked<any>;
   let authSessionService: jest.Mocked<any>;
 
   beforeEach(async () => {
     supabaseAuthService = {
       verifySignupOtp: jest.fn(),
     };
-    supabaseUserSyncService = {
-      findOrCreateSupabaseUser: jest.fn(),
+    usersService = {
+      findBySupabaseId: jest.fn(),
     };
     authSessionService = {
       getTokens: jest.fn(),
@@ -29,7 +29,7 @@ describe('VerifyEmailOtpUseCase', () => {
       providers: [
         VerifyEmailOtpUseCase,
         { provide: SupabaseAuthService, useValue: supabaseAuthService },
-        { provide: SupabaseUserSyncService, useValue: supabaseUserSyncService },
+        { provide: UsersService, useValue: usersService },
         { provide: AuthSessionService, useValue: authSessionService },
       ],
     }).compile();
@@ -37,10 +37,10 @@ describe('VerifyEmailOtpUseCase', () => {
     useCase = module.get<VerifyEmailOtpUseCase>(VerifyEmailOtpUseCase);
   });
 
-  it('1. OTP valid -> sync user, token, persist refresh, trả đúng result', async () => {
+  it('1. OTP valid -> fetch public user by supabaseId, return tokens', async () => {
     supabaseAuthService.verifySignupOtp.mockResolvedValue({ user: { id: 'sb_id' }, session: null });
     const localUser = { id: 'u1', isActive: true, role: Role.CUSTOMER, email: 'test@example.com' };
-    supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue(localUser);
+    usersService.findBySupabaseId.mockResolvedValue(localUser);
     authSessionService.getTokens.mockResolvedValue({ accessToken: 'acc', refreshToken: 'ref' });
     authSessionService.toPublicUser.mockReturnValue(localUser);
 
@@ -50,6 +50,7 @@ describe('VerifyEmailOtpUseCase', () => {
       context: { ipAddress: '1.1.1.1' },
     });
 
+    expect(usersService.findBySupabaseId).toHaveBeenCalledWith('sb_id');
     expect(authSessionService.saveRefreshToken).toHaveBeenCalledWith('u1', 'ref', {
       ipAddress: '1.1.1.1',
     });
@@ -73,10 +74,20 @@ describe('VerifyEmailOtpUseCase', () => {
     );
   });
 
-  it('4. Local user inactive -> đúng error', async () => {
+  it('4. Local profile missing -> throw 500 AUTH_PROFILE_OUT_OF_SYNC', async () => {
+    supabaseAuthService.verifySignupOtp.mockResolvedValue({ user: { id: 'sb_id' }, session: null });
+    usersService.findBySupabaseId.mockResolvedValue(null);
+
+    await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(
+      new InternalServerErrorException('AUTH_PROFILE_OUT_OF_SYNC'),
+    );
+    expect(authSessionService.saveRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it('5. Local user inactive -> đúng error', async () => {
     supabaseAuthService.verifySignupOtp.mockResolvedValue({ user: { id: 'sb_id' }, session: null });
     const localUser = { id: 'u1', isActive: false, role: Role.CUSTOMER, email: 'test@example.com' };
-    supabaseUserSyncService.findOrCreateSupabaseUser.mockResolvedValue(localUser);
+    usersService.findBySupabaseId.mockResolvedValue(localUser);
 
     await expect(useCase.execute({ email: 'test@example.com', otp: '123456' })).rejects.toThrow(
       ForbiddenException,

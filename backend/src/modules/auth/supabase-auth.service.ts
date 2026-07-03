@@ -126,6 +126,53 @@ export class SupabaseAuthService {
     return data;
   }
 
+  async resetPasswordForEmail(email: string, redirectTo: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const { error } = await this.supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo,
+    });
+    if (error) {
+      console.error(`Supabase resetPassword error for ${email}:`, error);
+    }
+  }
+
+  async verifyRecoveryOtp(email: string, otp: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const { data, error } = await this.supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: otp,
+      type: 'recovery',
+    });
+
+    if (error || !data.session) {
+      throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
+    }
+
+    return data.session;
+  }
+
+  async updatePassword(accessToken: string, newPassword: string) {
+    const tempClient = createClient(
+      this.configService.getOrThrow<string>('SUPABASE_URL'),
+      this.configService.getOrThrow<string>('SUPABASE_PUBLISHABLE_KEY'),
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      },
+    );
+
+    const { error } = await tempClient.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      throw new InternalServerErrorException('Failed to update password');
+    }
+  }
+
   private generateRandomPassword(): string {
     return Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10) + 'A1!';
   }
