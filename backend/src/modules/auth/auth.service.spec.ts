@@ -12,7 +12,8 @@ import { LoginUserUseCase } from './application/use-cases/login-user.use-case';
 import { GoogleIdTokenSignInUseCase } from './application/use-cases/google-id-token-sign-in.use-case';
 import { RefreshAuthSessionUseCase } from './application/use-cases/refresh-auth-session.use-case';
 import { AuthSessionService } from './application/services/auth-session.service';
-import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
+import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 
 jest.mock('bcrypt', () => ({
   compare: jest.fn(),
@@ -58,6 +59,8 @@ describe('AuthService', () => {
         { provide: GoogleIdTokenSignInUseCase, useValue: mockGoogleIdTokenSignInUseCase },
         { provide: RefreshAuthSessionUseCase, useValue: mockRefreshAuthSessionUseCase },
         { provide: AuthSessionService, useValue: mockAuthSessionService },
+        { provide: ForgotPasswordUseCase, useValue: {} },
+        { provide: ResetPasswordUseCase, useValue: {} },
       ],
     }).compile();
 
@@ -76,7 +79,11 @@ describe('AuthService', () => {
       message: 'Test message',
       requiresEmailConfirmation: true,
     });
-    const res = await service.register({ email: 'test@example.com', password: 'pass', fullName: 'Test Name' });
+    const res = await service.register({
+      email: 'test@example.com',
+      password: 'pass',
+      fullName: 'Test Name',
+    });
     expect(registerUserUseCase.execute).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'pass',
@@ -88,7 +95,13 @@ describe('AuthService', () => {
 
   it('AUTH-SB-01: VerifyEmailOtp delegates', async () => {
     verifyEmailOtpUseCase.execute.mockResolvedValue('result' as any);
-    const res = await service.verifyEmailOtp('test@example.com', '123456', 'agent', '1.1.1.1', 'dev');
+    const res = await service.verifyEmailOtp(
+      'test@example.com',
+      '123456',
+      'agent',
+      '1.1.1.1',
+      'dev',
+    );
     expect(verifyEmailOtpUseCase.execute).toHaveBeenCalledWith({
       email: 'test@example.com',
       otp: '123456',
@@ -99,7 +112,12 @@ describe('AuthService', () => {
 
   it('AUTH-SB-02: Login delegates', async () => {
     loginUserUseCase.execute.mockResolvedValue('result' as any);
-    const res = await service.login({ email: 'test@example.com', password: 'pwd' }, 'agent', '1.1.1.1', 'dev');
+    const res = await service.login(
+      { email: 'test@example.com', password: 'pwd' },
+      'agent',
+      '1.1.1.1',
+      'dev',
+    );
     expect(loginUserUseCase.execute).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'pwd',

@@ -24,10 +24,7 @@ describe('PrismaRefreshTokenRepository', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PrismaRefreshTokenRepository,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [PrismaRefreshTokenRepository, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     repository = module.get<PrismaRefreshTokenRepository>(PrismaRefreshTokenRepository);

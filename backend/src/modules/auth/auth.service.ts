@@ -23,6 +23,10 @@ import { LoginUserUseCase } from './application/use-cases/login-user.use-case';
 import { GoogleIdTokenSignInUseCase } from './application/use-cases/google-id-token-sign-in.use-case';
 import { RefreshAuthSessionUseCase } from './application/use-cases/refresh-auth-session.use-case';
 import { AuthSessionService } from './application/services/auth-session.service';
+import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -37,7 +41,9 @@ export class AuthService {
     private readonly googleIdTokenSignInUseCase: GoogleIdTokenSignInUseCase,
     private readonly refreshAuthSessionUseCase: RefreshAuthSessionUseCase,
     private readonly authSessionService: AuthSessionService,
-  ) { }
+    private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+  ) {}
 
   async register(dto: RegisterDto) {
     return this.registerUserUseCase.execute({
@@ -82,6 +88,14 @@ export class AuthService {
     };
   }
 
+  async forgotPassword(dto: ForgotPasswordDto) {
+    return this.forgotPasswordUseCase.execute(dto.email);
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    return this.resetPasswordUseCase.execute(dto);
+  }
+
   async signInGoogleIdToken(
     idToken: string,
     nonce?: string,
@@ -109,7 +123,7 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     const tokenHash = this.authSessionService.hashToken(refreshToken);
-    await this.refreshTokenRepository.deleteByHash(tokenHash).catch(() => { });
+    await this.refreshTokenRepository.deleteByHash(tokenHash).catch(() => {});
   }
 
   async logoutAll(userId: string) {

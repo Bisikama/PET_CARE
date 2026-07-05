@@ -67,3 +67,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 pet_care_auth_api_collection.json
 
 /docs/supabase_docs
+/docs/architecture/petcare-current-schema-erd.mmd
