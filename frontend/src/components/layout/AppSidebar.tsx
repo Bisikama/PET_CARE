@@ -4,14 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/utils/cn';
 import { ROUTES } from '@/lib/constants';
-import {
-  LayoutDashboard,
-  Dog,
-  CalendarCheck2,
-  HeartHandshake,
-  User,
-  LogOut,
-} from 'lucide-react';
+import { LayoutDashboard, LogOut } from 'lucide-react';
 import { removeAuthToken } from '@/lib/auth';
 
 export const AppSidebar = () => {
@@ -20,10 +13,6 @@ export const AppSidebar = () => {
 
   const navigation = [
     { name: 'Tổng quan', href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-    { name: 'Thú cưng', href: ROUTES.PETS, icon: Dog },
-    { name: 'Đặt lịch', href: ROUTES.BOOKINGS, icon: CalendarCheck2 },
-    { name: 'Dịch vụ', href: ROUTES.SERVICES, icon: HeartHandshake },
-    { name: 'Tài khoản', href: ROUTES.PROFILE, icon: User },
   ];
 
   const handleLogout = () => {
