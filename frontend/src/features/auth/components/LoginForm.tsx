@@ -205,7 +205,7 @@ export function LoginForm() {
               <span className="text-sm font-semibold text-slate-700">Ghi nhớ đăng nhập</span>
             </label>
             <Link 
-              href="#" 
+              href={ROUTES.FORGOT_PASSWORD} 
               className="text-sm font-bold text-slate-800 hover:text-[#0b1c30] transition-colors hover:underline"
             >
               Quên mật khẩu?

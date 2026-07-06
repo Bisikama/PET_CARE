@@ -11,6 +11,8 @@ interface AuthState {
   error: string | null;
   login: (credentials: Record<string, any>) => Promise<boolean>;
   registerUser: (data: Record<string, any>) => Promise<boolean>;
+  verifyEmailOtp: (email: string, otp: string) => Promise<boolean>;
+  resendOtp: (email: string) => Promise<boolean>;
   logout: () => Promise<void>;
   initAuth: () => Promise<void>;
   clearError: () => void;
@@ -58,9 +60,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // 1. Call register API
-      await authService.register(data);
+      const registerResponse = await authService.register(data);
       
-      // 2. Automatically log in after registration
+      // If Backend requires OTP verification, stop here and return true (UI will redirect to /verify-otp)
+      if (registerResponse && (registerResponse as any).requiresEmailConfirmation) {
+        set({ isLoading: false, error: null });
+        return true;
+      }
+
+      // 2. Automatically log in after registration (if bypass OTP or if standard sign up config)
       const loginResponse = await authService.login({
         email: data.email,
         password: data.password,
@@ -80,6 +88,50 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: any) {
       const errorMessage =
         err?.response?.data?.message || err?.message || 'Có lỗi xảy ra trong quá trình đăng ký.';
+      set({
+        isLoading: false,
+        error: errorMessage,
+      });
+      return false;
+    }
+  },
+
+  verifyEmailOtp: async (email, otp) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await authService.verifyEmailOtp(email, otp);
+      
+      // Store token locally
+      setAuthToken(response.accessToken);
+      
+      set({
+        user: response.user,
+        accessToken: response.accessToken,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      return true;
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message || err?.message || 'Xác thực OTP không thành công.';
+      set({
+        isLoading: false,
+        error: errorMessage,
+      });
+      return false;
+    }
+  },
+
+  resendOtp: async (email) => {
+    set({ isLoading: true, error: null });
+    try {
+      await authService.resendConfirmationOtp(email);
+      set({ isLoading: false, error: null });
+      return true;
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message || err?.message || 'Gửi lại mã OTP thất bại.';
       set({
         isLoading: false,
         error: errorMessage,

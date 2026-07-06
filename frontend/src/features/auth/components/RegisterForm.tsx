@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { AlertCircle, ArrowRight, Store } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import { useRegister } from '../hooks/useRegister';
+import { useAuthStore } from '../stores/auth.store';
 
 // Zod validation matching reference layout and backend requirements
 const registerSchema = z
@@ -56,7 +57,13 @@ export function RegisterForm() {
     clearError();
     const success = await registerUser(data);
     if (success) {
-      router.push(ROUTES.DASHBOARD);
+      router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(data.email)}`);
+    } else {
+      const currentError = useAuthStore.getState().error;
+      if (currentError === 'EMAIL_CONFIRMATION_PENDING') {
+        clearError();
+        router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(data.email)}`);
+      }
     }
   };
 

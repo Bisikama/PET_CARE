@@ -23,4 +23,24 @@ export const authService = {
     const response = await axiosInstance.post<{ message: string }>('/auth/logout');
     return response.data;
   },
+
+  verifyEmailOtp: async (email: string, otp: string): Promise<LoginResponse> => {
+    const response = await axiosInstance.post<LoginResponse>('/auth/verify-email-otp', { email, otp });
+    return response.data;
+  },
+
+  resendConfirmationOtp: async (email: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<{ message: string }>('/auth/resend-confirmation-otp', { email });
+    return response.data;
+  },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<{ message: string }>('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  resetPassword: async (data: Record<string, any>): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<{ message: string }>('/auth/reset-password', data);
+    return response.data;
+  },
 };
