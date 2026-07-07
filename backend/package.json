@@ -24,7 +24,7 @@
     "auth:preflight-emails": "npx tsx scripts/preflight-email-duplicates.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seeders/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
