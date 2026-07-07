@@ -3,17 +3,17 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
-  PETS: '/pets',
-  BOOKINGS: '/bookings',
-  SERVICES: '/services',
-  PROFILE: '/profile',
+  VERIFY_OTP: '/verify-otp',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
 } as const;
 
 export const API_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
-  PROFILE: '/auth/profile',
-  PETS: '/pets',
-  BOOKINGS: '/bookings',
-  SERVICES: '/services',
+  ME: '/auth/me',
+  VERIFY_EMAIL_OTP: '/auth/verify-email-otp',
+  RESEND_CONFIRMATION_OTP: '/auth/resend-confirmation-otp',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  RESET_PASSWORD: '/auth/reset-password',
 } as const;

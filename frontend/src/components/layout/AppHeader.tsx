@@ -3,18 +3,25 @@
 import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';
 import { Bell } from 'lucide-react';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
 
 export const AppHeader = () => {
   const pathname = usePathname();
+  const { user } = useAuthStore();
 
   const getPageTitle = () => {
     if (pathname === ROUTES.DASHBOARD) return 'Tổng quan';
-    if (pathname.startsWith(ROUTES.PETS)) return 'Danh sách Thú cưng';
-    if (pathname.startsWith(ROUTES.BOOKINGS)) return 'Lịch đặt dịch vụ';
-    if (pathname.startsWith(ROUTES.SERVICES)) return 'Dịch vụ Chăm sóc';
-    if (pathname.startsWith(ROUTES.PROFILE)) return 'Thông tin cá nhân';
     return 'Hệ thống Quản lý';
   };
+
+  const displayName = user?.fullName || 'Người dùng';
+  const roleName =
+    user?.role === 'ADMIN'
+      ? 'Quản trị viên'
+      : user?.role === 'PROVIDER'
+      ? 'Nhà cung cấp'
+      : 'Khách hàng';
+  const firstLetter = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-8 select-none">
@@ -30,12 +37,12 @@ export const AppHeader = () => {
 
         {/* User Info */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-semibold border border-teal-200">
-            A
+          <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-semibold border border-teal-200 uppercase">
+            {firstLetter}
           </div>
           <div className="hidden md:block text-left">
-            <p className="text-sm font-semibold text-slate-800 leading-tight">Admin</p>
-            <p className="text-xs text-slate-500">Quản trị viên</p>
+            <p className="text-sm font-semibold text-slate-800 leading-tight">{displayName}</p>
+            <p className="text-xs text-slate-500">{roleName}</p>
           </div>
         </div>
       </div>
