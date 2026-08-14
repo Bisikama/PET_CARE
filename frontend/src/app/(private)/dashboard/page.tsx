@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
-import { LayoutDashboard, Mail, Shield, User } from 'lucide-react';
+import { Heart, Mail, Plus, Shield, Sparkles, User } from 'lucide-react';
+import { PetList } from '@/features/pet';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -10,53 +11,84 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-teal-500 to-emerald-600 p-8 rounded-3xl text-white shadow-md relative overflow-hidden">
-        <div className="relative z-10">
-          <h2 className="text-2xl md:text-3xl font-extrabold">Chào mừng quay trở lại, {user?.fullName || 'Người dùng'}! 👋</h2>
-          <p className="text-teal-50/80 text-sm md:text-base mt-2 max-w-xl">
-            Hệ thống quản lý chăm sóc thú cưng chuyên nghiệp. Bạn đang đăng nhập với tư cách là <strong className="text-white">{user?.role || 'Khách hàng'}</strong>.
-          </p>
-        </div>
-        <div className="absolute top-1/2 right-6 -translate-y-1/2 opacity-10 pointer-events-none hidden md:block">
-          <LayoutDashboard className="w-48 h-48" />
+      <div className="relative bg-[#031625] p-8 md:p-10 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/60">
+        {/* Glow effects */}
+        <div className="absolute right-0 top-0 w-96 h-96 bg-[radial-gradient(circle_at_top_right,rgba(240,192,90,0.12),transparent_60%)] pointer-events-none" />
+        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-[radial-gradient(circle_at_bottom,rgba(20,184,166,0.04),transparent_60%)] pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3.5">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/5 border border-amber-400/15 text-[#f0c05a] text-xs font-semibold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 fill-current" />
+              Khu vực {user?.role === 'PROVIDER' ? 'người chăm sóc' : 'chủ nuôi'}
+            </div>
+            
+            {/* Title */}
+            <h2 className="text-2xl md:text-3.5xl font-extrabold tracking-tight text-white leading-tight">
+              Chào mừng trở lại, {user?.fullName || 'Người dùng'}!
+            </h2>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-700/80 bg-slate-800/20 hover:bg-slate-800/40 text-white text-sm font-semibold transition-all duration-200 active:scale-95">
+              <Plus className="w-4 h-4" />
+              Đăng ký bé cưng
+            </button>
+            <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#f0c05a] hover:bg-[#e0b04a] text-slate-950 text-sm font-bold transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/10">
+              <Heart className="w-4 h-4 fill-current" />
+              Đặt người chăm sóc mới
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* User Information Details Card */}
-      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-        <div>
-          <h3 className="text-lg font-bold text-slate-800">Thông tin tài khoản</h3>
-          <p className="text-slate-400 text-xs mt-0.5">Chi tiết thông tin đăng nhập của bạn từ cơ sở dữ liệu thật.</p>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left column: My Pets List */}
+        <div className="lg:col-span-2">
+          <PetList />
         </div>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-            <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
-              <User className="h-5 w-5" />
-            </div>
+        {/* Right column: Account Info Details */}
+        <div className="lg:col-span-1">
+          <div className="bg-white p-6 md:p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
             <div>
-              <p className="text-xs text-slate-400 font-medium">Họ và tên</p>
-              <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.fullName || 'N/A'}</p>
+              <h3 className="text-lg font-bold text-slate-800">Thông tin tài khoản</h3>
+              <p className="text-slate-400 text-xs mt-0.5">Chi tiết tài khoản đăng nhập của bạn.</p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Mail className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 font-medium">Email</p>
-              <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.email || 'N/A'}</p>
-            </div>
-          </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-medium">Họ và tên</p>
+                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.fullName || 'N/A'}</p>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 col-span-1 sm:col-span-2 md:col-span-1">
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 font-medium">Vai trò hệ thống</p>
-              <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.role || 'N/A'}</p>
+              <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-slate-400 font-medium">Email</p>
+                  <p className="text-sm font-semibold text-slate-700 mt-0.5 truncate">{user?.email || 'N/A'}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-medium">Vai trò hệ thống</p>
+                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.role || 'N/A'}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

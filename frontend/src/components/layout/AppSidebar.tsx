@@ -26,7 +26,11 @@ export const AppSidebar = () => {
       <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900">
         <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center font-bold text-slate-950">
-            🐾
+           <img 
+            src='/logo.png'
+            alt='logo'
+            className='w-full h-full object-cover'
+           />
           </div>
           <span className="font-bold text-lg bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
             PET CARE
