@@ -23,10 +23,14 @@ import { clearRefreshTokenCookie, setRefreshTokenCookie } from './utils/refresh-
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { AUTH_MESSAGES } from '../../common/constants/success-messages.constant';
+
 import { VerifyEmailOtpDto } from './dto/verify-email-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { GoogleIdTokenDto } from './dto/google-id-token.dto';
-import { AccessTokenGuard } from 'src/common/guards/access-token.guard';
+import { AccessTokenGuard } from '../../common/guards/access-token.guard';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 type RequestWithCookies = Omit<express.Request, 'cookies'> & {
   cookies?: Record<string, string>;
@@ -36,7 +40,7 @@ type RequestWithCookies = Omit<express.Request, 'cookies'> & {
 @UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('register')
@@ -84,8 +88,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Log in with email and password' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công.' })
-  @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không đúng.' })
-  @ApiResponse({ status: 403, description: 'Tài khoản bị khóa hoặc chưa xác nhận email.' })
+  @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không đúng (AUTH_INVALID_CREDENTIALS).' })
+  @ApiResponse({ status: 403, description: 'Tài khoản bị khóa (ACCOUNT_LOCKED) hoặc chưa xác nhận email (EMAIL_CONFIRMATION_PENDING).' })
+  @ApiResponse({ status: 409, description: 'Lỗi đồng bộ hồ sơ (AUTH_PROFILE_OUT_OF_SYNC) hoặc xung đột danh tính (ACCOUNT_IDENTITY_CONFLICT).' })
   async login(
     @Body() dto: LoginDto,
     @Req() request: express.Request,
@@ -144,6 +149,25 @@ export class AuthController {
     };
   }
 
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a password reset email' })
+  @ApiResponse({ status: 200, description: 'Email hướng dẫn đã được gửi nếu tài khoản tồn tại.' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password using OTP/token' })
+  @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công.' })
+  @ApiResponse({ status: 400, description: 'Token/OTP không hợp lệ hoặc mật khẩu không khớp.' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
+  }
+
   @Get('me')
   @UseGuards(AccessTokenGuard)
   @ApiBearerAuth()
@@ -183,7 +207,7 @@ export class AuthController {
       await this.authService.logout(refreshToken);
     }
     clearRefreshTokenCookie(response);
-    return { message: 'Logged out successfully' };
+    return { message: AUTH_MESSAGES.LOGOUT_SUCCESS };
   }
 
   @Public()

@@ -8,8 +8,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS with credentials support (needed for cookies)
+  const frontendOrigin = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',')
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
   app.enableCors({
-    origin: true,
+    origin: frontendOrigin,
     credentials: true,
   });
 

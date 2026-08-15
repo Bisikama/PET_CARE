@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
+import { AUTH_ERRORS } from '../../../common/constants/error-messages.constant';
 
 type JwtPayload = {
   sub: string;
@@ -26,9 +27,8 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: JwtPayload) {
     const user = await this.usersService.findById(payload.sub);
-
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('ACCOUNT_LOCKED_OR_MISSING');
+      throw new UnauthorizedException(AUTH_ERRORS.ACCOUNT_LOCKED_OR_MISSING);
     }
 
     return {

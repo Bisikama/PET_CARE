@@ -5,6 +5,11 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './database/prisma.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { ServicesModule } from './modules/services/services.module';
+import { CustomerAddressesModule } from './modules/customer-addresses/customer-addresses.module';
+import { ProviderCoverageModule } from './modules/provider-coverage/provider-coverage.module';
+import { ServiceDiscoveryModule } from './modules/service-discovery/service-discovery.module';
 import { AccessTokenGuard } from './common/guards/access-token.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -25,6 +30,11 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     PrismaModule,
     UsersModule,
     AuthModule,
+    BookingsModule,
+    ServicesModule,
+    CustomerAddressesModule,
+    ProviderCoverageModule,
+    ServiceDiscoveryModule,
   ],
   controllers: [],
   providers: [
