@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: pet_care_db
+    image: ${DB_IMAGE}
+    container_name: ${DB_CONTAINER_NAME}
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -11,5 +11,5 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - ./${DB_VOLUME_PATH}:/var/lib/postgresql/data
     restart: unless-stopped

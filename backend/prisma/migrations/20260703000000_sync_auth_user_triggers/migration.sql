@@ -1,3 +1,13 @@
+-- 0. Tạo schema auth và bảng mock users (chỉ chạy khi chưa có - ví dụ ở local DB)
+CREATE SCHEMA IF NOT EXISTS auth;
+
+CREATE TABLE IF NOT EXISTS auth.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255),
+    raw_user_meta_data JSONB,
+    email_confirmed_at TIMESTAMP WITH TIME ZONE
+);
+
 -- 1. Thêm Foreign Key ràng buộc supabase_id với auth.users và CASCADE delete
 ALTER TABLE "public"."users" 
 ADD CONSTRAINT "users_supabase_id_fkey" 
