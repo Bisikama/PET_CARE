@@ -4,9 +4,11 @@ import * as React from 'react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { Heart, Mail, Plus, Shield, Sparkles, User } from 'lucide-react';
 import { PetList } from '@/features/pet';
+import { useMeStore } from '@/features/me';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { openModal } = useMeStore();
 
   return (
     <div className="space-y-8">
@@ -26,8 +28,16 @@ export default function DashboardPage() {
             
             {/* Title */}
             <h2 className="text-2xl md:text-3.5xl font-extrabold tracking-tight text-white leading-tight">
-              Chào mừng trở lại, {user?.fullName || 'Người dùng'}!
+              Chào mừng trở lại,{' '}
+              <span 
+                onClick={openModal} 
+                className="cursor-pointer underline decoration-teal-400/60 decoration-wavy underline-offset-6 hover:text-teal-300 transition-all duration-200"
+              >
+                {user?.fullName || 'Người dùng'}
+              </span>
+              !
             </h2>
+
           </div>
 
           {/* Action buttons */}
@@ -60,7 +70,10 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <div 
+                onClick={openModal}
+                className="flex items-center gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer transition-all duration-200 active:scale-[0.99]"
+              >
                 <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
                   <User className="h-5 w-5" />
                 </div>
@@ -69,6 +82,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.fullName || 'N/A'}</p>
                 </div>
               </div>
+
 
               <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
                 <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">

@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: typeof window !== 'undefined' ? getAuthToken() : null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: typeof window !== 'undefined' ? !!getAuthToken() : false,
   error: null,
 
   login: async (credentials) => {

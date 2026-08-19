@@ -4,10 +4,12 @@ import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';
 import { Bell } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
+import { useMeStore } from '@/features/me';
 
 export const AppHeader = () => {
   const pathname = usePathname();
   const { user } = useAuthStore();
+  const { openModal } = useMeStore();
 
   const getPageTitle = () => {
     if (pathname === ROUTES.DASHBOARD) return 'Tổng quan';
@@ -36,7 +38,10 @@ export const AppHeader = () => {
         <div className="h-8 w-px bg-slate-200" />
 
         {/* User Info */}
-        <div className="flex items-center gap-3">
+        <div 
+          onClick={openModal}
+          className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1.5 -m-1.5 rounded-2xl transition-all duration-200 active:scale-[0.98]"
+        >
           <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-semibold border border-teal-200 uppercase">
             {firstLetter}
           </div>
@@ -49,3 +54,4 @@ export const AppHeader = () => {
     </header>
   );
 };
+
