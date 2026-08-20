@@ -12,6 +12,7 @@ import { ProviderCoverageModule } from './modules/provider-coverage/provider-cov
 import { ServiceDiscoveryModule } from './modules/service-discovery/service-discovery.module';
 import { PetsModule } from './modules/pets/pets.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { ProvidersModule } from './modules/providers/providers.module';
 import { AccessTokenGuard } from './common/guards/access-token.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -39,6 +40,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     ServiceDiscoveryModule,
     PetsModule,
     StorageModule,
+    ProvidersModule,
   ],
   controllers: [],
   providers: [
