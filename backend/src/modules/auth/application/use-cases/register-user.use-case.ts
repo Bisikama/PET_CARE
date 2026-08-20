@@ -35,12 +35,11 @@ export class RegisterUserUseCase {
     );
 
     if (!remoteUser?.identities || remoteUser.identities.length === 0) {
-      // Obfuscated user
+      // User bị làm mờ (Tồn tại rồi)
       throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
     }
 
-    // Create or update local user directly to avoid AUTH_PROFILE_OUT_OF_SYNC
-    // if the database trigger fails or is delayed.
+    // Lưu local user để tránh lỗi mất đồng bộ nếu DB trigger bị chậm
     const userByEmail = await this.usersService.findByEmail(normalizedEmail);
     if (!userByEmail) {
       await this.usersService.create({

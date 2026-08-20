@@ -17,7 +17,7 @@ export class ProvidersController {
   constructor(private readonly providersService: ProvidersService) {}
 
   @Post('profile')
-  @ApiOperation({ summary: 'Create a new provider profile' })
+  @ApiOperation({ summary: 'Tạo hồ sơ đối tác mới' })
   async createProfile(
     @GetCurrentUserId() userId: string,
     @Body() dto: CreateProviderProfileDto,
@@ -26,7 +26,7 @@ export class ProvidersController {
   }
 
   @Post('areas')
-  @ApiOperation({ summary: 'Add a service area' })
+  @ApiOperation({ summary: 'Thêm khu vực phục vụ' })
   async addServiceArea(
     @GetCurrentUserId() userId: string,
     @Body() dto: AddServiceAreaDto,
@@ -35,7 +35,7 @@ export class ProvidersController {
   }
 
   @Post('capabilities')
-  @ApiOperation({ summary: 'Register a new service capability' })
+  @ApiOperation({ summary: 'Đăng ký năng lực dịch vụ mới' })
   async registerCapability(
     @GetCurrentUserId() userId: string,
     @Body() dto: RegisterCapabilityDto,
@@ -44,7 +44,7 @@ export class ProvidersController {
   }
 
   @Post('documents')
-  @ApiOperation({ summary: 'Upload a KYC document or certificate' })
+  @ApiOperation({ summary: 'Tải lên tài liệu định danh (KYC) hoặc chứng chỉ' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(

@@ -26,7 +26,7 @@ export class CustomerCareController {
 
   // --- REVIEWS ---
   @Post('bookings/:bookingId/reviews')
-  @ApiOperation({ summary: 'Leave a review for a completed booking' })
+  @ApiOperation({ summary: 'Để lại đánh giá cho dịch vụ đã hoàn thành' })
   async createReview(
     @GetCurrentUserId() userId: string,
     @Param('bookingId') bookingId: string,
@@ -37,19 +37,19 @@ export class CustomerCareController {
 
   // --- SUPPORT TICKETS ---
   @Post('tickets')
-  @ApiOperation({ summary: 'Create a support ticket' })
+  @ApiOperation({ summary: 'Tạo yêu cầu hỗ trợ mới' })
   async createTicket(@GetCurrentUserId() userId: string, @Body() dto: CreateTicketDto) {
     return this.supportService.createTicket(userId, dto);
   }
 
   @Get('tickets')
-  @ApiOperation({ summary: 'Get my support tickets' })
+  @ApiOperation({ summary: 'Lấy danh sách yêu cầu hỗ trợ của tôi' })
   async getMyTickets(@GetCurrentUserId() userId: string) {
     return this.supportService.getMyTickets(userId);
   }
 
   @Post('tickets/:ticketId/reply')
-  @ApiOperation({ summary: 'Reply to a support ticket' })
+  @ApiOperation({ summary: 'Phản hồi yêu cầu hỗ trợ' })
   async replyTicket(
     @GetCurrentUserId() userId: string,
     @Param('ticketId') ticketId: string,
@@ -60,7 +60,7 @@ export class CustomerCareController {
 
   // --- DISPUTES ---
   @Post('bookings/:bookingId/disputes')
-  @ApiOperation({ summary: 'Open a dispute for a booking' })
+  @ApiOperation({ summary: 'Mở tranh chấp cho một lịch đặt' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files', 5))
   async openDispute(
@@ -74,7 +74,7 @@ export class CustomerCareController {
 
   // --- INCIDENTS ---
   @Post('bookings/:bookingId/incidents')
-  @ApiOperation({ summary: 'Report a safety incident' })
+  @ApiOperation({ summary: 'Báo cáo sự cố an toàn' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files', 5))
   async reportIncident(
