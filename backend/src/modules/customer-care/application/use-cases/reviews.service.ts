@@ -1,0 +1,120 @@
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../../../database/prisma.service';
+import { CreateReviewDto } from '../../dto/create-review.dto';
+import { booking_status } from '@prisma/client';
+
+@Injectable()
+export class ReviewsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createReview(reviewerId: string, bookingId: string, dto: CreateReviewDto) {
+    const booking = await this.prisma.bookings.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status !== booking_status.COMPLETED) {
+      throw new ForbiddenException('You can only review a COMPLETED booking');
+    }
+
+    // Ensure the reviewer is either the customer or the provider of the booking
+    if (booking.customer_id !== reviewerId && booking.provider_id !== reviewerId) {
+      throw new ForbiddenException('You are not authorized to review this booking');
+    }
+
+    const revieweeId = booking.customer_id === reviewerId ? booking.provider_id : booking.customer_id;
+    if (!revieweeId) {
+      throw new BadRequestException('Cannot determine reviewee');
+    }
+
+    // Ensure they haven't reviewed yet
+    const existingReview = await this.prisma.reviews.findFirst({
+      where: { booking_id: bookingId, reviewer_id: reviewerId },
+    });
+
+    if (existingReview) {
+      throw new ConflictException('You have already reviewed this booking');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create the review
+      const review = await tx.reviews.create({
+        data: {
+          booking_id: bookingId,
+          reviewer_id: reviewerId,
+          reviewee_id: revieweeId,
+          rating: dto.rating,
+          comment: dto.comment,
+        },
+      });
+
+      // 2. Aggregate the new rating average
+      const agg = await tx.reviews.aggregate({
+        _avg: { rating: true },
+        _count: { rating: true },
+        where: { reviewee_id: revieweeId, is_hidden: false },
+      });
+
+      const newRatingAvg = agg._avg.rating || 0;
+      const newTotalReviews = agg._count.rating || 0;
+
+      // 3. Update the reviewee's profile (assuming the reviewee is a provider for now, or updating user profile if needed)
+      // For this system, we mainly track provider ratings. We'll check if the reviewee is a provider.
+      const providerProfile = await tx.provider_profiles.findUnique({
+        where: { user_id: revieweeId },
+      });
+
+      if (providerProfile) {
+        await tx.provider_profiles.update({
+          where: { user_id: revieweeId },
+          data: {
+            rating_avg: newRatingAvg,
+            total_reviews: newTotalReviews,
+          },
+        });
+      }
+
+      return review;
+    });
+  }
+
+  async hideReview(adminId: string, reviewId: string, reason: string) {
+    const review = await this.prisma.reviews.findUnique({ where: { id: reviewId } });
+    if (!review) throw new NotFoundException('Review not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedReview = await tx.reviews.update({
+        where: { id: reviewId },
+        data: {
+          is_hidden: true,
+          hidden_reason: reason,
+          hidden_by: adminId,
+          hidden_at: new Date(),
+        },
+      });
+
+      // Recalculate average without the hidden review
+      const agg = await tx.reviews.aggregate({
+        _avg: { rating: true },
+        _count: { rating: true },
+        where: { reviewee_id: review.reviewee_id, is_hidden: false },
+      });
+
+      const newRatingAvg = agg._avg.rating || 0;
+      const newTotalReviews = agg._count.rating || 0;
+
+      await tx.provider_profiles.updateMany({
+        where: { user_id: review.reviewee_id },
+        data: {
+          rating_avg: newRatingAvg,
+          total_reviews: newTotalReviews,
+        },
+      });
+
+      return updatedReview;
+    });
+  }
+}
