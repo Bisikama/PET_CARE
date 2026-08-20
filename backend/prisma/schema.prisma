@@ -87,6 +87,7 @@ model bookings {
   booking_pets                 booking_pets[]
   chat_rooms                   chat_rooms?
   complaints                   complaints[]
+  incidents                    incidents[]
   notifications                notifications[]
   payments                     payments?
   reviews                      reviews[]
@@ -394,6 +395,8 @@ model User {
   complaints_complaints_accused_idTousers       complaints[]          @relation("complaints_accused_idTousers")
   complaints_complaints_admin_idTousers         complaints[]          @relation("complaints_admin_idTousers")
   complaints_complaints_complainant_idTousers   complaints[]          @relation("complaints_complainant_idTousers")
+  incident_reports                              incidents[]           @relation("incident_reporter")
+  incident_assignments                          incidents[]           @relation("incident_admin")
   customer_addresses                            customer_addresses[]
   notifications                                 notifications[]
   payments                                      payments[]
@@ -701,6 +704,7 @@ enum booking_status {
   CANCELLED
   EXPIRED
   DISPUTED
+  INCIDENT_REPORTED
 }
 
 enum checklist_item_status {
@@ -904,3 +908,56 @@ enum support_ticket_status {
   RESOLVED
   CLOSED
 }
+
+enum incident_type {
+  PET_INJURY
+  PET_HEALTH_EMERGENCY
+  PET_ESCAPED_OR_LOST
+  AGGRESSIVE_PET_INCIDENT
+  PROVIDER_SAFETY_INCIDENT
+  PROPERTY_DAMAGE
+  SUSPICIOUS_OR_UNSAFE_BEHAVIOR
+  PROVIDER_NO_SHOW_SERIOUS
+  CUSTOMER_UNSAFE_LOCATION
+  OTHER
+}
+
+enum incident_status {
+  DRAFT
+  OPEN
+  UNDER_REVIEW
+  ACTION_REQUIRED
+  RESOLVED
+  DISMISSED
+  ESCALATED
+}
+
+model incidents {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id      String            @db.Uuid
+  reporter_id     String            @db.Uuid
+  type            incident_type
+  status          incident_status   @default(OPEN)
+  description     String
+  admin_id        String?           @db.Uuid
+  resolution_note String?
+  resolved_at     DateTime?         @db.Timestamp(6)
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamp(6)
+
+  bookings           bookings             @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  reporter           User                 @relation("incident_reporter", fields: [reporter_id], references: [id], onDelete: Cascade)
+  admin              User?                @relation("incident_admin", fields: [admin_id], references: [id], onDelete: SetNull)
+  incident_evidences incident_evidences[]
+}
+
+model incident_evidences {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  incident_id String    @db.Uuid
+  file_url    String    @db.VarChar(255)
+  description String?
+  uploaded_at DateTime? @default(now()) @db.Timestamp(6)
+
+  incidents incidents @relation(fields: [incident_id], references: [id], onDelete: Cascade)
+}
+
