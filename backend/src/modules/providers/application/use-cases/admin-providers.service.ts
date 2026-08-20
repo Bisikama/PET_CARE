@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
-import { Prisma, provider_document_status, screening_status, provider_status } from '@prisma/client';
+import { Prisma, provider_document_status, screening_status, provider_status, Role } from '@prisma/client';
 import { ReviewDocumentDto } from '../../dto/review-document.dto';
 import { UpdateScreeningDto } from '../../dto/update-screening.dto';
 import { GrantBadgeDto } from '../../dto/grant-badge.dto';
@@ -104,6 +104,11 @@ export class AdminProvidersService {
       await tx.provider_profiles.update({
         where: { id: providerId },
         data: { status: provider_status.APPROVED },
+      });
+
+      await tx.user.update({
+        where: { id: profile.user_id },
+        data: { role: Role.PROVIDER },
       });
 
       await tx.audit_logs.create({
