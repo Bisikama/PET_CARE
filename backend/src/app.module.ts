@@ -10,6 +10,8 @@ import { ServicesModule } from './modules/services/services.module';
 import { CustomerAddressesModule } from './modules/customer-addresses/customer-addresses.module';
 import { ProviderCoverageModule } from './modules/provider-coverage/provider-coverage.module';
 import { ServiceDiscoveryModule } from './modules/service-discovery/service-discovery.module';
+import { PetsModule } from './modules/pets/pets.module';
+import { StorageModule } from './modules/storage/storage.module';
 import { AccessTokenGuard } from './common/guards/access-token.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -35,6 +37,8 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     CustomerAddressesModule,
     ProviderCoverageModule,
     ServiceDiscoveryModule,
+    PetsModule,
+    StorageModule,
   ],
   controllers: [],
   providers: [
