@@ -29,7 +29,7 @@ export class AdminCustomerCareController {
 
   // --- REVIEWS ---
   @Put('reviews/:reviewId/hide')
-  @ApiOperation({ summary: 'Hide a review' })
+  @ApiOperation({ summary: 'Ẩn đánh giá' })
   async hideReview(
     @GetCurrentUserId() adminId: string,
     @Param('reviewId') reviewId: string,
@@ -40,13 +40,13 @@ export class AdminCustomerCareController {
 
   // --- SUPPORT TICKETS ---
   @Get('tickets')
-  @ApiOperation({ summary: 'Get all support tickets' })
+  @ApiOperation({ summary: 'Lấy danh sách toàn bộ yêu cầu hỗ trợ' })
   async getAllTickets() {
     return this.supportService.getAllTicketsAdmin();
   }
 
   @Post('tickets/:ticketId/reply')
-  @ApiOperation({ summary: 'Reply to a support ticket (Admin)' })
+  @ApiOperation({ summary: 'Phản hồi yêu cầu hỗ trợ (Dành cho Admin)' })
   async replyTicketAdmin(
     @GetCurrentUserId() adminId: string,
     @Param('ticketId') ticketId: string,
@@ -56,7 +56,7 @@ export class AdminCustomerCareController {
   }
 
   @Put('tickets/:ticketId/status')
-  @ApiOperation({ summary: 'Update ticket status' })
+  @ApiOperation({ summary: 'Cập nhật trạng thái yêu cầu hỗ trợ' })
   async updateTicketStatus(
     @GetCurrentUserId() adminId: string,
     @Param('ticketId') ticketId: string,
@@ -67,7 +67,7 @@ export class AdminCustomerCareController {
 
   // --- DISPUTES ---
   @Put('disputes/:disputeId/resolve')
-  @ApiOperation({ summary: 'Resolve a dispute and release/refund Escrow' })
+  @ApiOperation({ summary: 'Giải quyết tranh chấp và giải phóng/hoàn tiền Escrow' })
   async resolveDispute(
     @GetCurrentUserId() adminId: string,
     @Param('disputeId') disputeId: string,
@@ -78,7 +78,7 @@ export class AdminCustomerCareController {
 
   // --- INCIDENTS ---
   @Put('incidents/:incidentId/resolve')
-  @ApiOperation({ summary: 'Resolve an incident and release Escrow' })
+  @ApiOperation({ summary: 'Giải quyết sự cố và giải phóng Escrow' })
   async resolveIncident(
     @GetCurrentUserId() adminId: string,
     @Param('incidentId') incidentId: string,

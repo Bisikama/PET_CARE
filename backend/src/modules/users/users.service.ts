@@ -73,7 +73,7 @@ export class UsersService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // Check if user exists by Supabase ID
+      // Kiểm tra user theo Supabase ID
       const userBySupabaseId = await tx.user.findUnique({
         where: { supabaseId },
       });
@@ -84,11 +84,22 @@ export class UsersService {
           throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
         }
 
-        // Không đổi role, isActive, status, emailVerifiedAt
+        // Nếu user đang pending hoặc chưa có emailVerifiedAt, cập nhật thành ACTIVE
+        if (userBySupabaseId.status === 'PENDING_VERIFICATION' || !userBySupabaseId.emailVerifiedAt) {
+          return tx.user.update({
+            where: { id: userBySupabaseId.id },
+            data: {
+              status: 'ACTIVE',
+              emailVerifiedAt: new Date(),
+            },
+          });
+        }
+
+        // Không đổi role, isActive
         return userBySupabaseId;
       }
 
-      // Check if user exists by email
+      // Kiểm tra user theo email
       const userByEmail = await tx.user.findUnique({
         where: { email: normalizedEmail },
       });
@@ -106,9 +117,9 @@ export class UsersService {
           email: normalizedEmail,
           fullName: safeFullName,
           role: 'CUSTOMER',
-          status: 'PENDING_VERIFICATION',
+          status: 'ACTIVE',
           isActive: true,
-          emailVerifiedAt: null,
+          emailVerifiedAt: new Date(),
         },
       });
     });

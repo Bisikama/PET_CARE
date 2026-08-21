@@ -19,7 +19,7 @@ export class AdminProvidersController {
   constructor(private readonly adminProvidersService: AdminProvidersService) {}
 
   @Put('documents/:id/review')
-  @ApiOperation({ summary: 'Review a provider document (KYC/Certificate)' })
+  @ApiOperation({ summary: 'Xét duyệt tài liệu của đối tác (KYC/Chứng chỉ)' })
   async reviewDocument(
     @GetCurrentUserId() adminId: string,
     @Param('id') documentId: string,
@@ -29,7 +29,7 @@ export class AdminProvidersController {
   }
 
   @Put(':id/screening')
-  @ApiOperation({ summary: 'Update provider background screening status' })
+  @ApiOperation({ summary: 'Cập nhật trạng thái lý lịch đối tác (Screening)' })
   async updateScreeningStatus(
     @GetCurrentUserId() adminId: string,
     @Param('id') providerId: string,
@@ -39,7 +39,7 @@ export class AdminProvidersController {
   }
 
   @Put(':id/approve')
-  @ApiOperation({ summary: 'Approve provider profile to be public' })
+  @ApiOperation({ summary: 'Phê duyệt hồ sơ đối tác để hiển thị công khai' })
   async approveProvider(
     @GetCurrentUserId() adminId: string,
     @Param('id') providerId: string,
@@ -48,7 +48,7 @@ export class AdminProvidersController {
   }
 
   @Post(':id/badges')
-  @ApiOperation({ summary: 'Manually grant a trust badge to provider' })
+  @ApiOperation({ summary: 'Cấp phù hiệu uy tín thủ công cho đối tác' })
   async grantBadge(
     @GetCurrentUserId() adminId: string,
     @Param('id') providerId: string,

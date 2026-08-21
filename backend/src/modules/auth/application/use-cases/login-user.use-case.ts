@@ -56,12 +56,12 @@ export class LoginUserUseCase {
       remoteUser = result.user;
     } catch (err: any) {
       if (err?.message?.includes('email_not_confirmed') || err?.name === 'AuthApiError' && err?.status === 400 && err?.message?.includes('Email not confirmed')) {
-        // Ghi audit warning về sync mismatch
+        // Cảnh báo mất đồng bộ
         console.warn(`[SYNC WARNING] Local user ${localUser.id} is verified but Supabase is not confirmed.`);
         throw new ForbiddenException(AUTH_ERRORS.EMAIL_CONFIRMATION_PENDING);
       }
       
-      // Fallback for network or 5xx errors from Supabase
+      // Xử lý lỗi mạng hoặc 5xx từ Supabase
       if (err?.status >= 500) {
         throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
       }

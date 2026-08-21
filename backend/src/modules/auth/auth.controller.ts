@@ -45,7 +45,7 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new customer user via Email' })
+  @ApiOperation({ summary: 'Đăng ký tài khoản khách hàng mới qua Email' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công, cần xác nhận OTP qua email.' })
   @ApiResponse({ status: 409, description: 'Tài khoản đã tồn tại (ACCOUNT_ALREADY_EXISTS)' })
   async register(@Body() dto: RegisterDto) {
@@ -55,7 +55,7 @@ export class AuthController {
   @Public()
   @Post('verify-email-otp')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verify email using OTP from Supabase' })
+  @ApiOperation({ summary: 'Xác thực email bằng mã OTP từ Supabase' })
   @ApiResponse({ status: 200, description: 'Xác thực thành công, trả về access token.' })
   @ApiResponse({ status: 400, description: 'OTP không hợp lệ hoặc đã hết hạn.' })
   async verifyEmailOtp(
@@ -86,7 +86,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Log in with email and password' })
+  @ApiOperation({ summary: 'Đăng nhập bằng email và mật khẩu' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công.' })
   @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không đúng (AUTH_INVALID_CREDENTIALS).' })
   @ApiResponse({ status: 403, description: 'Tài khoản bị khóa (ACCOUNT_LOCKED) hoặc chưa xác nhận email (EMAIL_CONFIRMATION_PENDING).' })
@@ -112,7 +112,7 @@ export class AuthController {
   @Public()
   @Post('resend-confirmation-otp')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Resend email confirmation OTP' })
+  @ApiOperation({ summary: 'Gửi lại mã OTP xác nhận email' })
   @ApiResponse({ status: 200, description: 'Mã OTP đã được gửi lại.' })
   async resendConfirmationOtp(@Body() dto: ResendOtpDto) {
     return this.authService.resendSignupOtp(dto.email);
@@ -121,7 +121,7 @@ export class AuthController {
   @Public()
   @Post('google/id-token')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Log in with Google ID Token' })
+  @ApiOperation({ summary: 'Đăng nhập bằng Google ID Token' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công bằng Google.' })
   @ApiResponse({ status: 401, description: 'Google ID Token không hợp lệ.' })
   async loginGoogleIdToken(
@@ -152,7 +152,7 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Request a password reset email' })
+  @ApiOperation({ summary: 'Yêu cầu gửi email đặt lại mật khẩu' })
   @ApiResponse({ status: 200, description: 'Email hướng dẫn đã được gửi nếu tài khoản tồn tại.' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
@@ -161,7 +161,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Reset password using OTP/token' })
+  @ApiOperation({ summary: 'Đặt lại mật khẩu sử dụng OTP/token' })
   @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công.' })
   @ApiResponse({ status: 400, description: 'Token/OTP không hợp lệ hoặc mật khẩu không khớp.' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
@@ -171,7 +171,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(AccessTokenGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOperation({ summary: 'Lấy thông tin hồ sơ cá nhân' })
   async getMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -180,7 +180,7 @@ export class AuthController {
   @UseGuards(RolesGuard)
   @Get('provider/me')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current provider profile' })
+  @ApiOperation({ summary: 'Lấy thông tin hồ sơ đối tác' })
   async getProviderMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -189,7 +189,7 @@ export class AuthController {
   @UseGuards(RolesGuard)
   @Get('admin/me')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current admin profile' })
+  @ApiOperation({ summary: 'Lấy thông tin hồ sơ quản trị viên' })
   async getAdminMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -197,7 +197,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Log out current user' })
+  @ApiOperation({ summary: 'Đăng xuất' })
   async logout(
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: express.Response,
@@ -215,7 +215,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiOperation({ summary: 'Làm mới access token bằng refresh token' })
   async refresh(
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
