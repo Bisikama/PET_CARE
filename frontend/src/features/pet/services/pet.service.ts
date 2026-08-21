@@ -15,4 +15,22 @@ export const petService = {
     });
     return response.data;
   },
+
+  getPetById: async (id: string): Promise<Pet> => {
+    const response = await axiosInstance.get<Pet>(`/pets/${id}`);
+    return response.data;
+  },
+
+  updatePet: async (id: string, formData: FormData): Promise<Pet> => {
+    const response = await axiosInstance.put<Pet>(`/pets/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  deletePet: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/pets/${id}`);
+  },
 };

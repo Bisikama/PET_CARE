@@ -1,11 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { X, Plus, Camera, Loader2, Info } from 'lucide-react';
-import { usePetStore } from '../stores/pet.store';
+import { X, Plus, Camera, Loader2, Info, Save } from 'lucide-react';
+import { usePet } from '../hooks/use-pet';
 
 export function PetModal() {
-  const { isOpen, isSubmitting, error, closeModal, createPet } = usePetStore();
+  const { isOpen, isSubmitting, error, closeModal, createPet, updatePet, selectedPet } = usePet();
 
   // Form states
   const [name, setName] = React.useState('');
@@ -25,6 +25,33 @@ export function PetModal() {
   const [validationErrors, setValidationErrors] = React.useState<Record<string, string>>({});
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Sync form states with selectedPet for Edit mode
+  React.useEffect(() => {
+    if (selectedPet) {
+      setName(selectedPet.name || '');
+      setSpecies(selectedPet.species || 'Dog');
+      setBreed(selectedPet.breed || '');
+      setAge(selectedPet.age?.toString() || '');
+      setWeight(selectedPet.weight?.toString() || '');
+      setGender((selectedPet.gender as 'Male' | 'Female') || 'Male');
+      setHealthNote(selectedPet.healthNote || '');
+      setBehaviorNote(selectedPet.behaviorNote || '');
+      setCustomPreview(selectedPet.avatarUrl || null);
+    } else {
+      setName('');
+      setSpecies('Dog');
+      setBreed('');
+      setAge('');
+      setWeight('');
+      setGender('Male');
+      setHealthNote('');
+      setBehaviorNote('');
+      setCustomPreview(null);
+    }
+    setCustomFile(null);
+    setValidationErrors({});
+  }, [selectedPet, isOpen]);
 
   // Handle ESC key to close modal
   React.useEffect(() => {
@@ -117,7 +144,10 @@ export function PetModal() {
       formData.append('avatar', customFile);
     }
 
-    const success = await createPet(formData);
+    const success = selectedPet
+      ? await updatePet(selectedPet.id, formData)
+      : await createPet(formData);
+
     if (success) {
       // Reset form
       setName('');
@@ -133,6 +163,8 @@ export function PetModal() {
     }
   };
 
+  const isEditMode = !!selectedPet;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">
       {/* Backdrop */}
@@ -147,7 +179,9 @@ export function PetModal() {
         <div className="bg-[#031625] px-6 py-5 flex items-center justify-between text-white">
           <div className="flex items-center gap-2">
             <span className="text-xl">💛</span>
-            <h3 className="text-lg font-bold tracking-wide">Thêm Hồ Sơ Thú Cưng</h3>
+            <h3 className="text-lg font-bold tracking-wide">
+              {isEditMode ? 'Cập Nhật Hồ Sơ Thú Cưng' : 'Thêm Hồ Sơ Thú Cưng'}
+            </h3>
           </div>
           <button
             onClick={closeModal}
@@ -363,12 +397,21 @@ export function PetModal() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                  Đang thêm...
+                  {isEditMode ? 'Đang cập nhật...' : 'Đang thêm...'}
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                  Thêm Thú Cưng
+                  {isEditMode ? (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Cập Nhật
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 stroke-[3]" />
+                      Thêm Thú Cưng
+                    </>
+                  )}
                 </>
               )}
             </button>

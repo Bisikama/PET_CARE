@@ -1,2 +1,3 @@
 // Export all hooks for pets here
-export {};
+export * from './use-pet';
+
