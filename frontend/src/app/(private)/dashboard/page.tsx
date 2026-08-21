@@ -3,12 +3,13 @@
 import * as React from 'react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { Heart, Mail, Plus, Shield, Sparkles, User } from 'lucide-react';
-import { PetList } from '@/features/pet';
+import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore } from '@/features/me';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const { openModal } = useMeStore();
+  const { openModal: openProfileModal } = useMeStore();
+  const { openModal: openPetModal } = usePetStore();
 
   return (
     <div className="space-y-8">
@@ -30,7 +31,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl md:text-3.5xl font-extrabold tracking-tight text-white leading-tight">
               Chào mừng trở lại,{' '}
               <span 
-                onClick={openModal} 
+                onClick={openProfileModal} 
                 className="cursor-pointer underline decoration-teal-400/60 decoration-wavy underline-offset-6 hover:text-teal-300 transition-all duration-200"
               >
                 {user?.fullName || 'Người dùng'}
@@ -42,7 +43,10 @@ export default function DashboardPage() {
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-700/80 bg-slate-800/20 hover:bg-slate-800/40 text-white text-sm font-semibold transition-all duration-200 active:scale-95">
+            <button 
+              onClick={openPetModal}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-700/80 bg-slate-800/20 hover:bg-slate-800/40 text-white text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer"
+            >
               <Plus className="w-4 h-4" />
               Đăng ký bé cưng
             </button>
@@ -71,7 +75,7 @@ export default function DashboardPage() {
 
             <div className="space-y-4">
               <div 
-                onClick={openModal}
+                onClick={openProfileModal}
                 className="flex items-center gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer transition-all duration-200 active:scale-[0.99]"
               >
                 <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">

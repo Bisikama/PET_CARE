@@ -8,6 +8,7 @@ import { isAuthenticated } from '@/lib/auth';
 import { ROUTES } from '@/lib/constants';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { MeModal } from '@/features/me';
+import { PetModal } from '@/features/pet';
 
 export default function PrivateLayout({
   children,
@@ -66,6 +67,7 @@ export default function PrivateLayout({
       </div>
 
       <MeModal />
+      <PetModal />
     </div>
   );
 }

@@ -1,2 +1,1 @@
-// Export all services for pets here
-export {};
+export * from './pet.service';

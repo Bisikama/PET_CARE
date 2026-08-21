@@ -1,2 +1,1 @@
-// Export all stores for pets here
-export {};
+export * from './pet.store';
