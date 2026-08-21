@@ -12,7 +12,7 @@ export class SupabaseStorageService {
   constructor(private readonly configService: ConfigService) {
     this.supabase = createClient(
       this.configService.getOrThrow<string>('SUPABASE_URL'),
-      this.configService.getOrThrow<string>('SUPABASE_PUBLISHABLE_KEY'),
+      this.configService.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY'),
       {
         auth: {
           persistSession: false,
