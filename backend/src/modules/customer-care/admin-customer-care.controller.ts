@@ -14,7 +14,7 @@ import { ResolveDisputeDto } from './dto/dispute.dto';
 import { ResolveIncidentDto } from './dto/incident.dto';
 import { support_ticket_status } from '@prisma/client';
 
-@ApiTags('admin/customer-care')
+@ApiTags('Admin/customer-care')
 @Controller('admin/customer-care')
 @UseGuards(AccessTokenGuard, RolesGuard)
 @Roles(Role.ADMIN)
