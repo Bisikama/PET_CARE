@@ -5,7 +5,7 @@ import { GetCurrentUserId } from '../../../common/decorators/get-current-user-id
 import { PromotionsService } from './promotions.service';
 import { ValidatePromotionDto } from './dto/validate-promotion.dto';
 
-@ApiTags('promotions')
+@ApiTags('Promotions')
 @Controller('promotions')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()

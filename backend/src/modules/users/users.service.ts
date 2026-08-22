@@ -2,10 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AUTH_ERRORS } from '../../common/constants/error-messages.constant';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const publicUserSelect = {
   id: true,
@@ -21,7 +24,10 @@ const publicUserSelect = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: SupabaseStorageService,
+  ) { }
 
   async create(data: Prisma.UserCreateInput) {
     return this.prisma.user.create({ data });
@@ -122,6 +128,41 @@ export class UsersService {
           emailVerifiedAt: new Date(),
         },
       });
+    });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: dto.fullName,
+        phone: dto.phone,
+      },
+      select: publicUserSelect,
+    });
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    // Upload file using SupabaseStorageService
+    const bucket = 'avatars';
+    const filePath = `users/${userId}/${Date.now()}-${file.originalname}`;
+    const avatarUrl = await this.storageService.uploadFile(file, bucket, filePath);
+
+    // Update DB
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: publicUserSelect,
     });
   }
 }
