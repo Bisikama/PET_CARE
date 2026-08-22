@@ -10,7 +10,7 @@ import { ReviewDocumentDto } from './dto/review-document.dto';
 import { UpdateScreeningDto } from './dto/update-screening.dto';
 import { GrantBadgeDto } from './dto/grant-badge.dto';
 
-@ApiTags('admin/providers')
+@ApiTags('Admin/providers')
 @Controller('admin/providers')
 @UseGuards(AccessTokenGuard, RolesGuard)
 @Roles(Role.ADMIN)

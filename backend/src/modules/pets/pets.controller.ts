@@ -7,7 +7,7 @@ import { PetsService } from './application/use-cases/pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 
-@ApiTags('pets')
+@ApiTags('Pets')
 @Controller('pets')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()

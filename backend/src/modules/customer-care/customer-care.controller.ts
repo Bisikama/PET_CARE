@@ -12,7 +12,7 @@ import { CreateTicketDto, ReplyTicketDto } from './dto/support.dto';
 import { OpenDisputeDto } from './dto/dispute.dto';
 import { ReportIncidentDto } from './dto/incident.dto';
 
-@ApiTags('customer-care')
+@ApiTags('Customer-care')
 @Controller('customer-care')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
