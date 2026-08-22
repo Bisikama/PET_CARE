@@ -13,6 +13,8 @@ export const AppHeader = () => {
 
   const getPageTitle = () => {
     if (pathname === ROUTES.DASHBOARD) return 'Tổng quan';
+    if (pathname === ROUTES.SERVICES) return 'Dịch vụ thú cưng';
+    if (pathname === ROUTES.BOOKINGS) return 'Đặt người chăm sóc';
     return 'Hệ thống Quản lý';
   };
 
