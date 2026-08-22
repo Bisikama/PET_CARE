@@ -9,7 +9,7 @@ import { AddServiceAreaDto } from './dto/add-service-area.dto';
 import { RegisterCapabilityDto } from './dto/register-capability.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 
-@ApiTags('providers')
+@ApiTags('Providers')
 @Controller('providers')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()

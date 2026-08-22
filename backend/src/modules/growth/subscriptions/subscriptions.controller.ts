@@ -5,7 +5,7 @@ import { GetCurrentUserId } from '../../../common/decorators/get-current-user-id
 import { SubscriptionsService } from './subscriptions.service';
 import { SubscribeDto } from './dto/subscribe.dto';
 
-@ApiTags('subscriptions')
+@ApiTags('Subscriptions')
 @Controller('subscriptions')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()

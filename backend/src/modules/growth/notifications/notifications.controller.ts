@@ -4,7 +4,7 @@ import { AccessTokenGuard } from '../../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../../common/decorators/get-current-user-id.decorator';
 import { NotificationsService } from './notifications.service';
 
-@ApiTags('notifications')
+@ApiTags('Notifications')
 @Controller('notifications')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()

@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 import { PromotionsService } from './promotions.service';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 
-@ApiTags('admin/promotions')
+@ApiTags('Admin/promotions')
 @Controller('admin/promotions')
 @UseGuards(AccessTokenGuard, RolesGuard)
 @Roles(Role.ADMIN)

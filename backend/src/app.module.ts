@@ -16,6 +16,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { ProvidersModule } from './modules/providers/providers.module';
 import { CustomerCareModule } from './modules/customer-care/customer-care.module';
 import { GrowthModule } from './modules/growth/growth.module';
+import { AdminCoreModule } from './modules/admin-core/admin-core.module';
 import { AccessTokenGuard } from './common/guards/access-token.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -47,6 +48,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     ProvidersModule,
     CustomerCareModule,
     GrowthModule,
+    AdminCoreModule,
   ],
   controllers: [],
   providers: [
