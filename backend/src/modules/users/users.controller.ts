@@ -35,6 +35,8 @@ export class UsersController {
   @Get('me')
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ cá nhân' })
   @ApiResponse({ status: 200, description: 'Trả về thông tin user đang login' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
   async getMe(@GetCurrentUserId() userId: string) {
     return this.usersService.findPublicById(userId);
   }
@@ -42,6 +44,9 @@ export class UsersController {
   @Patch('me')
   @ApiOperation({ summary: 'Cập nhật thông tin cơ bản (Tên, SĐT)' })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
   async updateProfile(
     @GetCurrentUserId() userId: string,
     @Body() dto: UpdateProfileDto,
@@ -65,6 +70,9 @@ export class UsersController {
     },
   })
   @ApiResponse({ status: 200, description: 'Cập nhật ảnh thành công' })
+  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá lớn' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
     @GetCurrentUserId() userId: string,

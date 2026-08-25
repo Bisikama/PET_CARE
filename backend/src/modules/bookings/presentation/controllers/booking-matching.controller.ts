@@ -28,6 +28,7 @@ export class BookingMatchingController {
     status: 404,
     description: 'Thú cưng hoặc địa chỉ của khách hàng không tồn tại.',
   })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async search(@Body() dto: SearchProviderDto) {
     return this.searchMatchingUseCase.execute(dto);
   }

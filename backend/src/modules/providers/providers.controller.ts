@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UploadedFile, UploadedFiles, UseGuards, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, BadRequestException } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
@@ -18,6 +18,9 @@ export class ProvidersController {
 
   @Post('profile')
   @ApiOperation({ summary: 'Tạo hồ sơ đối tác mới' })
+  @ApiResponse({ status: 201, description: 'Tạo hồ sơ thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async createProfile(
     @GetCurrentUserId() userId: string,
     @Body() dto: CreateProviderProfileDto,
@@ -27,6 +30,9 @@ export class ProvidersController {
 
   @Post('areas')
   @ApiOperation({ summary: 'Thêm khu vực phục vụ' })
+  @ApiResponse({ status: 201, description: 'Thêm khu vực thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async addServiceArea(
     @GetCurrentUserId() userId: string,
     @Body() dto: AddServiceAreaDto,
@@ -36,6 +42,9 @@ export class ProvidersController {
 
   @Post('capabilities')
   @ApiOperation({ summary: 'Đăng ký năng lực dịch vụ mới' })
+  @ApiResponse({ status: 201, description: 'Đăng ký năng lực thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async registerCapability(
     @GetCurrentUserId() userId: string,
     @Body() dto: RegisterCapabilityDto,
@@ -46,6 +55,9 @@ export class ProvidersController {
   @Post('documents')
   @ApiOperation({ summary: 'Tải lên tài liệu định danh (KYC) hoặc chứng chỉ' })
   @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'Tải tài liệu lên thành công' })
+  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá lớn' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @GetCurrentUserId() userId: string,
@@ -66,6 +78,19 @@ export class ProvidersController {
   @Post('kyc')
   @ApiOperation({ summary: 'Tải lên tài liệu eKYC (Mặt trước, mặt sau, chân dung)' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        frontImage: { type: 'string', format: 'binary', description: 'Ảnh CCCD mặt trước' },
+        backImage: { type: 'string', format: 'binary', description: 'Ảnh CCCD mặt sau' },
+        faceImage: { type: 'string', format: 'binary', description: 'Ảnh chân dung' },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Tải lên tài liệu eKYC thành công' })
+  @ApiResponse({ status: 400, description: 'Thiếu file hoặc file không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'frontImage', maxCount: 1 },

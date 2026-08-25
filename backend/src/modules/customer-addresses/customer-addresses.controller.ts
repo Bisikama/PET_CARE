@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
@@ -62,6 +62,7 @@ export class CustomerAddressesController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy chi tiết một địa chỉ' })
+  @ApiParam({ name: 'id', description: 'ID của địa chỉ', type: String })
   @ApiResponse({ status: 200, description: 'Lấy chi tiết địa chỉ thành công.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
   @ApiResponse({
@@ -76,6 +77,7 @@ export class CustomerAddressesController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cập nhật địa chỉ khách hàng' })
+  @ApiParam({ name: 'id', description: 'ID của địa chỉ', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật địa chỉ thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu cập nhật không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -95,6 +97,7 @@ export class CustomerAddressesController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xóa mềm địa chỉ khách hàng' })
+  @ApiParam({ name: 'id', description: 'ID của địa chỉ', type: String })
   @ApiResponse({ status: 204, description: 'Xóa mềm địa chỉ thành công.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
   @ApiResponse({

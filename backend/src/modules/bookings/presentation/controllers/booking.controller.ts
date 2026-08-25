@@ -43,6 +43,7 @@ export class BookingsController {
     status: 409,
     description: 'Slot làm việc này đã được người khác đặt hoặc khóa trước đó.',
   })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async create(@GetCurrentUserId() userId: string, @Body() dto: CreateBookingDto) {
     return this.createBookingUseCase.execute(userId, dto);
   }
@@ -67,6 +68,7 @@ export class BookingsController {
     description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này.',
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng hoặc thông tin liên quan.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async accept(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
     return this.acceptBookingUseCase.execute(userId, bookingId);
   }
@@ -88,6 +90,7 @@ export class BookingsController {
     description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này.',
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng hoặc thông tin liên quan.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async reject(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
     return this.rejectBookingUseCase.execute(userId, bookingId);
   }
@@ -98,6 +101,7 @@ export class BookingsController {
   @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
   @ApiResponse({ status: 200, description: 'Chi tiết đơn đặt lịch được truy xuất thành công.' })
   @ApiResponse({ status: 404, description: 'Đơn đặt lịch không tồn tại.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async findById(@Param('id') bookingId: string) {
     return this.bookingRepo.findBookingById(bookingId);
   }

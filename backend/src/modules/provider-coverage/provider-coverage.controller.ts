@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
@@ -54,6 +54,7 @@ export class ProviderCoverageController {
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cập nhật khu vực phục vụ của đối tác' })
+  @ApiParam({ name: 'id', description: 'ID của khu vực phục vụ', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật khu vực thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu cập nhật không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -74,6 +75,7 @@ export class ProviderCoverageController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xóa mềm khu vực phục vụ của đối tác' })
+  @ApiParam({ name: 'id', description: 'ID của khu vực phục vụ', type: String })
   @ApiResponse({ status: 204, description: 'Xóa mềm khu vực thành công.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
   @ApiResponse({

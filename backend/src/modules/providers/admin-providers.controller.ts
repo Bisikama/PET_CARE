@@ -1,5 +1,5 @@
 import { Body, Controller, Param, Post, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -20,6 +20,12 @@ export class AdminProvidersController {
 
   @Put('documents/:id/review')
   @ApiOperation({ summary: 'Xét duyệt tài liệu của đối tác (KYC/Chứng chỉ)' })
+  @ApiParam({ name: 'id', description: 'ID của tài liệu', type: String })
+  @ApiResponse({ status: 200, description: 'Xét duyệt tài liệu thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy tài liệu' })
   async reviewDocument(
     @GetCurrentUserId() adminId: string,
     @Param('id') documentId: string,
@@ -30,6 +36,12 @@ export class AdminProvidersController {
 
   @Put(':id/screening')
   @ApiOperation({ summary: 'Cập nhật trạng thái lý lịch đối tác (Screening)' })
+  @ApiParam({ name: 'id', description: 'ID của đối tác', type: String })
+  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đối tác' })
   async updateScreeningStatus(
     @GetCurrentUserId() adminId: string,
     @Param('id') providerId: string,
@@ -40,6 +52,12 @@ export class AdminProvidersController {
 
   @Put(':id/approve')
   @ApiOperation({ summary: 'Phê duyệt hồ sơ đối tác để hiển thị công khai' })
+  @ApiParam({ name: 'id', description: 'ID của đối tác', type: String })
+  @ApiResponse({ status: 200, description: 'Phê duyệt hồ sơ thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đối tác' })
   async approveProvider(
     @GetCurrentUserId() adminId: string,
     @Param('id') providerId: string,
@@ -49,6 +67,12 @@ export class AdminProvidersController {
 
   @Post(':id/badges')
   @ApiOperation({ summary: 'Cấp phù hiệu uy tín thủ công cho đối tác' })
+  @ApiParam({ name: 'id', description: 'ID của đối tác', type: String })
+  @ApiResponse({ status: 201, description: 'Cấp phù hiệu thành công' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đối tác' })
   async grantBadge(
     @GetCurrentUserId() adminId: string,
     @Param('id') providerId: string,
