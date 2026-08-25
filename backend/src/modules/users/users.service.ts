@@ -99,15 +99,27 @@ export class UsersService {
         return userBySupabaseId;
       }
 
-      // Kiểm tra user theo email
+      // 2. Kiểm tra user theo email
       const userByEmail = await tx.user.findUnique({
         where: { email: normalizedEmail },
       });
 
       if (userByEmail) {
-        // CASE 2: Không có theo supabaseId nhưng có local User cùng email
-        // Dù supabaseId khác null hay null đều ném conflict an toàn
-        throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
+        // CASE 2: Có user theo email
+        if (userByEmail.supabaseId && userByEmail.supabaseId !== supabaseId) {
+          throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
+        }
+
+        // Tự động liên kết supabaseId và kích hoạt tài khoản
+        return tx.user.update({
+          where: { id: userByEmail.id },
+          data: {
+            supabaseId,
+            status: 'ACTIVE',
+            emailVerifiedAt: userByEmail.emailVerifiedAt ?? new Date(),
+            fullName: userByEmail.fullName || safeFullName,
+          },
+        });
       }
 
       // CASE 3: Không có cả supabaseId lẫn email -> Tạo local User mới
