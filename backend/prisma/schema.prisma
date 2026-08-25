@@ -278,6 +278,12 @@ model provider_profiles {
   rating_avg               Decimal?                 @default(0) @db.Decimal(3, 2)
   total_reviews            Int?                     @default(0)
   total_completed_bookings Int?                     @default(0)
+  id_number                String?                  @unique @db.VarChar(50)
+  full_name_on_id          String?                  @db.VarChar(100)
+  dob                      DateTime?                @db.Date
+  issue_date               DateTime?                @db.Date
+  face_match_score         Decimal?                 @db.Decimal(5, 2)
+  kyc_provider             String?                  @db.VarChar(50)
   created_at               DateTime?                @default(now()) @db.Timestamp(6)
   updated_at               DateTime?                @default(now()) @db.Timestamp(6)
   bookings                 bookings[]

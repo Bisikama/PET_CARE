@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Role, User as PrismaUser } from '@prisma/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 

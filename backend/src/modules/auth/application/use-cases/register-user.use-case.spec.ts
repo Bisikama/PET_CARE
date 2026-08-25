@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RegisterUserUseCase } from './register-user.use-case';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { ConflictException } from '@nestjs/common';
 import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { SuspendUserDto } from './dto/suspend-user.dto';
-import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
+import { PrismaService } from '../../../../database/prisma.service';
+import { SuspendUserDto } from '../../dto/suspend-user.dto';
+import { GetAuditLogsDto } from '../../dto/get-audit-logs.dto';
 import { Role, user_status, provider_status } from '@prisma/client';
 
 @Injectable()

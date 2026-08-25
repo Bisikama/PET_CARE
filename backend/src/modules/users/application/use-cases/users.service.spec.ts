@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
-import { PrismaService } from '../../database/prisma.service';
-import { SupabaseStorageService } from '../storage/supabase-storage.service';
+import { PrismaService } from '../../../../database/prisma.service';
+import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('UsersService', () => {

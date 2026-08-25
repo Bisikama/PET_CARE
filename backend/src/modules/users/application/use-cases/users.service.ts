@@ -5,10 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { AUTH_ERRORS } from '../../common/constants/error-messages.constant';
-import { SupabaseStorageService } from '../storage/supabase-storage.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { PrismaService } from '../../../../database/prisma.service';
+import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
+import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
+import { UpdateProfileDto } from '../../dto/update-profile.dto';
 
 const publicUserSelect = {
   id: true,
@@ -158,11 +158,17 @@ export class UsersService {
     const filePath = `users/${userId}/${Date.now()}-${file.originalname}`;
     const avatarUrl = await this.storageService.uploadFile(file, bucket, filePath);
 
-    // Update DB
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { avatarUrl },
-      select: publicUserSelect,
-    });
+    try {
+      // Update DB
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data: { avatarUrl },
+        select: publicUserSelect,
+      });
+    } catch (error) {
+      // Rollback: Xóa file rác trên Cloud Storage
+      await this.storageService.deleteFile(bucket, filePath);
+      throw error;
+    }
   }
 }

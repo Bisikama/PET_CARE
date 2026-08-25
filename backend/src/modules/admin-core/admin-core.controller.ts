@@ -1,6 +1,6 @@
 import { Controller, Get, Patch, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { AdminCoreService } from './admin-core.service';
+import { AdminCoreService } from './application/use-cases/admin-core.service';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';

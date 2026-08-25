@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProvidersService } from './providers.service';
 import { PROVIDERS_REPOSITORY } from '../../providers.tokens';
 import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
+import { PrismaService } from '../../../../database/prisma.service';
+import { EkycService } from '../../ekyc.service';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ProviderDocumentType } from '../../dto/upload-document.dto';
 import { Prisma } from '@prisma/client';
@@ -34,6 +36,14 @@ describe('ProvidersService', () => {
         {
           provide: SupabaseStorageService,
           useValue: mockStorageService,
+        },
+        {
+          provide: PrismaService,
+          useValue: { $transaction: jest.fn((callback) => callback(mockProvidersRepository)) }, // Simplified mock for transaction
+        },
+        {
+          provide: EkycService,
+          useValue: { verifyIdentity: jest.fn() },
         },
       ],
     }).compile();

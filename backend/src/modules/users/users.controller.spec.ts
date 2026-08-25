@@ -1,9 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { UsersService } from './application/use-cases/users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { BadRequestException } from '@nestjs/common';
-
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: UsersService;
@@ -71,25 +69,6 @@ describe('UsersController', () => {
         buffer: Buffer.from('test'),
       }) as Express.Multer.File;
 
-    it('should throw BadRequestException if no file is provided', async () => {
-      await expect(controller.uploadAvatar('user-1', null as any)).rejects.toThrow(
-        new BadRequestException('Vui lòng chọn một file ảnh'),
-      );
-    });
-
-    it('should throw BadRequestException if file is not an image', async () => {
-      const file = mockFile('application/pdf', 1000);
-      await expect(controller.uploadAvatar('user-1', file)).rejects.toThrow(
-        new BadRequestException('Chỉ chấp nhận file ảnh định dạng jpeg, png, jpg, webp'),
-      );
-    });
-
-    it('should throw BadRequestException if file is too large', async () => {
-      const file = mockFile('image/jpeg', 6 * 1024 * 1024); // 6MB
-      await expect(controller.uploadAvatar('user-1', file)).rejects.toThrow(
-        new BadRequestException('Kích thước ảnh không được vượt quá 5MB'),
-      );
-    });
 
     it('should call uploadAvatar on service with correct params', async () => {
       const userId = 'user-1';

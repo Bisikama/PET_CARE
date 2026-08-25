@@ -9,6 +9,8 @@ import { UploadDocumentDto, ProviderDocumentType } from '../../dto/upload-docume
 import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../../../database/prisma.service';
+import { EkycService } from '../../ekyc.service';
 
 @Injectable()
 export class ProvidersService {
@@ -16,6 +18,8 @@ export class ProvidersService {
     @Inject(PROVIDERS_REPOSITORY)
     private readonly providersRepository: IProvidersRepository,
     private readonly storageService: SupabaseStorageService,
+    private readonly prisma: PrismaService,
+    private readonly ekycService: EkycService,
   ) {}
 
   async createProfile(userId: string, dto: CreateProviderProfileDto): Promise<ProviderProfileRecord> {
@@ -85,6 +89,115 @@ export class ProvidersService {
 
     if (dto.documentType === ProviderDocumentType.IDENTITY_CARD) {
       await this.providersRepository.updateIdentityCardUrl(profile.id, fileUrl);
+    }
+  }
+
+  async uploadKycDocuments(
+    userId: string,
+    frontFile: Express.Multer.File,
+    backFile: Express.Multer.File,
+    faceFile: Express.Multer.File,
+  ) {
+    const profile = await this.providersRepository.findProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('Provider profile not found');
+    }
+
+    // 1. Gọi hệ thống eKYC (Real 3rd-party) xử lý trực tiếp trên RAM (Buffer)
+    const ekycResult = await this.ekycService.verifyIdentity(
+      frontFile.buffer,
+      backFile.buffer,
+      faceFile.buffer,
+    );
+
+    // 2. Tải ảnh lên Cloud Storage CHỈ KHI eKYC thành công (Tránh rác)
+    const frontPath = `${profile.id}/kyc-front-${randomUUID()}-${frontFile.originalname}`;
+    const backPath = `${profile.id}/kyc-back-${randomUUID()}-${backFile.originalname}`;
+    const facePath = `${profile.id}/kyc-face-${randomUUID()}-${faceFile.originalname}`;
+
+    const uploadTasks = [
+      this.storageService.uploadFile(frontFile, 'providers', frontPath),
+      this.storageService.uploadFile(backFile, 'providers', backPath),
+      this.storageService.uploadFile(faceFile, 'providers', facePath),
+    ];
+    
+    const [frontUrl, backUrl, faceUrl] = await Promise.all(uploadTasks);
+
+    // 3. Logic Auto-Approve (Threshold = 90%)
+    const isApproved = ekycResult.faceMatchScore >= 90;
+    const newKycStatus = isApproved ? 'APPROVED' : 'PENDING';
+    const documentStatus = isApproved ? 'APPROVED' : 'PENDING';
+
+    try {
+      // 4. Thực thi Database Transaction để đảm bảo tính toàn vẹn 100%
+      return await this.prisma.$transaction(async (tx) => {
+      // 4.1. Cập nhật Provider Profile
+      const updatedProfile = await tx.provider_profiles.update({
+        where: { user_id: userId },
+        data: {
+          kyc_status: newKycStatus,
+          identity_card_url: frontUrl, 
+          id_number: ekycResult.idNumber,
+          full_name_on_id: ekycResult.fullName,
+          dob: ekycResult.dob,
+          issue_date: ekycResult.issueDate,
+          face_match_score: ekycResult.faceMatchScore,
+          kyc_provider: ekycResult.provider,
+        },
+      });
+
+      // 4.2. Lưu chứng từ vào bảng provider_documents
+      const documentsToCreate = [
+        {
+          provider_id: updatedProfile.id,
+          document_type: 'IDENTITY_CARD' as const,
+          file_url: frontUrl,
+          status: documentStatus as 'APPROVED' | 'PENDING',
+          note: 'Ảnh CCCD Mặt trước',
+        },
+        {
+          provider_id: updatedProfile.id,
+          document_type: 'IDENTITY_CARD' as const,
+          file_url: backUrl,
+          status: documentStatus as 'APPROVED' | 'PENDING',
+          note: 'Ảnh CCCD Mặt sau',
+        },
+        {
+          provider_id: updatedProfile.id,
+          document_type: 'OTHER' as const, // Sử dụng OTHER tạm thời cho ảnh chân dung
+          file_url: faceUrl,
+          status: documentStatus as 'APPROVED' | 'PENDING',
+          note: 'Ảnh chân dung Face Match',
+        },
+      ];
+
+      await tx.provider_documents.createMany({
+        data: documentsToCreate,
+      });
+
+      // 4.3. Nếu Auto-Approve, BẮT BUỘC ghi Audit Log
+      if (isApproved) {
+        await tx.audit_logs.create({
+          data: {
+            action: 'AUTO_APPROVE_KYC',
+            target_type: 'PROVIDER_PROFILE',
+            target_id: updatedProfile.id,
+            reason: `eKYC FaceMatchScore: ${ekycResult.faceMatchScore}%`,
+            new_value: { kyc_status: 'APPROVED', provider: ekycResult.provider },
+          },
+        });
+      }
+
+      return updatedProfile;
+      });
+    } catch (error) {
+      // Nếu transaction lỗi, dọn dẹp rác trên Cloud Storage
+      await Promise.allSettled([
+        this.storageService.deleteFile('providers', frontPath),
+        this.storageService.deleteFile('providers', backPath),
+        this.storageService.deleteFile('providers', facePath),
+      ]);
+      throw error;
     }
   }
 }

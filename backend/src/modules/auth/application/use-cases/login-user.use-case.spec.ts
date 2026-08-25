@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, ForbiddenException, UnauthorizedException, ServiceUnavailableException, InternalServerErrorException } from '@nestjs/common';
 import { LoginUserUseCase } from './login-user.use-case';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AuthSessionService } from '../services/auth-session.service';
 import { Role } from '@prisma/client';

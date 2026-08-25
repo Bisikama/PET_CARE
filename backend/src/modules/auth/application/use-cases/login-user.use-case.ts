@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 import { AuthSessionService } from '../services/auth-session.service';

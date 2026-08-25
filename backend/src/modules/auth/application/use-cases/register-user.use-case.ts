@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';

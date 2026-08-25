@@ -7,6 +7,9 @@ import {
   UseGuards,
   UseInterceptors,
   BadRequestException,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -19,7 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
-import { UsersService } from './users.service';
+import { UsersService } from './application/use-cases/users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('Users Profile')
@@ -65,23 +68,16 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
     @GetCurrentUserId() userId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    ) file: Express.Multer.File,
   ) {
-    if (!file) {
-      throw new BadRequestException('Vui lòng chọn một file ảnh');
-    }
-
-    // Validate file type (image only)
-    if (!file.mimetype.match(/^image\/(jpeg|png|webp|jpg)$/)) {
-      throw new BadRequestException('Chỉ chấp nhận file ảnh định dạng jpeg, png, jpg, webp');
-    }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      throw new BadRequestException('Kích thước ảnh không được vượt quá 5MB');
-    }
-
     return this.usersService.uploadAvatar(userId, file);
   }
 }
