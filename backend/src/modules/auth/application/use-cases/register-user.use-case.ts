@@ -39,27 +39,6 @@ export class RegisterUserUseCase {
       throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
     }
 
-    // Lưu local user để tránh lỗi mất đồng bộ nếu DB trigger bị chậm
-    const userByEmail = await this.usersService.findByEmail(normalizedEmail);
-    if (!userByEmail) {
-      await this.usersService.create({
-        supabaseId: remoteUser.id,
-        email: normalizedEmail,
-        fullName: input.fullName || 'Unknown',
-        role: 'CUSTOMER',
-        status: 'PENDING_VERIFICATION',
-        isActive: true,
-        emailVerifiedAt: null,
-      });
-    } else {
-      await this.usersService.update(userByEmail.id, {
-        supabaseId: remoteUser.id,
-        fullName: input.fullName || userByEmail.fullName,
-        status: 'PENDING_VERIFICATION',
-        isActive: true,
-      });
-    }
-
     return {
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
       requiresEmailConfirmation: true,
