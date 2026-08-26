@@ -30,5 +30,6 @@ export interface ProviderProfileRecord {
   userId: string;
   providerType: provider_type;
   status: provider_status;
+  kycStatus: string;
   identityCardUrl?: string;
 }

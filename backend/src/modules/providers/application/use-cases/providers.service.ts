@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PROVIDERS_REPOSITORY } from '../../providers.tokens';
 import type { IProvidersRepository } from '../ports/providers.repository.port';
 import { ProviderProfileRecord } from '../types/providers.types';
@@ -10,7 +10,7 @@ import { SupabaseStorageService } from '../../../storage/supabase-storage.servic
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
-import { EkycService } from '../../ekyc.service';
+import { SubmitKycDto } from '../../dto/submit-kyc.dto';
 
 @Injectable()
 export class ProvidersService {
@@ -19,7 +19,6 @@ export class ProvidersService {
     private readonly providersRepository: IProvidersRepository,
     private readonly storageService: SupabaseStorageService,
     private readonly prisma: PrismaService,
-    private readonly ekycService: EkycService,
   ) {}
 
   async createProfile(userId: string, dto: CreateProviderProfileDto): Promise<ProviderProfileRecord> {
@@ -39,6 +38,9 @@ export class ProvidersService {
     if (!profile) {
       throw new NotFoundException('Provider profile not found');
     }
+    if (profile.kycStatus !== 'APPROVED') {
+      throw new ForbiddenException('You must complete KYC approval before setting up services.');
+    }
     await this.providersRepository.addServiceArea(profile.id, dto);
   }
 
@@ -46,6 +48,9 @@ export class ProvidersService {
     const profile = await this.providersRepository.findProfileByUserId(userId);
     if (!profile) {
       throw new NotFoundException('Provider profile not found');
+    }
+    if (profile.kycStatus !== 'APPROVED') {
+      throw new ForbiddenException('You must complete KYC approval before setting up services.');
     }
 
     const basePrice = await this.providersRepository.getBasePriceByServiceId(dto.serviceId);
@@ -79,6 +84,13 @@ export class ProvidersService {
       throw new BadRequestException('File is required');
     }
 
+    const currentDocuments = await this.prisma.provider_documents.count({
+      where: { provider_id: profile.id },
+    });
+    if (currentDocuments >= 10) {
+      throw new BadRequestException('Bạn đã đạt giới hạn 10 chứng chỉ tối đa.');
+    }
+
     const fileName = `${profile.id}/${dto.documentType.toLowerCase()}-${randomUUID()}-${file.originalname.replace(/\s+/g, '-')}`;
     const fileUrl = await this.storageService.uploadFile(file, 'providers', fileName);
 
@@ -87,13 +99,12 @@ export class ProvidersService {
       fileUrl,
     });
 
-    if (dto.documentType === ProviderDocumentType.IDENTITY_CARD) {
-      await this.providersRepository.updateIdentityCardUrl(profile.id, fileUrl);
-    }
+
   }
 
   async uploadKycDocuments(
     userId: string,
+    dto: SubmitKycDto,
     frontFile: Express.Multer.File,
     backFile: Express.Multer.File,
     faceFile: Express.Multer.File,
@@ -103,14 +114,11 @@ export class ProvidersService {
       throw new NotFoundException('Provider profile not found');
     }
 
-    // 1. Gọi hệ thống eKYC (Real 3rd-party) xử lý trực tiếp trên RAM (Buffer)
-    const ekycResult = await this.ekycService.verifyIdentity(
-      frontFile.buffer,
-      backFile.buffer,
-      faceFile.buffer,
-    );
+    if (profile.kycStatus === 'APPROVED') {
+      throw new ConflictException('Hồ sơ KYC của bạn đã được duyệt. Vui lòng liên hệ Admin nếu muốn thay đổi thông tin.');
+    }
 
-    // 2. Tải ảnh lên Cloud Storage CHỈ KHI eKYC thành công (Tránh rác)
+    // 1. Tải ảnh lên Cloud Storage
     const frontPath = `${profile.id}/kyc-front-${randomUUID()}-${frontFile.originalname}`;
     const backPath = `${profile.id}/kyc-back-${randomUUID()}-${backFile.originalname}`;
     const facePath = `${profile.id}/kyc-face-${randomUUID()}-${faceFile.originalname}`;
@@ -123,50 +131,50 @@ export class ProvidersService {
     
     const [frontUrl, backUrl, faceUrl] = await Promise.all(uploadTasks);
 
-    // 3. Logic Auto-Approve (Threshold = 90%)
-    const isApproved = ekycResult.faceMatchScore >= 90;
-    const newKycStatus = isApproved ? 'APPROVED' : 'PENDING';
-    const documentStatus = isApproved ? 'APPROVED' : 'PENDING';
+    // 2. Mặc định là PENDING để chờ Admin duyệt
+    const newKycStatus = 'PENDING';
+    const documentStatus = 'PENDING';
 
     try {
-      // 4. Thực thi Database Transaction để đảm bảo tính toàn vẹn 100%
+      // 3. Thực thi Database Transaction
       return await this.prisma.$transaction(async (tx) => {
-      // 4.1. Cập nhật Provider Profile
+      // 3.1. Cập nhật Provider Profile
       const updatedProfile = await tx.provider_profiles.update({
         where: { user_id: userId },
         data: {
           kyc_status: newKycStatus,
           identity_card_url: frontUrl, 
-          id_number: ekycResult.idNumber,
-          full_name_on_id: ekycResult.fullName,
-          dob: ekycResult.dob,
-          issue_date: ekycResult.issueDate,
-          face_match_score: ekycResult.faceMatchScore,
-          kyc_provider: ekycResult.provider,
+          id_number: dto.idNumber,
+          full_name_on_id: dto.fullName,
+          dob: new Date(dto.dob),
+          issue_date: new Date(dto.issueDate),
+          // Bỏ trống kyc_provider và face_match_score do không dùng bên thứ 3
+          kyc_provider: null,
+          face_match_score: null,
         },
       });
 
-      // 4.2. Lưu chứng từ vào bảng provider_documents
+      // 3.2. Lưu chứng từ vào bảng provider_documents
       const documentsToCreate = [
         {
           provider_id: updatedProfile.id,
           document_type: 'IDENTITY_CARD' as const,
           file_url: frontUrl,
-          status: documentStatus as 'APPROVED' | 'PENDING',
+          status: documentStatus as 'PENDING',
           note: 'Ảnh CCCD Mặt trước',
         },
         {
           provider_id: updatedProfile.id,
           document_type: 'IDENTITY_CARD' as const,
           file_url: backUrl,
-          status: documentStatus as 'APPROVED' | 'PENDING',
+          status: documentStatus as 'PENDING',
           note: 'Ảnh CCCD Mặt sau',
         },
         {
           provider_id: updatedProfile.id,
-          document_type: 'OTHER' as const, // Sử dụng OTHER tạm thời cho ảnh chân dung
+          document_type: 'FACE_PORTRAIT' as const,
           file_url: faceUrl,
-          status: documentStatus as 'APPROVED' | 'PENDING',
+          status: documentStatus as 'PENDING',
           note: 'Ảnh chân dung Face Match',
         },
       ];
@@ -175,18 +183,15 @@ export class ProvidersService {
         data: documentsToCreate,
       });
 
-      // 4.3. Nếu Auto-Approve, BẮT BUỘC ghi Audit Log
-      if (isApproved) {
-        await tx.audit_logs.create({
-          data: {
-            action: 'AUTO_APPROVE_KYC',
-            target_type: 'PROVIDER_PROFILE',
-            target_id: updatedProfile.id,
-            reason: `eKYC FaceMatchScore: ${ekycResult.faceMatchScore}%`,
-            new_value: { kyc_status: 'APPROVED', provider: ekycResult.provider },
-          },
-        });
-      }
+      await tx.audit_logs.create({
+        data: {
+          action: 'SUBMIT_MANUAL_KYC',
+          target_type: 'PROVIDER_PROFILE',
+          target_id: updatedProfile.id,
+          reason: 'User submitted KYC documents for manual review',
+          new_value: { kyc_status: 'PENDING' },
+        },
+      });
 
       return updatedProfile;
       });
@@ -199,5 +204,61 @@ export class ProvidersService {
       ]);
       throw error;
     }
+  }
+
+  async getProfile(userId: string) {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+      include: {
+        provider_services: true,
+        provider_service_areas: true,
+      }
+    });
+    if (!profile) {
+      throw new NotFoundException('Provider profile not found');
+    }
+    return profile;
+  }
+
+  async getDocuments(userId: string) {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Provider profile not found');
+    }
+    
+    return this.prisma.provider_documents.findMany({
+      where: { provider_id: profile.id },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async deleteDocument(userId: string, documentId: string): Promise<void> {
+    const profile = await this.providersRepository.findProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('Provider profile not found');
+    }
+
+    const document = await this.prisma.provider_documents.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document || document.provider_id !== profile.id) {
+      throw new NotFoundException('Document not found or access denied');
+    }
+
+    // Xóa trên Supabase Storage
+    try {
+      const pathPart = document.file_url.split('/public/providers/')[1];
+      if (pathPart) {
+        await this.storageService.deleteFile('providers', pathPart);
+      }
+    } catch (e) {
+      // Bỏ qua lỗi xóa file nếu file không tồn tại trên Cloud
+    }
+
+    // Xóa mềm trong DB
+    await this.providersRepository.deleteDocument(documentId);
   }
 }

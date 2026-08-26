@@ -76,7 +76,7 @@ describe('AuthService', () => {
 
   it('AUTH-SB-01: Register delegates to RegisterUserUseCase', async () => {
     registerUserUseCase.execute.mockResolvedValue({
-      message: 'Test message',
+      message: 'Đăng ký thành công. Vui lòng kiểm tra Gmail để nhập mã OTP xác nhận.',
       requiresEmailConfirmation: true,
     });
     const res = await service.register({
@@ -89,7 +89,7 @@ describe('AuthService', () => {
       password: 'pass',
       fullName: 'Test Name',
     });
-    expect(res.message).toBe('Test message');
+    expect(res.message).toBe('Đăng ký thành công. Vui lòng kiểm tra Gmail để nhập mã OTP xác nhận.');
     expect(res.requiresEmailConfirmation).toBe(true);
   });
 

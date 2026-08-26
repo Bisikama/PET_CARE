@@ -9,5 +9,6 @@ export interface IProvidersRepository {
   addServiceArea(providerId: string, data: AddServiceAreaInput): Promise<void>;
   registerService(providerId: string, data: RegisterCapabilityInput): Promise<void>;
   addDocument(providerId: string, data: AddDocumentInput): Promise<void>;
+  deleteDocument(documentId: string): Promise<void>;
   getBasePriceByServiceId(serviceId: string): Promise<number | null>;
 }
