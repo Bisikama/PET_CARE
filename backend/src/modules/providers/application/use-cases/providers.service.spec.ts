@@ -39,7 +39,11 @@ describe('ProvidersService', () => {
         },
         {
           provide: PrismaService,
-          useValue: { $transaction: jest.fn((callback) => callback(mockProvidersRepository)) }, // Simplified mock for transaction
+          useValue: { 
+            $transaction: jest.fn((callback) => callback(mockProvidersRepository)),
+            provider_profiles: { update: jest.fn() },
+            provider_documents: { count: jest.fn() },
+          },
         },
         {
           provide: EkycService,
@@ -74,6 +78,8 @@ describe('ProvidersService', () => {
 
     it('should successfully upload document and update identityCardUrl', async () => {
       mockProvidersRepository.findProfileByUserId.mockResolvedValue({ id: 'provider-1' });
+      const prismaService = (service as any).prisma;
+      prismaService.provider_documents.count.mockResolvedValue(0);
       mockStorageService.uploadFile.mockResolvedValue('http://supabase.com/file.pdf');
 
       const file = { originalname: 'id.pdf', buffer: Buffer.from('test') } as any;
@@ -85,13 +91,14 @@ describe('ProvidersService', () => {
       expect(mockProvidersRepository.addDocument).toHaveBeenCalledWith('provider-1', {
         documentType: ProviderDocumentType.GROOMING_CERTIFICATE,
         fileUrl: 'http://supabase.com/file.pdf',
+        status: 'PENDING',
       });
     });
   });
 
   describe('registerCapability', () => {
     it('should throw ConflictException on duplicate service', async () => {
-      mockProvidersRepository.findProfileByUserId.mockResolvedValue({ id: 'provider-1' });
+      mockProvidersRepository.findProfileByUserId.mockResolvedValue({ id: 'provider-1', kkycStatus: 'APPROVED', kycStatus: 'APPROVED' });
       mockProvidersRepository.getBasePriceByServiceId.mockResolvedValue(100);
 
       const error = new Prisma.PrismaClientKnownRequestError('duplicate', { code: 'P2002', clientVersion: '5.x' });
@@ -100,6 +107,47 @@ describe('ProvidersService', () => {
       await expect(
         service.registerCapability('user-1', { serviceId: 'svc-1', petSpecies: 'Dog', minWeight: 0, maxWeight: 10 })
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('updateBaseAddress', () => {
+    it('should throw NotFoundException if profile does not exist', async () => {
+      mockProvidersRepository.findProfileByUserId.mockResolvedValue(null);
+
+      await expect(
+        service.updateBaseAddress('user-1', {
+          baseAddressLine: '123 Test',
+          baseLatitude: 10,
+          baseLongitude: 106,
+        })
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should successfully update base address', async () => {
+      mockProvidersRepository.findProfileByUserId.mockResolvedValue({ id: 'provider-1' });
+      const prismaService = (service as any).prisma;
+      prismaService.provider_profiles.update.mockResolvedValue({});
+
+      await service.updateBaseAddress('user-1', {
+        baseAddressLine: '123 Test',
+        baseLatitude: 10,
+        baseLongitude: 106,
+        serviceRadiusKm: 10,
+      });
+
+      expect(prismaService.provider_profiles.update).toHaveBeenCalledWith({
+        where: { id: 'provider-1' },
+        data: {
+          base_address_line: '123 Test',
+          base_ward: undefined,
+          base_district: undefined,
+          base_city: undefined,
+          base_latitude: 10,
+          base_longitude: 106,
+          base_formatted: undefined,
+          service_radius_km: 10,
+        }
+      });
     });
   });
 });

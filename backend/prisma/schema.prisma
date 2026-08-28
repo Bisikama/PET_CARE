@@ -173,22 +173,25 @@ model complaints {
 }
 
 model customer_addresses {
-  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id   String     @db.Uuid
-  label         String?    @db.VarChar(100)
-  receiver_name String?    @db.VarChar(100)
-  phone         String?    @db.VarChar(20)
-  address_line  String
-  ward          String?    @db.VarChar(100)
-  district      String?    @db.VarChar(100)
-  city          String?    @db.VarChar(100)
-  latitude      Decimal?   @db.Decimal(10, 7)
-  longitude     Decimal?   @db.Decimal(10, 7)
-  is_default    Boolean?   @default(false)
-  created_at    DateTime?  @default(now()) @db.Timestamp(6)
-  deleted_at    DateTime?  @db.Timestamp(6)
-  bookings      bookings[]
-  users         User       @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id       String        @db.Uuid
+  label             String?       @db.VarChar(100)
+  receiver_name     String?       @db.VarChar(100)
+  phone             String?       @db.VarChar(20)
+  address_line      String
+  ward              String?       @db.VarChar(100)
+  district          String?       @db.VarChar(100)
+  city              String?       @db.VarChar(100)
+  latitude          Decimal       @db.Decimal(10, 7)
+  longitude         Decimal       @db.Decimal(10, 7)
+  formatted_address String?       @db.Text
+  place_id          String?       @db.VarChar(255)
+  address_type      address_type? @default(OTHER)
+  is_default        Boolean?      @default(false)
+  created_at        DateTime?     @default(now()) @db.Timestamp(6)
+  deleted_at        DateTime?     @db.Timestamp(6)
+  bookings          bookings[]
+  users             User          @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model notifications {
@@ -242,6 +245,7 @@ model pets {
   created_at    DateTime?      @default(now()) @db.Timestamp(6)
   updated_at    DateTime?      @default(now()) @db.Timestamp(6)
   booking_pets  booking_pets[]
+  pet_photos    pet_photos[]
   users         User           @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([customer_id], map: "idx_pets_customer_id")
@@ -269,8 +273,14 @@ model provider_profiles {
   experience_years         Int?                     @default(0)
   identity_card_url        String?
   certificate_url          String?
-  service_area             String?
-  base_location            String?
+  base_address_line        String?
+  base_ward                String?                  @db.VarChar(100)
+  base_district            String?                  @db.VarChar(100)
+  base_city                String?                  @db.VarChar(100)
+  base_latitude            Decimal?                 @db.Decimal(10, 7)
+  base_longitude           Decimal?                 @db.Decimal(10, 7)
+  base_formatted           String?                  @db.Text
+  service_radius_km        Int?                     @default(5)
   status                   provider_status          @default(DRAFT)
   kyc_status               provider_document_status @default(PENDING)
   credential_status        provider_document_status @default(PENDING)
@@ -1023,4 +1033,19 @@ model promotion_usages {
   promotion promotions @relation(fields: [promotion_id], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   booking   bookings?  @relation(fields: [booking_id], references: [id], onDelete: SetNull)
+}
+
+model pet_photos {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pet_id     String    @db.Uuid
+  photo_url  String
+  is_primary Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  pets       pets      @relation(fields: [pet_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+enum address_type {
+  HOME
+  WORK
+  OTHER
 }

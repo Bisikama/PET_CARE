@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsBoolean, Min, Max } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsBoolean, Min, Max, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { address_type } from '@prisma/client';
 
 export class CreateAddressDto {
   @ApiProperty({ description: 'Nhãn địa chỉ', example: 'Nhà riêng' })
@@ -37,19 +38,34 @@ export class CreateAddressDto {
   @IsOptional()
   city?: string;
 
-  @ApiProperty({ description: 'Vĩ độ', required: false, example: 10.776889 })
+  @ApiProperty({ description: 'Vĩ độ', example: 10.776889 })
   @IsNumber()
   @Min(-90)
   @Max(90)
-  @IsOptional()
-  latitude?: number;
+  @IsNotEmpty()
+  latitude: number;
 
-  @ApiProperty({ description: 'Kinh độ', required: false, example: 106.700897 })
+  @ApiProperty({ description: 'Kinh độ', example: 106.700897 })
   @IsNumber()
   @Min(-180)
   @Max(180)
+  @IsNotEmpty()
+  longitude: number;
+
+  @ApiProperty({ description: 'Địa chỉ đầy đủ (từ Google)', required: false, example: 'Số 123 Đường số 7, Tân Kiểng, Quận 7, Hồ Chí Minh' })
+  @IsString()
   @IsOptional()
-  longitude?: number;
+  formattedAddress?: string;
+
+  @ApiProperty({ description: 'Place ID từ Google Maps', required: false })
+  @IsString()
+  @IsOptional()
+  placeId?: string;
+
+  @ApiProperty({ description: 'Loại địa chỉ', enum: address_type, required: false, default: address_type.OTHER })
+  @IsEnum(address_type)
+  @IsOptional()
+  addressType?: address_type;
 
   @ApiProperty({ description: 'Đặt làm mặc định', required: false, default: false })
   @IsBoolean()

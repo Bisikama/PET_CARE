@@ -12,6 +12,7 @@ import { AddServiceAreaDto } from './dto/add-service-area.dto';
 import { RegisterCapabilityDto } from './dto/register-capability.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
+import { UpdateProviderAddressDto } from './dto/update-provider-address.dto';
 
 @ApiTags('Providers')
 @Controller('providers')
@@ -30,6 +31,21 @@ export class ProvidersController {
     @Body() dto: CreateProviderProfileDto,
   ) {
     return this.providersService.createProfile(userId, dto);
+  }
+
+  @Post('base-address')
+  @ApiOperation({ summary: 'Cập nhật địa chỉ cơ sở (Base Location)' })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác' })
+  async updateBaseAddress(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: UpdateProviderAddressDto,
+  ) {
+    await this.providersService.updateBaseAddress(userId, dto);
+    return { success: true, message: 'Cập nhật địa chỉ thành công' };
   }
 
   @Post('areas')

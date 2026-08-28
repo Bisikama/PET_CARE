@@ -6,6 +6,7 @@ import { CreateProviderProfileDto } from '../../dto/create-provider-profile.dto'
 import { AddServiceAreaDto } from '../../dto/add-service-area.dto';
 import { RegisterCapabilityDto } from '../../dto/register-capability.dto';
 import { UploadDocumentDto, ProviderDocumentType } from '../../dto/upload-document.dto';
+import { UpdateProviderAddressDto } from '../../dto/update-provider-address.dto';
 import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
@@ -33,18 +34,37 @@ export class ProvidersService {
     });
   }
 
-  async addServiceArea(userId: string, dto: AddServiceAreaDto): Promise<void> {
+  async updateBaseAddress(userId: string, dto: UpdateProviderAddressDto): Promise<any> {
     const profile = await this.providersRepository.findProfileByUserId(userId);
     if (!profile) {
       throw new NotFoundException('Provider profile not found');
     }
-    if (profile.kycStatus !== 'APPROVED') {
-      throw new ForbiddenException('You must complete KYC approval before setting up services.');
-    }
-    await this.providersRepository.addServiceArea(profile.id, dto);
+
+    const updated = await this.prisma.provider_profiles.update({
+      where: { id: profile.id },
+      data: {
+        base_address_line: dto.baseAddressLine,
+        base_latitude: dto.baseLatitude,
+        base_longitude: dto.baseLongitude,
+        base_formatted: dto.baseFormatted,
+        service_radius_km: dto.serviceRadiusKm ?? 5,
+      },
+    });
+    return updated;
   }
 
-  async registerCapability(userId: string, dto: RegisterCapabilityDto): Promise<void> {
+  async addServiceArea(userId: string, dto: AddServiceAreaDto): Promise<any> {
+    const profile = await this.providersRepository.findProfileByUserId(userId);
+    if (!profile) {
+      throw new NotFoundException('Provider profile not found');
+    }
+    if (profile.kycStatus !== 'APPROVED') {
+      throw new ForbiddenException('You must complete KYC approval before setting up services.');
+    }
+    return this.providersRepository.addServiceArea(profile.id, dto);
+  }
+
+  async registerCapability(userId: string, dto: RegisterCapabilityDto): Promise<any> {
     const profile = await this.providersRepository.findProfileByUserId(userId);
     if (!profile) {
       throw new NotFoundException('Provider profile not found');
@@ -53,13 +73,19 @@ export class ProvidersService {
       throw new ForbiddenException('You must complete KYC approval before setting up services.');
     }
 
-    const basePrice = await this.providersRepository.getBasePriceByServiceId(dto.serviceId);
-    if (basePrice === null) {
-      throw new NotFoundException('Service not found');
+    let basePrice: number | null = null;
+    try {
+      basePrice = await this.providersRepository.getBasePriceByServiceId(dto.serviceId);
+      if (basePrice === null) {
+        throw new NotFoundException('Service not found in the system');
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new NotFoundException('Service not found in the system');
     }
 
     try {
-      await this.providersRepository.registerService(profile.id, {
+      return await this.providersRepository.registerService(profile.id, {
         serviceId: dto.serviceId,
         petSpecies: dto.petSpecies,
         minWeight: dto.minWeight,
@@ -74,7 +100,7 @@ export class ProvidersService {
     }
   }
 
-  async uploadDocument(userId: string, dto: UploadDocumentDto, file: Express.Multer.File): Promise<void> {
+  async uploadDocument(userId: string, dto: UploadDocumentDto, file: Express.Multer.File): Promise<any> {
     const profile = await this.providersRepository.findProfileByUserId(userId);
     if (!profile) {
       throw new NotFoundException('Provider profile not found');
@@ -94,12 +120,15 @@ export class ProvidersService {
     const fileName = `${profile.id}/${dto.documentType.toLowerCase()}-${randomUUID()}-${file.originalname.replace(/\s+/g, '-')}`;
     const fileUrl = await this.storageService.uploadFile(file, 'providers', fileName);
 
-    await this.providersRepository.addDocument(profile.id, {
+    const docData = {
       documentType: dto.documentType,
       fileUrl,
-    });
+      status: 'PENDING',
+    };
 
+    const doc = await this.providersRepository.addDocument(profile.id, docData);
 
+    return doc;
   }
 
   async uploadKycDocuments(
