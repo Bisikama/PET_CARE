@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { ResetPasswordDto } from '../../dto/reset-password.dto';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';
 import { REFRESH_TOKEN_REPOSITORY } from '../../auth.tokens';

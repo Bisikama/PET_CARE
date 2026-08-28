@@ -17,6 +17,7 @@ export class PrismaProvidersRepository implements IProvidersRepository {
       userId: profile.user_id,
       providerType: profile.provider_type,
       status: profile.status,
+      kycStatus: profile.kyc_status,
       identityCardUrl: profile.identity_card_url || undefined,
     };
   }
@@ -35,6 +36,7 @@ export class PrismaProvidersRepository implements IProvidersRepository {
       userId: profile.user_id,
       providerType: profile.provider_type,
       status: profile.status,
+      kycStatus: profile.kyc_status,
     };
   }
 
@@ -76,6 +78,12 @@ export class PrismaProvidersRepository implements IProvidersRepository {
         document_type: data.documentType,
         file_url: data.fileUrl,
       },
+    });
+  }
+
+  async deleteDocument(documentId: string): Promise<void> {
+    await this.prisma.provider_documents.delete({
+      where: { id: documentId },
     });
   }
 

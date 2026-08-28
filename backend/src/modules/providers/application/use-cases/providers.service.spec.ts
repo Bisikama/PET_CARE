@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProvidersService } from './providers.service';
 import { PROVIDERS_REPOSITORY } from '../../providers.tokens';
 import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
+import { PrismaService } from '../../../../database/prisma.service';
+import { EkycService } from '../../ekyc.service';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ProviderDocumentType } from '../../dto/upload-document.dto';
 import { Prisma } from '@prisma/client';
@@ -35,6 +37,14 @@ describe('ProvidersService', () => {
           provide: SupabaseStorageService,
           useValue: mockStorageService,
         },
+        {
+          provide: PrismaService,
+          useValue: { $transaction: jest.fn((callback) => callback(mockProvidersRepository)) }, // Simplified mock for transaction
+        },
+        {
+          provide: EkycService,
+          useValue: { verifyIdentity: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -50,7 +60,7 @@ describe('ProvidersService', () => {
       mockProvidersRepository.findProfileByUserId.mockResolvedValue(null);
 
       await expect(
-        service.uploadDocument('user-1', { documentType: ProviderDocumentType.IDENTITY_CARD }, {} as any)
+        service.uploadDocument('user-1', { documentType: ProviderDocumentType.GROOMING_CERTIFICATE }, {} as any)
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -58,7 +68,7 @@ describe('ProvidersService', () => {
       mockProvidersRepository.findProfileByUserId.mockResolvedValue({ id: 'provider-1' });
 
       await expect(
-        service.uploadDocument('user-1', { documentType: ProviderDocumentType.IDENTITY_CARD }, undefined as any)
+        service.uploadDocument('user-1', { documentType: ProviderDocumentType.GROOMING_CERTIFICATE }, undefined as any)
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -67,16 +77,15 @@ describe('ProvidersService', () => {
       mockStorageService.uploadFile.mockResolvedValue('http://supabase.com/file.pdf');
 
       const file = { originalname: 'id.pdf', buffer: Buffer.from('test') } as any;
-      const dto = { documentType: ProviderDocumentType.IDENTITY_CARD };
+      const dto = { documentType: ProviderDocumentType.GROOMING_CERTIFICATE };
 
       await service.uploadDocument('user-1', dto, file);
 
       expect(mockStorageService.uploadFile).toHaveBeenCalled();
       expect(mockProvidersRepository.addDocument).toHaveBeenCalledWith('provider-1', {
-        documentType: ProviderDocumentType.IDENTITY_CARD,
+        documentType: ProviderDocumentType.GROOMING_CERTIFICATE,
         fileUrl: 'http://supabase.com/file.pdf',
       });
-      expect(mockProvidersRepository.updateIdentityCardUrl).toHaveBeenCalledWith('provider-1', 'http://supabase.com/file.pdf');
     });
   });
 

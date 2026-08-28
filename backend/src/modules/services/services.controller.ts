@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
 import { Public } from '../../common/decorators/public.decorator';
@@ -70,6 +70,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cập nhật thông tin gói dịch vụ (Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật gói dịch vụ thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu cập nhật không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -85,6 +86,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xóa mềm gói dịch vụ (Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 204, description: 'Xóa mềm gói dịch vụ thành công.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
   @ApiResponse({ status: 403, description: 'Không có quyền thực hiện hành động này.' })
@@ -106,6 +108,7 @@ export class ServicesController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy chi tiết gói dịch vụ (Công khai)' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 200, description: 'Trả về thông tin chi tiết gói dịch vụ.' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ yêu cầu.' })
   async findOne(@Param('id') id: string) {
@@ -121,6 +124,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Thêm bảng giá cho gói dịch vụ (Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 201, description: 'Thêm bảng giá thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu bảng giá không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -138,6 +142,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cập nhật bảng giá dịch vụ (Admin)' })
+  @ApiParam({ name: 'ruleId', description: 'ID của bảng giá', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật bảng giá thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu cập nhật không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -152,6 +157,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xóa mềm bảng giá dịch vụ (Admin)' })
+  @ApiParam({ name: 'ruleId', description: 'ID của bảng giá', type: String })
   @ApiResponse({ status: 204, description: 'Xóa mềm bảng giá thành công.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
   @ApiResponse({ status: 403, description: 'Không có quyền thực hiện hành động này.' })
@@ -164,6 +170,7 @@ export class ServicesController {
   @Get(':id/pricing-rules')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách các bảng giá của gói dịch vụ' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 200, description: 'Trả về danh sách bảng giá thành công.' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ yêu cầu.' })
   async getPricingRules(@Param('id') serviceId: string) {
@@ -179,6 +186,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Thêm checklist template cho dịch vụ (Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 201, description: 'Thêm checklist template thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu checklist không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -199,6 +207,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cập nhật checklist template (Admin)' })
+  @ApiParam({ name: 'templateId', description: 'ID của checklist template', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật checklist template thành công.' })
   @ApiResponse({ status: 400, description: 'Dữ liệu cập nhật không hợp lệ.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
@@ -216,6 +225,7 @@ export class ServicesController {
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xóa mềm checklist template (Admin)' })
+  @ApiParam({ name: 'templateId', description: 'ID của checklist template', type: String })
   @ApiResponse({ status: 204, description: 'Xóa mềm checklist template thành công.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
   @ApiResponse({ status: 403, description: 'Không có quyền thực hiện hành động này.' })
@@ -228,6 +238,7 @@ export class ServicesController {
   @Get(':id/checklist-templates')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy các checklist template của gói dịch vụ' })
+  @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
   @ApiResponse({ status: 200, description: 'Trả về danh sách checklist template thành công.' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ yêu cầu.' })
   async getChecklistTemplates(@Param('id') serviceId: string) {

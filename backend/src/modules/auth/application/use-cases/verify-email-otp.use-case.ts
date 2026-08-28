@@ -7,7 +7,7 @@ import {
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 import { AuthSessionService } from '../services/auth-session.service';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { DeviceContext } from '../types/device-context.type';
 
 export interface VerifyEmailOtpInput {
