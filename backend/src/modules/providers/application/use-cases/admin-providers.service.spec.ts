@@ -33,6 +33,9 @@ describe('AdminProvidersService', () => {
       delete: jest.fn(),
     },
     provider_documents: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
       updateMany: jest.fn(),
     }
   };
@@ -126,6 +129,51 @@ describe('AdminProvidersService', () => {
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user1' },
         data: { role: Role.CUSTOMER }
+      });
+    });
+  });
+
+  describe('reviewDocument', () => {
+    it('should throw NotFoundException if document not found', async () => {
+      mockPrisma.provider_documents.findUnique = jest.fn().mockResolvedValue(null);
+      await expect(service.reviewDocument('admin1', 'doc1', { status: provider_document_status.APPROVED, rejectReason: '' })).rejects.toThrow(NotFoundException);
+    });
+
+    it('should update document and trigger auto KYC approval if all docs are approved', async () => {
+      mockPrisma.provider_documents.findUnique = jest.fn().mockResolvedValue({ id: 'doc1', provider_id: 'provider1' });
+      mockPrisma.provider_documents.findMany = jest.fn().mockResolvedValue([
+        { id: 'doc2', status: provider_document_status.APPROVED },
+      ]);
+      mockPrisma.provider_profiles.findUnique = jest.fn().mockResolvedValue({
+        id: 'provider1', kyc_status: provider_document_status.PENDING, screening_status: screening_status.PASSED
+      });
+
+      await service.reviewDocument('admin1', 'doc1', { status: provider_document_status.APPROVED, rejectReason: '' });
+
+      expect(mockPrisma.provider_documents.update).toHaveBeenCalledWith({
+        where: { id: 'doc1' },
+        data: expect.objectContaining({ status: provider_document_status.APPROVED }),
+      });
+      expect(mockPrisma.provider_profiles.update).toHaveBeenCalledWith({
+        where: { id: 'provider1' },
+        data: { kyc_status: provider_document_status.APPROVED },
+      });
+    });
+  });
+
+  describe('reviewBulkKyc', () => {
+    it('should update all pending documents and profile kyc status', async () => {
+      mockPrisma.provider_profiles.findUnique = jest.fn().mockResolvedValue({ id: 'provider1', kyc_status: provider_document_status.PENDING });
+      
+      await service.reviewBulkKyc('admin1', 'provider1', { status: provider_document_status.APPROVED, rejectReason: '' });
+
+      expect(mockPrisma.provider_documents.updateMany).toHaveBeenCalledWith({
+        where: { provider_id: 'provider1', status: provider_document_status.PENDING },
+        data: expect.objectContaining({ status: provider_document_status.APPROVED }),
+      });
+      expect(mockPrisma.provider_profiles.update).toHaveBeenCalledWith({
+        where: { id: 'provider1' },
+        data: { kyc_status: provider_document_status.APPROVED },
       });
     });
   });
