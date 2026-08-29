@@ -7,13 +7,16 @@ import { PrismaModule } from '../../database/prisma.module';
 import { StorageModule } from '../storage/storage.module';
 import { AdminProvidersController } from './admin-providers.controller';
 import { AdminProvidersService } from './application/use-cases/admin-providers.service';
+import { EkycService } from './ekyc.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [PrismaModule, StorageModule],
+  imports: [PrismaModule, StorageModule, HttpModule],
   controllers: [ProvidersController, AdminProvidersController],
   providers: [
     ProvidersService,
     AdminProvidersService,
+    EkycService,
     {
       provide: PROVIDERS_REPOSITORY,
       useClass: PrismaProvidersRepository,

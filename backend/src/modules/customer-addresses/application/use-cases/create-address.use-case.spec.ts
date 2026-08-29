@@ -28,12 +28,16 @@ describe('CreateAddressUseCase', () => {
 
     const result = await useCase.execute('customer-1', {
       addressLine: '123 Test St',
+      latitude: 10,
+      longitude: 106,
       isDefault: true,
     });
 
     expect(result).toBe(mockAddress);
     expect(repository.create).toHaveBeenCalledWith('customer-1', {
       addressLine: '123 Test St',
+      latitude: 10,
+      longitude: 106,
       isDefault: true,
     });
     expect(repository.unsetOtherDefaults).toHaveBeenCalledWith('customer-1', 'address-1');
@@ -45,6 +49,8 @@ describe('CreateAddressUseCase', () => {
 
     const result = await useCase.execute('customer-1', {
       addressLine: '123 Test St',
+      latitude: 10,
+      longitude: 106,
       isDefault: false,
     });
 

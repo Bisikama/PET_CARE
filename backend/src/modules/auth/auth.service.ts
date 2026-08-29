@@ -9,7 +9,7 @@ import { Role, User as PrismaUser } from '@prisma/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/application/use-cases/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SupabaseAuthService } from './supabase-auth.service';

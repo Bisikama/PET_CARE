@@ -8,8 +8,11 @@ export interface CustomerAddressRecord {
   ward: string | null;
   district: string | null;
   city: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number;
+  longitude: number;
+  formattedAddress: string | null;
+  placeId: string | null;
+  addressType: 'HOME' | 'WORK' | 'OTHER' | null;
   isDefault: boolean;
   createdAt: Date;
   deletedAt: Date | null;
@@ -23,8 +26,11 @@ export interface CreateAddressInput {
   ward?: string;
   district?: string;
   city?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude: number;
+  longitude: number;
+  formattedAddress?: string;
+  placeId?: string;
+  addressType?: 'HOME' | 'WORK' | 'OTHER';
   isDefault?: boolean;
 }
 
@@ -38,5 +44,8 @@ export interface UpdateAddressInput {
   city?: string;
   latitude?: number;
   longitude?: number;
+  formattedAddress?: string;
+  placeId?: string;
+  addressType?: 'HOME' | 'WORK' | 'OTHER';
   isDefault?: boolean;
 }

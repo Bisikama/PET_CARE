@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { RefreshAuthSessionUseCase } from './refresh-auth-session.use-case';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { AuthSessionService } from '../services/auth-session.service';
 import { REFRESH_TOKEN_REPOSITORY } from '../../auth.tokens';
 

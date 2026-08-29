@@ -172,6 +172,8 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ cá nhân' })
+  @ApiResponse({ status: 200, description: 'Trả về thông tin hồ sơ người dùng.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   async getMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -181,6 +183,9 @@ export class AuthController {
   @Get('provider/me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ đối tác' })
+  @ApiResponse({ status: 200, description: 'Trả về thông tin hồ sơ đối tác.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền (Cần Role PROVIDER).' })
   async getProviderMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -190,6 +195,9 @@ export class AuthController {
   @Get('admin/me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ quản trị viên' })
+  @ApiResponse({ status: 200, description: 'Trả về thông tin hồ sơ quản trị viên.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền (Cần Role ADMIN).' })
   async getAdminMe(@GetCurrentUserId() userId: string) {
     return this.authService.getProfile(userId);
   }
@@ -198,6 +206,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Đăng xuất' })
+  @ApiResponse({ status: 200, description: 'Đăng xuất thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   async logout(
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: express.Response,
@@ -216,6 +226,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Làm mới access token bằng refresh token' })
+  @ApiResponse({ status: 200, description: 'Cấp mới access token thành công.' })
+  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn.' })
   async refresh(
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,

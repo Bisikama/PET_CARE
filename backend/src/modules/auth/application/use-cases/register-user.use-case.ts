@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 import { AUTH_MESSAGES } from '../../../../common/constants/success-messages.constant';
@@ -37,27 +37,6 @@ export class RegisterUserUseCase {
     if (!remoteUser?.identities || remoteUser.identities.length === 0) {
       // User bị làm mờ (Tồn tại rồi)
       throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
-    }
-
-    // Lưu local user để tránh lỗi mất đồng bộ nếu DB trigger bị chậm
-    const userByEmail = await this.usersService.findByEmail(normalizedEmail);
-    if (!userByEmail) {
-      await this.usersService.create({
-        supabaseId: remoteUser.id,
-        email: normalizedEmail,
-        fullName: input.fullName || 'Unknown',
-        role: 'CUSTOMER',
-        status: 'PENDING_VERIFICATION',
-        isActive: true,
-        emailVerifiedAt: null,
-      });
-    } else {
-      await this.usersService.update(userByEmail.id, {
-        supabaseId: remoteUser.id,
-        fullName: input.fullName || userByEmail.fullName,
-        status: 'PENDING_VERIFICATION',
-        isActive: true,
-      });
     }
 
     return {
