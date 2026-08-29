@@ -1,5 +1,5 @@
 import { Body, Controller, Param, Post, Put, Get, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
@@ -76,6 +76,21 @@ export class CustomerCareController {
   @Post('bookings/:bookingId/disputes')
   @ApiOperation({ summary: 'Mở tranh chấp cho một lịch đặt' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string', description: 'Lý do tranh chấp' },
+        title: { type: 'string', description: 'Tiêu đề tranh chấp' },
+        description: { type: 'string', description: 'Mô tả chi tiết' },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Danh sách ảnh/tài liệu bằng chứng (tối đa 5 file)',
+        },
+      },
+    },
+  })
   @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
   @ApiResponse({ status: 201, description: 'Mở tranh chấp thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
@@ -95,6 +110,21 @@ export class CustomerCareController {
   @Post('bookings/:bookingId/incidents')
   @ApiOperation({ summary: 'Báo cáo sự cố an toàn' })
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        severity: { type: 'string', description: 'Mức độ nghiêm trọng (LOW, MEDIUM, HIGH, CRITICAL)' },
+        title: { type: 'string', description: 'Tiêu đề sự cố' },
+        description: { type: 'string', description: 'Mô tả chi tiết sự cố' },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Danh sách ảnh/tài liệu bằng chứng (tối đa 5 file)',
+        },
+      },
+    },
+  })
   @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
   @ApiResponse({ status: 201, description: 'Báo cáo sự cố thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })

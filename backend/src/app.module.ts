@@ -22,6 +22,10 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 
+import { WalletsModule } from './modules/wallets/wallets.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { SettlementsModule } from './modules/settlements/settlements.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +53,9 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     CustomerCareModule,
     GrowthModule,
     AdminCoreModule,
+    WalletsModule,
+    PaymentsModule,
+    SettlementsModule,
   ],
   controllers: [],
   providers: [

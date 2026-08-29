@@ -5,11 +5,14 @@ import { OpenDisputeDto, ResolveDisputeDto } from '../../dto/dispute.dto';
 import { booking_status, payment_status, complaint_status } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
+import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
+
 @Injectable()
 export class DisputesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: SupabaseStorageService,
+    private readonly settlementsService: SettlementsService,
   ) {}
 
   async openDispute(userId: string, bookingId: string, dto: OpenDisputeDto, files?: Express.Multer.File[]) {
@@ -66,7 +69,7 @@ export class DisputesService {
 
       await tx.payments.update({
         where: { booking_id: bookingId },
-        data: { status: payment_status.PAID_HELD_IN_ESCROW },
+        data: { status: payment_status.ESCROW_ON_HOLD },
       });
 
       await tx.booking_status_logs.create({
@@ -109,23 +112,14 @@ export class DisputesService {
       const bookingId = complaint.booking_id;
 
       // 2. Resolve ESCROW based on decision
-      let newBookingStatus: booking_status = booking_status.COMPLETED;
-      let newPaymentStatus: payment_status = payment_status.RELEASED_TO_PROVIDER;
-
+      let newBookingStatus: booking_status;
       if (dto.decision === 'FULL_REFUND' || dto.decision === 'PARTIAL_REFUND') {
+        await this.settlementsService.refund(bookingId, tx, `Giải quyết khiếu nại (Hoàn tiền): ${dto.resolutionNote}`);
         newBookingStatus = booking_status.CANCELLED;
-        newPaymentStatus = payment_status.REFUNDED;
+      } else {
+        await this.settlementsService.releaseEscrow(bookingId, tx);
+        newBookingStatus = booking_status.COMPLETED;
       }
-
-      await tx.bookings.update({
-        where: { id: bookingId },
-        data: { status: newBookingStatus },
-      });
-
-      await tx.payments.update({
-        where: { booking_id: bookingId },
-        data: { status: newPaymentStatus, refunded_at: newPaymentStatus === payment_status.REFUNDED ? new Date() : null, released_at: newPaymentStatus === payment_status.RELEASED_TO_PROVIDER ? new Date() : null },
-      });
 
       await tx.booking_status_logs.create({
         data: {
@@ -147,6 +141,15 @@ export class DisputesService {
       });
 
       return updatedComplaint;
+    });
+  }
+
+  async getAllDisputesAdmin() {
+    return this.prisma.complaints.findMany({
+      include: {
+        bookings: { select: { id: true, total_price: true, status: true } },
+      },
+      orderBy: { created_at: 'desc' },
     });
   }
 }
