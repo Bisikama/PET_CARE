@@ -2,10 +2,12 @@
 
 import * as React from 'react';
 import { X, Loader2, Save, Award, Info, MapPin, Briefcase, FileText, ChevronRight } from 'lucide-react';
-import { useProviderRegister } from '../hooks/useProviderRegister';
+import { useProvider } from '@/features/provider';
+import { useProviderProfile } from '../hooks/useProviderProfile';
 
 export function ProviderRegisterModal() {
-  const { isOpen, closeModal, step, setStep, isSubmitting, error, registerProvider } = useProviderRegister();
+  const { isOpen, step, setStep } = useProvider();
+  const { isSubmitting, error, closeModal, registerProvider } = useProviderProfile();
 
   const [providerType, setProviderType] = React.useState<'SITTER' | 'GROOMER' | 'VET'>('SITTER');
   const [experienceYears, setExperienceYears] = React.useState('1');
@@ -77,7 +79,7 @@ export function ProviderRegisterModal() {
           <div className="flex items-center gap-2">
             <span className="text-xl">💼</span>
             <h3 className="text-base md:text-lg font-bold tracking-wide">
-              Đăng Ký Đối Tác - Bước 1/4
+              Đăng Ký Đối Tác - Bước 1/2
             </h3>
           </div>
           {!isSubmitting && (
@@ -91,32 +93,31 @@ export function ProviderRegisterModal() {
         </div>
 
         {/* Step Indicator */}
-        <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-6 justify-center">
           {[
             { id: 1, label: 'Thông tin', icon: Briefcase },
-            { id: 2, label: 'Khu vực', icon: MapPin },
-            { id: 3, label: 'Dịch vụ', icon: Award },
-            { id: 4, label: 'Xác minh', icon: FileText },
+            { id: 2, label: 'Xác minh', icon: FileText },
           ].map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => handleStepClick(s.id)}
-              className="flex items-center gap-1.5 hover:opacity-85 transition-all cursor-pointer outline-none border-none bg-transparent"
-            >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
-                step === s.id ? 'bg-slate-800 text-white shadow-md' :
-                step > s.id ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
-              }`}>
-                {step > s.id ? '✓' : s.id}
-              </div>
-              <span className={`text-xs font-bold hidden sm:inline ${
-                step === s.id ? 'text-slate-800' : 'text-slate-400'
-              }`}>
-                {s.label}
-              </span>
-              {s.id < 4 && <ChevronRight className="w-3.5 h-3.5 text-slate-300 hidden sm:inline ml-1.5" />}
-            </button>
+            <React.Fragment key={s.id}>
+              <button
+                type="button"
+                onClick={() => handleStepClick(s.id)}
+                className="flex items-center gap-1.5 hover:opacity-85 transition-all cursor-pointer outline-none border-none bg-transparent"
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
+                  step === s.id ? 'bg-slate-800 text-white shadow-md' :
+                  step > s.id ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {step > s.id ? '✓' : s.id}
+                </div>
+                <span className={`text-xs font-bold ${
+                  step === s.id ? 'text-slate-800' : 'text-slate-400'
+                }`}>
+                  {s.label}
+                </span>
+              </button>
+              {s.id < 2 && <div className="w-12 h-[1px] bg-slate-200" />}
+            </React.Fragment>
           ))}
         </div>
 

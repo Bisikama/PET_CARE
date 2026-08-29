@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';
 import { Bell } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -8,11 +8,35 @@ import { useMeStore } from '@/features/me';
 
 export const AppHeader = () => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const { openModal } = useMeStore();
 
   const getPageTitle = () => {
-    if (pathname === ROUTES.DASHBOARD) return 'Tổng quan';
+    if (pathname === ROUTES.DASHBOARD) {
+      if (user?.role === 'ADMIN') {
+        const tab = searchParams.get('tab') || 'verify-partners';
+        switch (tab) {
+          case 'dashboard':
+            return 'Bảng Điều Khiển';
+          case 'verify-partners':
+            return 'Duyệt Hồ Sơ';
+          case 'monitor-shifts':
+            return 'Giám Sát Ca Làm';
+          case 'escrow':
+            return 'Quản Lý Escrow';
+          case 'arbitration':
+            return 'Trọng Tài Tranh Chấp';
+          case 'limits':
+            return 'Giới Hạn Tài Khoản';
+          case 'logs':
+            return 'Nhật Ký Hệ Thống';
+          default:
+            return 'Duyệt Hồ Sơ';
+        }
+      }
+      return 'Tổng quan';
+    }
     if (pathname === ROUTES.SERVICES) return 'Dịch vụ thú cưng';
     if (pathname === ROUTES.BOOKINGS) return 'Đặt người chăm sóc';
     return 'Hệ thống Quản lý';

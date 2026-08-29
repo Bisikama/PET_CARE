@@ -2,17 +2,17 @@
 
 import * as React from 'react';
 import { X, CheckCircle2 } from 'lucide-react';
-import { useProviderRegister } from '../hooks/useProviderRegister';
+import { useProvider } from '@/features/provider';
 
 export function ProviderSuccessModal() {
-  const { isOpen, closeModal, step } = useProviderRegister();
+  const { isOpen, closeModal, step } = useProvider();
 
   // Handle ESC key to close modal
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeModal();
     };
-    if (isOpen && step === 5) {
+    if (isOpen && step === 3) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     }
@@ -22,7 +22,7 @@ export function ProviderSuccessModal() {
     };
   }, [isOpen, step, closeModal]);
 
-  if (!isOpen || step !== 5) return null;
+  if (!isOpen || step !== 3) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">

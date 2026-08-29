@@ -1,27 +1,42 @@
 'use client';
 
 import * as React from 'react';
-import { X, Loader2, Save, Award, Info, MapPin, Briefcase, FileText, ChevronRight, ChevronLeft, Upload } from 'lucide-react';
-import { useProviderRegister } from '../hooks/useProviderRegister';
+import { X, Loader2, Save, Info, Briefcase, FileText, ChevronLeft, Upload } from 'lucide-react';
+import { useProvider } from '@/features/provider';
+import { useProviderDocument } from '../hooks/useProviderDocument';
 
 export function ProviderDocumentModal() {
-  const { isOpen, closeModal, step, setStep, isSubmitting, error, setError, uploadDocument } = useProviderRegister();
+  const { isOpen, step } = useProvider();
+  const { isSubmitting, error, setError, closeModal, setStep, submitKyc } = useProviderDocument();
 
-  const [idCardFile, setIdCardFile] = React.useState<File | null>(null);
-  const [idCardPreview, setIdCardPreview] = React.useState<string | null>(null);
-  const [certFile, setCertFile] = React.useState<File | null>(null);
-  const [certPreview, setCertPreview] = React.useState<string | null>(null);
+  // Basic KYC Form Fields
+  const [idNumber, setIdNumber] = React.useState('');
+  const [fullName, setFullName] = React.useState('');
+  const [dob, setDob] = React.useState('');
+  const [issueDate, setIssueDate] = React.useState('');
+
+  // 3 Images state
+  const [frontFile, setFrontFile] = React.useState<File | null>(null);
+  const [frontPreview, setFrontPreview] = React.useState<string | null>(null);
+  
+  const [backFile, setBackFile] = React.useState<File | null>(null);
+  const [backPreview, setBackPreview] = React.useState<string | null>(null);
+  
+  const [faceFile, setFaceFile] = React.useState<File | null>(null);
+  const [facePreview, setFacePreview] = React.useState<string | null>(null);
+
   const [validationErrors, setValidationErrors] = React.useState<Record<string, string>>({});
 
-  const idCardInputRef = React.useRef<HTMLInputElement>(null);
-  const certInputRef = React.useRef<HTMLInputElement>(null);
+  const frontInputRef = React.useRef<HTMLInputElement>(null);
+  const backInputRef = React.useRef<HTMLInputElement>(null);
+  const faceInputRef = React.useRef<HTMLInputElement>(null);
 
   // Handle ESC key to close modal
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isSubmitting) closeModal();
     };
-    if (isOpen && step === 4) {
+    if (isOpen && step === 2) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     }
@@ -31,53 +46,29 @@ export function ProviderDocumentModal() {
     };
   }, [isOpen, step, isSubmitting, closeModal]);
 
-  if (!isOpen || step !== 4) return null;
+  if (!isOpen || step !== 2) return null;
 
-  const handleIdCardFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(file.type)) {
-        setValidationErrors((prev) => ({ ...prev, idCard: 'Định dạng tệp phải là PNG, JPG hoặc PDF.' }));
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setValidationErrors((prev) => ({ ...prev, idCard: 'Tệp không được vượt quá 5MB.' }));
-        return;
-      }
-      setIdCardFile(file);
-      if (file.type.startsWith('image/')) {
-        setIdCardPreview(URL.createObjectURL(file));
-      } else {
-        setIdCardPreview('/pdf-icon-placeholder.png');
-      }
-      setValidationErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.idCard;
-        return copy;
-      });
+  const validateFile = (file: File, field: string) => {
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+      setValidationErrors((prev) => ({ ...prev, [field]: 'Định dạng tệp phải là PNG, JPG hoặc WEBP.' }));
+      return false;
     }
+    if (file.size > 10 * 1024 * 1024) {
+      setValidationErrors((prev) => ({ ...prev, [field]: 'Tệp không được vượt quá 10MB.' }));
+      return false;
+    }
+    return true;
   };
 
-  const handleCertFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string, setFile: React.Dispatch<React.SetStateAction<File | null>>, setPreview: React.Dispatch<React.SetStateAction<string | null>>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'].includes(file.type)) {
-        setValidationErrors((prev) => ({ ...prev, cert: 'Định dạng tệp phải là PNG, JPG hoặc PDF.' }));
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setValidationErrors((prev) => ({ ...prev, cert: 'Tệp không được vượt quá 5MB.' }));
-        return;
-      }
-      setCertFile(file);
-      if (file.type.startsWith('image/')) {
-        setCertPreview(URL.createObjectURL(file));
-      } else {
-        setCertPreview('/pdf-icon-placeholder.png');
-      }
+      if (!validateFile(file, field)) return;
+      setFile(file);
+      setPreview(URL.createObjectURL(file));
       setValidationErrors((prev) => {
         const copy = { ...prev };
-        delete copy.cert;
+        delete copy[field];
         return copy;
       });
     }
@@ -89,28 +80,35 @@ export function ProviderDocumentModal() {
     setError(null);
 
     const errors: Record<string, string> = {};
-    if (!idCardFile) {
-      errors.idCard = 'Vui lòng tải lên tài liệu định danh (CCCD/CMND) để xác minh danh tính.';
-    }
+    if (!idNumber.trim()) errors.idNumber = 'Vui lòng nhập số CCCD.';
+    if (!fullName.trim()) errors.fullName = 'Vui lòng nhập họ tên trên CCCD.';
+    if (!dob) errors.dob = 'Vui lòng chọn ngày sinh.';
+    if (!issueDate) errors.issueDate = 'Vui lòng chọn ngày cấp CCCD.';
+    if (!frontFile) errors.frontImage = 'Vui lòng tải ảnh mặt trước CCCD.';
+    if (!backFile) errors.backImage = 'Vui lòng tải ảnh mặt sau CCCD.';
+    if (!faceFile) errors.faceImage = 'Vui lòng tải ảnh chân dung.';
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
     }
 
-    // Upload IDENTITY_CARD
-    let uploadSuccess = false;
-    if (idCardFile) {
-      uploadSuccess = await uploadDocument('IDENTITY_CARD', idCardFile);
-    }
+    const success = await submitKyc(
+      {
+        idNumber,
+        fullName: fullName.toUpperCase(),
+        dob,
+        issueDate,
+      },
+      {
+        frontImage: frontFile!,
+        backImage: backFile!,
+        faceImage: faceFile!,
+      }
+    );
 
-    // Upload optional CERTIFICATE if exists
-    if (uploadSuccess && certFile) {
-      await uploadDocument('GROOMING_CERTIFICATE', certFile);
-    }
-
-    if (uploadSuccess) {
-      setStep(5); // Go to Success Screen
+    if (success) {
+      setStep(3); // Go to Success Screen
     }
   };
 
@@ -123,13 +121,13 @@ export function ProviderDocumentModal() {
       />
 
       {/* Modal Box */}
-      <div className="relative w-full max-w-xl bg-white rounded-[32px] border border-slate-100 shadow-2xl overflow-hidden z-10 transform transition-all duration-300 animate-scale-up">
+      <div className="relative w-full max-w-2xl bg-white rounded-[32px] border border-slate-100 shadow-2xl overflow-hidden z-10 transform transition-all duration-300 animate-scale-up">
         {/* Header */}
         <div className="bg-[#031625] px-6 py-5 flex items-center justify-between text-white">
           <div className="flex items-center gap-2">
             <span className="text-xl">💼</span>
             <h3 className="text-base md:text-lg font-bold tracking-wide">
-              Đăng Ký Đối Tác - Bước 4/4
+              Đăng Ký Đối Tác - Bước 2/2
             </h3>
           </div>
           {!isSubmitting && (
@@ -143,33 +141,32 @@ export function ProviderDocumentModal() {
         </div>
 
         {/* Step Indicator */}
-        <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-          {[
-            { id: 1, label: 'Thông tin', icon: Briefcase },
-            { id: 2, label: 'Khu vực', icon: MapPin },
-            { id: 3, label: 'Dịch vụ', icon: Award },
-            { id: 4, label: 'Xác minh', icon: FileText },
-          ].map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setStep(s.id)}
-              className="flex items-center gap-1.5 hover:opacity-85 transition-all cursor-pointer outline-none border-none bg-transparent"
-            >
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
-                step === s.id ? 'bg-slate-800 text-white shadow-md' :
-                step > s.id ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
-              }`}>
-                {step > s.id ? '✓' : s.id}
-              </div>
-              <span className={`text-xs font-bold hidden sm:inline ${
-                step === s.id ? 'text-slate-800' : 'text-slate-400'
-              }`}>
-                {s.label}
-              </span>
-              {s.id < 4 && <ChevronRight className="w-3.5 h-3.5 text-slate-300 hidden sm:inline ml-1.5" />}
-            </button>
-          ))}
+        <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-6 justify-center">
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 hover:opacity-85 transition-all cursor-pointer outline-none border-none bg-transparent"
+          >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-emerald-500 text-white">
+              ✓
+            </div>
+            <span className="text-xs font-bold text-slate-400">
+              Thông tin
+            </span>
+          </button>
+          <div className="w-12 h-[1px] bg-slate-200" />
+          <button
+            type="button"
+            className="flex items-center gap-1.5 outline-none border-none bg-transparent"
+          >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-800 text-white shadow-md">
+              2
+            </div>
+            <span className="text-xs font-bold text-slate-800">
+              Xác minh danh tính (eKYC)
+            </span>
+          </button>
         </div>
 
         {/* Form Body */}
@@ -180,104 +177,211 @@ export function ProviderDocumentModal() {
             </div>
           )}
 
-          <div className="space-y-5">
-            <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200/30 flex items-start gap-3">
-              <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                Yêu cầu bắt buộc tải lên hình ảnh CCCD/CMND để xác thực danh tính. Việc này giúp đảm bảo sự tin tưởng và an toàn của cộng đồng PET CARE.
-              </p>
+          <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-200/30 flex items-start gap-3">
+            <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+              Yêu cầu bắt buộc tải lên hình ảnh CCCD và ảnh chân dung để xác thực danh tính. Thông tin của bạn được bảo mật tuyệt đối theo chính sách bảo mật của PET CARE.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {/* Row 1: CCCD Number & Fullname */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="idNumber" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Số CCCD (12 chữ số)
+                </label>
+                <input
+                  id="idNumber"
+                  type="text"
+                  maxLength={12}
+                  placeholder="Ví dụ: 001202012345"
+                  value={idNumber}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setIdNumber(val);
+                  }}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200"
+                />
+                {validationErrors.idNumber && (
+                  <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.idNumber}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="fullName" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Họ và tên (trên CCCD)
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  placeholder="Ví dụ: NGUYEN VAN A"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200 uppercase"
+                />
+                {validationErrors.fullName && (
+                  <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.fullName}</p>
+                )}
+              </div>
             </div>
 
-            {/* Identity Card File Input */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Ảnh Căn cước công dân / CMND (Bắt buộc)
-              </label>
-              <input
-                type="file"
-                ref={idCardInputRef}
-                onChange={handleIdCardFileChange}
-                accept="image/png, image/jpeg, image/jpg, application/pdf"
-                className="hidden"
-              />
-              
-              {idCardPreview ? (
-                <div className="relative border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-4 max-h-[140px]">
-                  {idCardFile?.type === 'application/pdf' ? (
-                    <span className="text-xs font-bold text-slate-600">📄 File PDF: {idCardFile.name}</span>
-                  ) : (
-                    <img src={idCardPreview} alt="CCCD Preview" className="max-h-[120px] object-contain rounded-lg" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIdCardFile(null);
-                      setIdCardPreview(null);
-                    }}
-                    className="absolute top-2 right-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1 cursor-pointer transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => idCardInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 rounded-2xl py-6 flex flex-col items-center justify-center cursor-pointer transition-all duration-150"
-                >
-                  <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
-                  <span className="text-xs font-bold text-slate-600">Tải ảnh mặt trước CCCD</span>
-                  <span className="text-[9px] text-slate-400 mt-0.5">Hỗ trợ PNG, JPG, PDF tối đa 5MB</span>
-                </div>
-              )}
-              {validationErrors.idCard && (
-                <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.idCard}</p>
-              )}
+            {/* Row 2: DOB & Issue Date */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="dob" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Ngày sinh
+                </label>
+                <input
+                  id="dob"
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200"
+                />
+                {validationErrors.dob && (
+                  <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.dob}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="issueDate" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Ngày cấp CCCD
+                </label>
+                <input
+                  id="issueDate"
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200"
+                />
+                {validationErrors.issueDate && (
+                  <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.issueDate}</p>
+                )}
+              </div>
             </div>
 
-            {/* Certificate File Input (Optional) */}
-            <div className="space-y-2">
+            {/* Row 3: Identity Card Images */}
+            <div className="space-y-2 pt-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Chứng chỉ hành nghề (Nếu có - Không bắt buộc)
+                Hình ảnh định danh (eKYC)
               </label>
-              <input
-                type="file"
-                ref={certInputRef}
-                onChange={handleCertFileChange}
-                accept="image/png, image/jpeg, image/jpg, application/pdf"
-                className="hidden"
-              />
-              
-              {certPreview ? (
-                <div className="relative border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-4 max-h-[140px]">
-                  {certFile?.type === 'application/pdf' ? (
-                    <span className="text-xs font-bold text-slate-600">📄 File PDF: {certFile.name}</span>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Front Image */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 block">1. Ảnh mặt trước CCCD</span>
+                  <input
+                    type="file"
+                    ref={frontInputRef}
+                    onChange={(e) => handleFileChange(e, 'frontImage', setFrontFile, setFrontPreview)}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  {frontPreview ? (
+                    <div className="relative border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 h-[120px]">
+                      <img src={frontPreview} alt="Front CCCD" className="h-full object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFrontFile(null);
+                          setFrontPreview(null);
+                        }}
+                        className="absolute top-1.5 right-1.5 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1 cursor-pointer transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   ) : (
-                    <img src={certPreview} alt="Cert Preview" className="max-h-[120px] object-contain rounded-lg" />
+                    <div
+                      onClick={() => frontInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 rounded-2xl h-[120px] flex flex-col items-center justify-center cursor-pointer transition-all"
+                    >
+                      <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                      <span className="text-[11px] font-bold text-slate-600">Tải ảnh mặt trước</span>
+                    </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCertFile(null);
-                      setCertPreview(null);
-                    }}
-                    className="absolute top-2 right-2 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1 cursor-pointer transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  {validationErrors.frontImage && (
+                    <p className="text-[10px] text-rose-500 font-bold leading-tight">{validationErrors.frontImage}</p>
+                  )}
                 </div>
-              ) : (
-                <div
-                  onClick={() => certInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 rounded-2xl py-6 flex flex-col items-center justify-center cursor-pointer transition-all duration-150"
-                >
-                  <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
-                  <span className="text-xs font-bold text-slate-600">Tải lên chứng chỉ hành nghề</span>
-                  <span className="text-[9px] text-slate-400 mt-0.5">Tải lên chứng chỉ bác sĩ, làm đẹp...</span>
+
+                {/* Back Image */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 block">2. Ảnh mặt sau CCCD</span>
+                  <input
+                    type="file"
+                    ref={backInputRef}
+                    onChange={(e) => handleFileChange(e, 'backImage', setBackFile, setBackPreview)}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  {backPreview ? (
+                    <div className="relative border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 h-[120px]">
+                      <img src={backPreview} alt="Back CCCD" className="h-full object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBackFile(null);
+                          setBackPreview(null);
+                        }}
+                        className="absolute top-1.5 right-1.5 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1 cursor-pointer transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => backInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 rounded-2xl h-[120px] flex flex-col items-center justify-center cursor-pointer transition-all"
+                    >
+                      <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                      <span className="text-[11px] font-bold text-slate-600">Tải ảnh mặt sau</span>
+                    </div>
+                  )}
+                  {validationErrors.backImage && (
+                    <p className="text-[10px] text-rose-500 font-bold leading-tight">{validationErrors.backImage}</p>
+                  )}
                 </div>
-              )}
-              {validationErrors.cert && (
-                <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.cert}</p>
-              )}
+
+                {/* Face Image */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 block">3. Ảnh chân dung (Selfie)</span>
+                  <input
+                    type="file"
+                    ref={faceInputRef}
+                    onChange={(e) => handleFileChange(e, 'faceImage', setFaceFile, setFacePreview)}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  {facePreview ? (
+                    <div className="relative border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 h-[120px]">
+                      <img src={facePreview} alt="Portrait face" className="h-full object-contain rounded-lg" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFaceFile(null);
+                          setFacePreview(null);
+                        }}
+                        className="absolute top-1.5 right-1.5 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full p-1 cursor-pointer transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => faceInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50 rounded-2xl h-[120px] flex flex-col items-center justify-center cursor-pointer transition-all"
+                    >
+                      <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                      <span className="text-[11px] font-bold text-slate-600">Tải ảnh chân dung</span>
+                    </div>
+                  )}
+                  {validationErrors.faceImage && (
+                    <p className="text-[10px] text-rose-500 font-bold leading-tight">{validationErrors.faceImage}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -287,7 +391,7 @@ export function ProviderDocumentModal() {
               type="button"
               onClick={() => {
                 setError(null);
-                setStep(3);
+                setStep(1);
               }}
               disabled={isSubmitting}
               className="flex items-center gap-1.5 px-4 py-3 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs md:text-sm font-bold rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50"
@@ -318,7 +422,7 @@ export function ProviderDocumentModal() {
                 ) : (
                   <>
                     <Save className="w-4 h-4 text-[#f0c05a]" />
-                    Hoàn thành đăng ký
+                    Nộp hồ sơ duyệt
                   </>
                 )}
               </button>

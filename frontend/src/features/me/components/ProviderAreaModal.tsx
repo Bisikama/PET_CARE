@@ -2,14 +2,15 @@
 
 import * as React from 'react';
 import { X, Loader2, Award, MapPin, Briefcase, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
-import { useProviderRegister } from '../hooks/useProviderRegister';
+import { useProvider } from '@/features/provider';
+import { useProviderArea } from '../hooks/useProviderArea';
+import { AddressSelector } from './AddressSelector';
 
 export function ProviderAreaModal() {
-  const { isOpen, closeModal, step, setStep, isSubmitting, error, setError, addServiceArea } = useProviderRegister();
+  const { isOpen, step } = useProvider();
+  const { isSubmitting, error, setError, closeModal, setStep, addServiceArea } = useProviderArea();
 
-  const [city, setCity] = React.useState('Hồ Chí Minh');
-  const [district, setDistrict] = React.useState('');
-  const [ward, setWard] = React.useState('');
+  const [addressData, setAddressData] = React.useState<{ province: string; district: string; ward: string } | null>(null);
   const [validationErrors, setValidationErrors] = React.useState<Record<string, string>>({});
 
   // Handle ESC key to close modal
@@ -34,20 +35,17 @@ export function ProviderAreaModal() {
     setValidationErrors({});
     setError(null);
 
-    const errors: Record<string, string> = {};
-    if (!city.trim()) errors.city = 'Vui lòng điền Tỉnh / Thành phố.';
-    if (!district.trim()) errors.district = 'Vui lòng điền Quận / Huyện.';
-    if (!ward.trim()) errors.ward = 'Vui lòng điền Phường / Xã.';
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
+    if (!addressData || !addressData.province || !addressData.district || !addressData.ward) {
+      setValidationErrors({
+        address: 'Vui lòng chọn đầy đủ thông tin Tỉnh/Thành phố, Quận/Huyện, Phường/Xã.',
+      });
       return;
     }
 
     await addServiceArea({
-      city: city.trim(),
-      district: district.trim(),
-      ward: ward.trim(),
+      city: addressData.province,
+      district: addressData.district,
+      ward: addressData.ward,
     });
   };
 
@@ -117,59 +115,24 @@ export function ProviderAreaModal() {
             </div>
           )}
 
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <label htmlFor="city" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Tỉnh / Thành phố
-              </label>
-              <input
-                id="city"
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200"
-              />
-              {validationErrors.city && (
-                <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.city}</p>
-              )}
+          {validationErrors.address && (
+            <div className="p-4 bg-rose-50 text-rose-700 text-sm font-semibold rounded-2xl border border-rose-100">
+              {validationErrors.address}
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="district" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Quận / Huyện
-                </label>
-                <input
-                  id="district"
-                  type="text"
-                  placeholder="Ví dụ: Quận 1"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200"
-                />
-                {validationErrors.district && (
-                  <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.district}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="ward" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Phường / Xã
-                </label>
-                <input
-                  id="ward"
-                  type="text"
-                  placeholder="Ví dụ: Phường Bến Nghé"
-                  value={ward}
-                  onChange={(e) => setWard(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm font-semibold outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-800/10 transition-all duration-200"
-                />
-                {validationErrors.ward && (
-                  <p className="text-xs text-rose-500 font-bold pl-1">{validationErrors.ward}</p>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Vietnam Address Selector */}
+          <AddressSelector
+            onAddressChange={(data) => {
+              setAddressData(data);
+              setValidationErrors({});
+            }}
+            initialValues={addressData ? {
+              province: addressData.province,
+              district: addressData.district,
+              ward: addressData.ward
+            } : undefined}
+          />
 
           {/* Footer Action Buttons */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">

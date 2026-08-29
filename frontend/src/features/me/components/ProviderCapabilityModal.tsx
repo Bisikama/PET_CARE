@@ -2,10 +2,12 @@
 
 import * as React from 'react';
 import { X, Loader2, Award, MapPin, Briefcase, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
-import { useProviderRegister } from '../hooks/useProviderRegister';
+import { useProvider } from '@/features/provider';
+import { useProviderCapability } from '../hooks/useProviderCapability';
 
 export function ProviderCapabilityModal() {
-  const { isOpen, closeModal, step, setStep, isSubmitting, error, setError, registerCapability, getActiveServices } = useProviderRegister();
+  const { isOpen, step } = useProvider();
+  const { isSubmitting, error, setError, closeModal, setStep, registerCapability, getActiveServices } = useProviderCapability();
 
   const [servicesList, setServicesList] = React.useState<any[]>([]);
   const [serviceId, setServiceId] = React.useState('');

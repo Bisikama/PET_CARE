@@ -1,18 +1,48 @@
 'use client';
 
 import * as React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
-import { Heart, Mail, Plus, Shield, Sparkles, User, AlertCircle, Check, HelpCircle, Briefcase } from 'lucide-react';
+import { Heart, Mail, Plus, Shield, Sparkles, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity } from 'lucide-react';
 import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore } from '@/features/me';
 import { ProviderHeader, useProvider } from '@/features/provider';
+import { AdminHeader, PartnerVerificationList } from '@/features/admin';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const searchParams = useSearchParams();
   const { openModal: openProfileModal } = useMeStore();
   const { openModal: openPetModal } = usePetStore();
   const { openModal: openProviderModal } = useProvider();
   const [providerTab, setProviderTab] = React.useState('active-cases');
+  const adminTab = searchParams.get('tab') || 'verify-partners';
+
+  if (user?.role === 'ADMIN') {
+    return (
+      <div className="space-y-8 animate-fade-in animate-scale-up">
+        {/* Admin Header Component */}
+        <AdminHeader />
+        
+        {/* Tab Content Panel */}
+        {adminTab === 'verify-partners' ? (
+          <PartnerVerificationList />
+        ) : (
+          <div className="bg-white p-12 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
+            <div className="p-4 bg-teal-50 text-teal-600 rounded-3xl">
+              <Shield className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-800">Bảng điều khiển & Chức năng</h3>
+              <p className="text-slate-400 text-xs md:text-sm max-w-sm">
+                Tính năng này đang được thiết lập kết nối dữ liệu. Vui lòng quay lại sau.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (user?.role === 'PROVIDER') {
     return (
