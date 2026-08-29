@@ -120,7 +120,7 @@ export function AddressSelector({ onAddressChange, initialValues }: AddressSelec
               <SelectTrigger className="w-full bg-slate-100 border border-slate-200 rounded-2xl px-4 py-3.5 h-auto text-slate-600 text-sm font-semibold cursor-not-allowed">
                 <SelectValue placeholder={isLoading ? 'Đang tải Tỉnh/Thành phố...' : 'Chọn Tỉnh / Thành phố'} />
               </SelectTrigger>
-              <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl z-[60] p-0 overflow-hidden flex flex-col">
+              <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl z-[100000] p-0 overflow-hidden flex flex-col">
                 {/* Search Box */}
                 <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
                   <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -180,7 +180,7 @@ export function AddressSelector({ onAddressChange, initialValues }: AddressSelec
                 <SelectTrigger className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 h-auto text-slate-800 text-sm font-semibold focus:ring-slate-800/10 focus:border-slate-800 transition-all disabled:opacity-50">
                   <SelectValue placeholder={!selectedProvince ? 'Chọn Tỉnh trước' : 'Chọn Quận / Huyện'} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl z-[60] p-0 overflow-hidden flex flex-col">
+                <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl z-[100000] p-0 overflow-hidden flex flex-col">
                   {/* Search Box */}
                   <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -235,7 +235,7 @@ export function AddressSelector({ onAddressChange, initialValues }: AddressSelec
                 <SelectTrigger className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 h-auto text-slate-800 text-sm font-semibold focus:ring-slate-800/10 focus:border-slate-800 transition-all disabled:opacity-50">
                   <SelectValue placeholder={!selectedDistrict ? 'Chọn Huyện trước' : 'Chọn Phường / Xã'} />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl z-[60] p-0 overflow-hidden flex flex-col">
+                <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl z-[100000] p-0 overflow-hidden flex flex-col">
                   {/* Search Box */}
                   <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />

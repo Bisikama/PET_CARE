@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   ShieldX,
   Filter,
+  FileText,
 } from 'lucide-react';
 import { formatDate } from '@/utils/formatDate';
 
@@ -444,41 +445,64 @@ export function PartnerVerificationList() {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                          {providerDocs.map(doc => (
-                            <div key={doc.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
-                              <div className="px-3 pt-3 pb-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
-                                {doc.document_type === 'FACE_PORTRAIT' ? 'Ảnh chân dung' : doc.note || 'CCCD/CMND'}
+                          {providerDocs.map(doc => {
+                            const documentLabels: Record<string, string> = {
+                              IDENTITY_CARD: 'Ảnh CCCD/CMND',
+                              FACE_PORTRAIT: 'Ảnh chân dung',
+                              GROOMING_CERTIFICATE: 'Chứng chỉ Cắt tỉa lông',
+                              PET_CARE_CERTIFICATE: 'Chứng chỉ Chăm sóc thú cưng',
+                              FIRST_AID_CERTIFICATE: 'Chứng chỉ Sơ cứu thú cưng',
+                              BACKGROUND_SCREENING: 'Lý lịch tư pháp',
+                              OTHER: 'Tài liệu bổ sung khác',
+                            };
+                            const label = documentLabels[doc.document_type] || doc.note || 'Tài liệu xác minh';
+                            const isPdf = doc.file_url?.toLowerCase().endsWith('.pdf');
+
+                            return (
+                              <div key={doc.id} className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+                                <div>
+                                  <div className="px-3 pt-3 pb-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider truncate" title={label}>
+                                    {label}
+                                  </div>
+                                  <div className="relative h-[150px] bg-slate-50 group overflow-hidden">
+                                    {isPdf ? (
+                                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-1.5 p-4">
+                                        <FileText className="w-10 h-10 text-rose-500" />
+                                        <span className="text-[10px] font-extrabold text-slate-500">Tài liệu PDF</span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={doc.file_url}
+                                        alt={label}
+                                        className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                                      />
+                                    )}
+                                    <a
+                                      href={doc.file_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="absolute inset-0 flex items-center justify-center gap-1.5 bg-slate-950/40 opacity-0 group-hover:opacity-100 text-white text-xs font-bold transition-opacity duration-200 cursor-pointer"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                      {isPdf ? 'Mở file PDF' : 'Xem ảnh gốc'}
+                                    </a>
+                                  </div>
+                                </div>
+                                <div className="px-3 py-2 flex items-center justify-between border-t border-slate-50 bg-slate-50/20">
+                                  <span className="text-[10px] text-slate-450 font-medium">Trạng thái</span>
+                                  <span className={`text-[10px] font-extrabold ${
+                                    doc.status === 'APPROVED' ? 'text-emerald-500'
+                                    : doc.status === 'REJECTED' ? 'text-rose-500'
+                                    : 'text-amber-500'
+                                  }`}>
+                                    {doc.status === 'APPROVED' ? '✓ Hợp lệ'
+                                      : doc.status === 'REJECTED' ? '✕ Từ chối'
+                                      : '⏳ Chờ duyệt'}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="relative h-[150px] bg-slate-50 group overflow-hidden">
-                                <img
-                                  src={doc.file_url}
-                                  alt={doc.note || 'KYC File'}
-                                  className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
-                                />
-                                <a
-                                  href={doc.file_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="absolute inset-0 flex items-center justify-center gap-1.5 bg-slate-950/40 opacity-0 group-hover:opacity-100 text-white text-xs font-bold transition-opacity duration-200 cursor-pointer"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  Xem ảnh gốc
-                                </a>
-                              </div>
-                              <div className="px-3 py-2 flex items-center justify-between">
-                                <span className="text-[10px] text-slate-400">Trạng thái</span>
-                                <span className={`text-[10px] font-extrabold ${
-                                  doc.status === 'APPROVED' ? 'text-emerald-500'
-                                  : doc.status === 'REJECTED' ? 'text-rose-500'
-                                  : 'text-amber-500'
-                                }`}>
-                                  {doc.status === 'APPROVED' ? '✓ Hợp lệ'
-                                    : doc.status === 'REJECTED' ? '✕ Từ chối'
-                                    : '⏳ Chờ duyệt'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>

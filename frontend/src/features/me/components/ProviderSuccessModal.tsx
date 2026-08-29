@@ -12,7 +12,7 @@ export function ProviderSuccessModal() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeModal();
     };
-    if (isOpen && step === 3) {
+    if (isOpen && step === 4) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     }
@@ -22,7 +22,7 @@ export function ProviderSuccessModal() {
     };
   }, [isOpen, step, closeModal]);
 
-  if (!isOpen || step !== 3) return null;
+  if (!isOpen || step !== 4) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">

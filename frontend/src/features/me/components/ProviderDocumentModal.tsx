@@ -36,7 +36,7 @@ export function ProviderDocumentModal() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isSubmitting) closeModal();
     };
-    if (isOpen && step === 2) {
+    if (isOpen && step === 3) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
     }
@@ -46,7 +46,7 @@ export function ProviderDocumentModal() {
     };
   }, [isOpen, step, isSubmitting, closeModal]);
 
-  if (!isOpen || step !== 2) return null;
+  if (!isOpen || step !== 3) return null;
 
   const validateFile = (file: File, field: string) => {
     if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
@@ -108,7 +108,7 @@ export function ProviderDocumentModal() {
     );
 
     if (success) {
-      setStep(3); // Go to Success Screen
+      setStep(4); // Go to Success Screen
     }
   };
 
@@ -127,7 +127,7 @@ export function ProviderDocumentModal() {
           <div className="flex items-center gap-2">
             <span className="text-xl">💼</span>
             <h3 className="text-base md:text-lg font-bold tracking-wide">
-              Đăng Ký Đối Tác - Bước 2/2
+              Đăng Ký Đối Tác - Bước 3/3
             </h3>
           </div>
           {!isSubmitting && (
@@ -158,10 +158,24 @@ export function ProviderDocumentModal() {
           <div className="w-12 h-[1px] bg-slate-200" />
           <button
             type="button"
+            onClick={() => setStep(2)}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 hover:opacity-85 transition-all cursor-pointer outline-none border-none bg-transparent"
+          >
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-emerald-500 text-white">
+              ✓
+            </div>
+            <span className="text-xs font-bold text-slate-400">
+              Địa chỉ
+            </span>
+          </button>
+          <div className="w-12 h-[1px] bg-slate-200" />
+          <button
+            type="button"
             className="flex items-center gap-1.5 outline-none border-none bg-transparent"
           >
             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-slate-800 text-white shadow-md">
-              2
+              3
             </div>
             <span className="text-xs font-bold text-slate-800">
               Xác minh danh tính (eKYC)

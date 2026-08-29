@@ -17,6 +17,17 @@ export const meService = {
     return response.data;
   },
 
+  updateBaseAddress: async (data: {
+    baseAddressLine: string;
+    baseLatitude: number;
+    baseLongitude: number;
+    baseFormatted?: string;
+    serviceRadiusKm?: number;
+  }): Promise<any> => {
+    const response = await axiosInstance.post('/providers/base-address', data);
+    return response.data;
+  },
+
   addServiceArea: async (data: { city: string; district: string; ward: string }): Promise<any> => {
     const response = await axiosInstance.post('/providers/areas', data);
     return response.data;

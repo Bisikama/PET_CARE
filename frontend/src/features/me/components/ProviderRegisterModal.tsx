@@ -79,7 +79,7 @@ export function ProviderRegisterModal() {
           <div className="flex items-center gap-2">
             <span className="text-xl">💼</span>
             <h3 className="text-base md:text-lg font-bold tracking-wide">
-              Đăng Ký Đối Tác - Bước 1/2
+              Đăng Ký Đối Tác - Bước 1/3
             </h3>
           </div>
           {!isSubmitting && (
@@ -95,8 +95,9 @@ export function ProviderRegisterModal() {
         {/* Step Indicator */}
         <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center gap-6 justify-center">
           {[
-            { id: 1, label: 'Thông tin', icon: Briefcase },
-            { id: 2, label: 'Xác minh', icon: FileText },
+            { id: 1, label: 'Thông tin' },
+            { id: 2, label: 'Địa chỉ' },
+            { id: 3, label: 'Xác minh' },
           ].map((s) => (
             <React.Fragment key={s.id}>
               <button
@@ -116,7 +117,7 @@ export function ProviderRegisterModal() {
                   {s.label}
                 </span>
               </button>
-              {s.id < 2 && <div className="w-12 h-[1px] bg-slate-200" />}
+              {s.id < 3 && <div className="w-12 h-[1px] bg-slate-200" />}
             </React.Fragment>
           ))}
         </div>
