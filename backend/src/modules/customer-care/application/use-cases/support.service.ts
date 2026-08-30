@@ -25,6 +25,25 @@ export class SupportService {
     });
   }
 
+  async getTicketDetails(userId: string, ticketId: string, isAdmin = false) {
+    const ticket = await this.prisma.support_tickets.findUnique({
+      where: { id: ticketId },
+      include: {
+        support_ticket_messages: {
+          orderBy: { created_at: 'asc' },
+        },
+      },
+    });
+
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    if (!isAdmin && ticket.user_id !== userId) {
+      throw new ForbiddenException('You are not authorized to view this ticket');
+    }
+
+    return ticket;
+  }
+
   async replyTicket(userId: string, ticketId: string, dto: ReplyTicketDto, isAdmin = false) {
     const ticket = await this.prisma.support_tickets.findUnique({
       where: { id: ticketId },

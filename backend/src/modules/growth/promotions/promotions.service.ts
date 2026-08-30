@@ -8,6 +8,31 @@ import { Prisma } from '@prisma/client';
 export class PromotionsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getActivePromotions() {
+    const now = new Date();
+    return this.prisma.promotions.findMany({
+      where: {
+        is_active: true,
+        start_date: { lte: now },
+        end_date: { gte: now },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async getAllPromotionsAdmin() {
+    return this.prisma.promotions.findMany({
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async updatePromotion(id: string, dto: any) {
+    return this.prisma.promotions.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
   async createPromotion(dto: CreatePromotionDto) {
     // Cannot have both percent and amount null
     if (!dto.discountPercent && !dto.discountAmount) {

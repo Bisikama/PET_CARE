@@ -12,6 +12,9 @@ export class ReportIncidentDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsOptional()
+  files?: any;
 }
 
 export class ResolveIncidentDto {

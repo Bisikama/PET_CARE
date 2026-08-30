@@ -33,8 +33,8 @@ export class AdminProvidersController {
   }
 
   @Put('documents/:id/review')
-  @ApiOperation({ summary: 'Xét duyệt tài liệu của đối tác (KYC/Chứng chỉ)' })
-  @ApiParam({ name: 'id', description: 'ID của tài liệu', type: String })
+  @ApiOperation({ summary: 'Xét duyệt chứng chỉ/bằng cấp của đối tác (Không dùng để duyệt KYC)' })
+  @ApiParam({ name: 'id', description: 'ID của tài liệu/chứng chỉ', type: String })
   @ApiResponse({ status: 200, description: 'Xét duyệt tài liệu thành công' })
   @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
@@ -67,10 +67,10 @@ export class AdminProvidersController {
   }
 
   @Put(':id/approve')
-  @ApiOperation({ summary: 'Phê duyệt hồ sơ đối tác để hiển thị công khai (Yêu cầu phải qua KYC và Sàng lọc)' })
+  @ApiOperation({ summary: 'Phê duyệt hồ sơ đối tác (Yêu cầu phải qua KYC, Sàng lọc và có ít nhất 1 chứng chỉ được duyệt)' })
   @ApiParam({ name: 'id', description: 'ID của đối tác', type: String })
   @ApiResponse({ status: 200, description: 'Phê duyệt hồ sơ thành công' })
-  @ApiResponse({ status: 400, description: 'Hồ sơ chưa đủ điều kiện duyệt (Thiếu KYC hoặc Screening)' })
+  @ApiResponse({ status: 400, description: 'Hồ sơ chưa đủ điều kiện duyệt (Thiếu KYC, Screening, hoặc chưa có Chứng chỉ được duyệt)' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đối tác' })
@@ -163,7 +163,7 @@ export class AdminProvidersController {
   }
 
   @Put(':id/kyc-review')
-  @ApiOperation({ summary: 'Duyệt toàn bộ hồ sơ KYC của đối tác' })
+  @ApiOperation({ summary: 'Duyệt hồ sơ KYC của đối tác' })
   @ApiParam({ name: 'id', description: 'ID của đối tác', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật trạng thái KYC thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })

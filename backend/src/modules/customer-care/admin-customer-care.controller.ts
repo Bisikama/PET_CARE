@@ -54,6 +54,19 @@ export class AdminCustomerCareController {
     return this.supportService.getAllTicketsAdmin();
   }
 
+  @Get('tickets/:ticketId')
+  @ApiOperation({ summary: 'Lấy chi tiết yêu cầu hỗ trợ (gồm tin nhắn)' })
+  @ApiParam({ name: 'ticketId', description: 'ID của yêu cầu hỗ trợ', type: String })
+  @ApiResponse({ status: 200, description: 'Chi tiết yêu cầu hỗ trợ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hỗ trợ' })
+  async getTicketDetails(
+    @GetCurrentUserId() adminId: string,
+    @Param('ticketId') ticketId: string,
+  ) {
+    return this.supportService.getTicketDetails(adminId, ticketId, true);
+  }
+
   @Post('tickets/:ticketId/reply')
   @ApiOperation({ summary: 'Phản hồi yêu cầu hỗ trợ (Dành cho Admin)' })
   @ApiParam({ name: 'ticketId', description: 'ID của yêu cầu hỗ trợ', type: String })
@@ -87,6 +100,15 @@ export class AdminCustomerCareController {
   }
 
   // --- DISPUTES ---
+  @Get('disputes')
+  @ApiOperation({ summary: 'Lấy danh sách khiếu nại (Admin)' })
+  @ApiResponse({ status: 200, description: 'Danh sách khiếu nại' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  async getAllDisputes() {
+    return this.disputesService.getAllDisputesAdmin();
+  }
+
   @Put('disputes/:disputeId/resolve')
   @ApiOperation({ summary: 'Giải quyết tranh chấp và giải phóng/hoàn tiền Escrow' })
   @ApiParam({ name: 'disputeId', description: 'ID của tranh chấp', type: String })

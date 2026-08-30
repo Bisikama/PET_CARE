@@ -17,6 +17,9 @@ export class OpenDisputeDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsOptional()
+  files?: any;
 }
 
 export class ResolveDisputeDto {

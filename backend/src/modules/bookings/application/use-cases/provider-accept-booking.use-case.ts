@@ -38,9 +38,12 @@ export class ProviderAcceptBookingUseCase {
     // Determine next state
     const nextStatus = this.stateMachine.providerAccept(booking.status);
 
-    return this.unitOfWork.transaction(async (tx) => {
+      return this.unitOfWork.transaction(async (tx) => {
       // 1. Update Booking status to ACCEPTED
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
+
+      // 1.5 Create Chat Room for Customer and Provider
+      await this.bookingRepo.createChatRoom(bookingId, booking.customer_id, providerUserId, tx);
 
       // 2. Update Slot status to BOOKED
       await this.bookingRepo.updateWorkingSlotStatus(

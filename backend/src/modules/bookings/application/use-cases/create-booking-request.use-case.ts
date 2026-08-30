@@ -12,6 +12,8 @@ import type { BookingRepositoryPort } from '../ports/booking-repository.port';
 import type { UnitOfWorkPort } from '../ports/unit-of-work.port';
 import { CreateBookingDto } from '../../presentation/dto/create-booking.dto';
 
+import { PaymentsService } from '../../../payments/application/use-cases/payments.service';
+
 @Injectable()
 export class CreateBookingRequestUseCase {
   constructor(
@@ -19,9 +21,10 @@ export class CreateBookingRequestUseCase {
     private readonly bookingRepo: BookingRepositoryPort,
     @Inject(UNIT_OF_WORK)
     private readonly unitOfWork: UnitOfWorkPort,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
-  async execute(customerId: string, dto: CreateBookingDto) {
+  async execute(customerId: string, dto: CreateBookingDto, ipAddress: string = '127.0.0.1') {
     // 1. Verify Pet and ownership
     const pet = await this.bookingRepo.findPetById(dto.petId);
     if (!pet) {
@@ -67,7 +70,7 @@ export class CreateBookingRequestUseCase {
     const estimatedEndAt = new Date(`${dateStr}T${slot.time_slots.end_time}:00`);
 
     // 5. Execute transaction with concurrency check
-    return this.unitOfWork.transaction(async (tx) => {
+    const booking = await this.unitOfWork.transaction(async (tx) => {
       // Concurrency update: check if slot is AVAILABLE and update status to RESERVED
       // This is the core lock mechanism to prevent double booking.
       const reservedUntil = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes reservation
@@ -100,7 +103,7 @@ export class CreateBookingRequestUseCase {
       };
 
       // Create booking and related tables
-      const booking = await this.bookingRepo.createBooking(
+      const newBooking = await this.bookingRepo.createBooking(
         {
           customerId,
           providerId,
@@ -111,7 +114,7 @@ export class CreateBookingRequestUseCase {
           serviceDurationMinutes: providerService.services.duration_minutes,
           estimatedStartAt,
           estimatedEndAt,
-          status: 'PENDING_PROVIDER_ACCEPTANCE',
+          status: 'PENDING_PAYMENT', // MUST BE PENDING_PAYMENT as per requirement
           totalPrice: Number(providerService.price),
           customerNote: dto.customerNote,
           addressSnapshot,
@@ -143,14 +146,26 @@ export class CreateBookingRequestUseCase {
 
       // Log event
       await this.bookingRepo.addBookingEvent(
-        booking.id,
+        newBooking.id,
         customerId,
         'BOOKING_CREATED',
-        'Booking request submitted by customer',
+        'Booking request submitted by customer and awaiting payment',
         tx,
       );
 
-      return booking;
+      return newBooking;
     });
+
+    // 6. Generate VNPay URL outside the transaction to avoid holding DB lock during external logic
+    const paymentUrl = await this.paymentsService.createVNPayUrl(
+      booking.id,
+      Number(booking.total_price),
+      ipAddress,
+    );
+
+    return {
+      booking,
+      paymentUrl,
+    };
   }
 }

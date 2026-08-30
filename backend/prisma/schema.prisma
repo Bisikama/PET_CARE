@@ -98,6 +98,7 @@ model bookings {
   reviews                        reviews[]
   booking_events                 booking_events[]
   booking_cancellations          booking_cancellations[]
+  wallet_transactions            wallet_transactions[]
 
   @@index([requested_date], map: "idx_bookings_requested_date")
   @@index([customer_id], map: "idx_bookings_customer_id")
@@ -166,7 +167,7 @@ model complaints {
   complaint_evidences                    complaint_evidences[]
   users_complaints_accused_idTousers     User?                 @relation("complaints_accused_idTousers", fields: [accused_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users_complaints_admin_idTousers       User?                 @relation("complaints_admin_idTousers", fields: [admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  bookings                               bookings              @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  bookings                               bookings              @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   users_complaints_complainant_idTousers User                  @relation("complaints_complainant_idTousers", fields: [complainant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([status], map: "idx_complaints_status")
@@ -225,7 +226,8 @@ model payments {
   released_at       DateTime?          @db.Timestamp(6)
   refunded_at       DateTime?          @db.Timestamp(6)
   created_at        DateTime?          @default(now()) @db.Timestamp(6)
-  bookings          bookings           @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  idempotency_key   String?            @unique @db.VarChar(255)
+  bookings          bookings           @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   users             User               @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   provider_profiles provider_profiles? @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -298,6 +300,7 @@ model provider_profiles {
   updated_at               DateTime?                @default(now()) @db.Timestamp(6)
   bookings                 bookings[]
   payments                 payments[]
+  payout_requests          payout_requests[]
   provider_availability    provider_availability[]
   users                    User                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   provider_services        provider_services[]
@@ -442,6 +445,7 @@ model User {
 
   @@index([role], map: "idx_users_role")
   @@map("users")
+  wallets                                       wallets?
 }
 
 model provider_documents {
@@ -773,6 +777,7 @@ enum payment_method {
   MOMO
   VNPAY
   BANK_TRANSFER
+  WALLET
 }
 
 enum payment_status {
@@ -785,6 +790,7 @@ enum payment_status {
   REFUNDED
   PARTIALLY_SETTLED
   FAILED
+  ESCROW_ON_HOLD
 }
 
 enum provider_status {
@@ -800,6 +806,66 @@ enum provider_type {
   SITTER
   GROOMER
   VET
+}
+
+enum wallet_status {
+  ACTIVE
+  LOCKED
+}
+
+enum wallet_transaction_type {
+  CREDIT
+  DEBIT
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  PAYOUT
+}
+
+model wallets {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String                @unique @db.Uuid
+  balance         Decimal               @default(0) @db.Decimal(12, 2)
+  pending_balance Decimal               @default(0) @db.Decimal(12, 2)
+  status          wallet_status         @default(ACTIVE)
+  created_at      DateTime              @default(now()) @db.Timestamp(6)
+  updated_at      DateTime              @default(now()) @updatedAt @db.Timestamp(6)
+  users           User                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions    wallet_transactions[]
+}
+
+model wallet_transactions {
+  id            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wallet_id     String                  @db.Uuid
+  type          wallet_transaction_type
+  amount        Decimal                 @db.Decimal(12, 2)
+  balance_after Decimal                 @db.Decimal(12, 2)
+  booking_id    String?                 @db.Uuid
+  description   String?
+  created_at    DateTime                @default(now()) @db.Timestamp(6)
+  wallets       wallets                 @relation(fields: [wallet_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  bookings      bookings?               @relation(fields: [booking_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([wallet_id], map: "idx_wallet_transactions_wallet_id")
+  @@index([booking_id], map: "idx_wallet_transactions_booking_id")
+}
+
+enum payout_status {
+  PAYOUT_PENDING
+  PROCESSING
+  PAID_OUT
+  FAILED
+}
+
+model payout_requests {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id     String            @db.Uuid
+  amount          Decimal           @db.Decimal(12, 2)
+  status          payout_status     @default(PAYOUT_PENDING)
+  admin_note      String?
+  created_at      DateTime          @default(now()) @db.Timestamp(6)
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamp(6)
+
+  provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Cascade)
 }
 
 enum Role {
