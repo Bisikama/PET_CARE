@@ -47,6 +47,7 @@ export interface BookingRepositoryPort {
     },
     bookingServiceData: {
       providerServiceId: string;
+      serviceId?: string;
       price: number;
       durationMinutes: number;
       serviceName: string;
@@ -73,4 +74,30 @@ export interface BookingRepositoryPort {
     ward: string,
     date: Date,
   ): Promise<any[]>;
+  findServiceChecklistTemplates(serviceId: string, tx?: any): Promise<any[]>;
+  findChecklistItemById(itemId: string, tx?: any): Promise<any>;
+  updateChecklistItem(
+    itemId: string,
+    data: { status?: any; note?: string; completed_at?: Date | null },
+    tx?: any,
+  ): Promise<any>;
+  createBookingMedia(
+    medias: Array<{
+      booking_id: string;
+      uploaded_by: string;
+      media_url: string;
+      media_type: any;
+      caption?: string;
+    }>,
+    tx?: any,
+  ): Promise<any>;
+  addBookingStatusLog(
+    bookingId: string,
+    oldStatus: booking_status | null,
+    newStatus: booking_status,
+    changedBy: string | null,
+    note?: string,
+    tx?: any,
+  ): Promise<any>;
 }
+

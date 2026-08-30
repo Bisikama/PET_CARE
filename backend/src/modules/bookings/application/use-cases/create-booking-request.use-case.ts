@@ -131,6 +131,7 @@ export class CreateBookingRequestUseCase {
         },
         {
           providerServiceId: providerService.id,
+          serviceId: dto.serviceId,
           price: Number(providerService.price),
           durationMinutes: providerService.services.duration_minutes,
           serviceName: providerService.services.name,

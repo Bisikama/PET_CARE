@@ -89,7 +89,7 @@ async function main() {
   const providerServicesData = [
     {
       provider_id: providerProfile.id,
-      service_id: 'a23b1234-abcd-1234-ef01-000000000001', // Chăm sóc chó tại nhà
+      service_id: 'a23b1234-abcd-4234-8f01-000000000001', // Chăm sóc chó tại nhà
       price: 150000,
       custom_description: 'Chăm sóc chó tại nhà khu vực Gò Vấp',
       pet_species: 'Dog',
@@ -100,7 +100,7 @@ async function main() {
     },
     {
       provider_id: providerProfile.id,
-      service_id: 'a23b1234-abcd-1234-ef01-000000000002', // Dắt chó đi dạo
+      service_id: 'a23b1234-abcd-4234-8f01-000000000002', // Dắt chó đi dạo
       price: 100000,
       custom_description: 'Dắt chó đi dạo ở công viên Gò Vấp',
       pet_species: 'Dog',
@@ -111,7 +111,7 @@ async function main() {
     },
     {
       provider_id: providerProfile.id,
-      service_id: 'a23b1234-abcd-1234-ef01-000000000003', // Chăm sóc mèo tại nhà
+      service_id: 'a23b1234-abcd-4234-8f01-000000000003', // Chăm sóc mèo tại nhà
       price: 120000,
       custom_description: 'Chăm sóc mèo tại nhà khu vực Gò Vấp',
       pet_species: 'Cat',
@@ -122,7 +122,7 @@ async function main() {
     },
     {
       provider_id: providerProfile.id,
-      service_id: 'a23b1234-abcd-1234-ef01-000000000004', // Tắm rửa cắt tỉa
+      service_id: 'a23b1234-abcd-4234-8f01-000000000004', // Tắm rửa cắt tỉa
       price: 250000,
       custom_description: 'Tắm rửa cắt tỉa chuyên nghiệp tại Gò Vấp',
       pet_species: 'Dog',
@@ -133,7 +133,7 @@ async function main() {
     },
     {
       provider_id: providerProfile.id,
-      service_id: 'a23b1234-abcd-1234-ef01-000000000004', // Tắm rửa cắt tỉa (mèo)
+      service_id: 'a23b1234-abcd-4234-8f01-000000000004', // Tắm rửa cắt tỉa (mèo)
       price: 220000,
       custom_description: 'Tắm sấy chải lông rụng cho mèo tại Gò Vấp',
       pet_species: 'Cat',
@@ -303,7 +303,7 @@ async function main() {
     const serviceDogWalk = await prisma.provider_services.findFirst({
       where: {
         provider_id: providerProfile.id,
-        service_id: 'a23b1234-abcd-1234-ef01-000000000002', // Dắt chó đi dạo
+        service_id: 'a23b1234-abcd-4234-8f01-000000000002', // Dắt chó đi dạo
         pet_species: 'Dog',
       },
     });
@@ -385,7 +385,7 @@ async function main() {
     const serviceCatGroom = await prisma.provider_services.findFirst({
       where: {
         provider_id: providerProfile.id,
-        service_id: 'a23b1234-abcd-1234-ef01-000000000004', // Tắm rửa cắt tỉa
+        service_id: 'a23b1234-abcd-4234-8f01-000000000004', // Tắm rửa cắt tỉa
         pet_species: 'Cat',
       },
     });

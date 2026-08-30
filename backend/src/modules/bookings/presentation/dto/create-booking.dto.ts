@@ -27,7 +27,7 @@ export class CreateBookingDto {
     example: '5c6d7e8f-9a0b-1c2d-3e4f-5a6b7c8d9e0f',
     description: 'ID of the system service',
   })
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   serviceId: string;
 
