@@ -6,6 +6,7 @@ import { GetCurrentUserId } from '../../../../common/decorators/get-current-user
 import { CreateBookingRequestUseCase } from '../../application/use-cases/create-booking-request.use-case';
 import { ProviderAcceptBookingUseCase } from '../../application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from '../../application/use-cases/provider-reject-booking.use-case';
+import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import type { BookingRepositoryPort } from '../../application/ports/booking-repository.port';
 import { BOOKING_REPOSITORY } from '../../booking.tokens';
 import { Inject } from '@nestjs/common';
@@ -19,6 +20,7 @@ export class BookingsController {
     private readonly createBookingUseCase: CreateBookingRequestUseCase,
     private readonly acceptBookingUseCase: ProviderAcceptBookingUseCase,
     private readonly rejectBookingUseCase: ProviderRejectBookingUseCase,
+    private readonly cancelBookingUseCase: CustomerCancelBookingUseCase,
     @Inject(BOOKING_REPOSITORY)
     private readonly bookingRepo: BookingRepositoryPort,
   ) {}
@@ -104,5 +106,20 @@ export class BookingsController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async findById(@Param('id') bookingId: string) {
     return this.bookingRepo.findBookingById(bookingId);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Hủy đơn đặt lịch (Khách hàng)' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Đơn đặt lịch đã được hủy thành công. Tiền đã được hoàn lại nếu thanh toán bằng Ví/Ký quỹ.' })
+  @ApiResponse({ status: 400, description: 'Đơn đặt lịch không tồn tại hoặc không thuộc quyền sở hữu.' })
+  @ApiResponse({ status: 409, description: 'Trạng thái đơn đặt lịch không cho phép hủy.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  async cancel(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+  ) {
+    return this.cancelBookingUseCase.execute(userId, bookingId);
   }
 }

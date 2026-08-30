@@ -2,7 +2,7 @@
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Role, availability_slot_status } from '@prisma/client';
+import { Prisma, Role, availability_slot_status } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
 import request from 'supertest';
@@ -100,6 +100,8 @@ describe('BookingController (e2e)', () => {
         ward: 'Phường 12',
         district: 'Quận 10',
         city: 'Thành phố Hồ Chí Minh',
+        latitude: new Prisma.Decimal(10.762622),
+        longitude: new Prisma.Decimal(106.660172),
       },
     });
     addressId = address.id;

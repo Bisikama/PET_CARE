@@ -57,6 +57,8 @@ export interface BookingRepositoryPort {
   ): Promise<any>;
   findBookingById(bookingId: string, tx?: any): Promise<any>;
   updateBookingStatus(bookingId: string, status: booking_status, tx?: any): Promise<any>;
+  createChatRoom(bookingId: string, customerId: string, providerId: string, tx?: any): Promise<any>;
+  updateChatRoomStatus(bookingId: string, isActive: boolean, tx?: any): Promise<any>;
   addBookingEvent(
     bookingId: string,
     actorId: string | null,

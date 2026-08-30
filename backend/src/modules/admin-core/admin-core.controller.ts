@@ -16,6 +16,15 @@ import { Role } from '@prisma/client';
 export class AdminCoreController {
   constructor(private readonly adminCoreService: AdminCoreService) {}
 
+  @Get('dashboard/stats')
+  @ApiOperation({ summary: 'Lấy thống kê tổng quan (Dashboard Admin)' })
+  @ApiResponse({ status: 200, description: 'Trả về các số liệu thống kê' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  async getDashboardStats() {
+    return this.adminCoreService.getDashboardStats();
+  }
+
   @Patch('users/:id/suspend')
   @ApiOperation({ summary: 'Khóa tài khoản người dùng (Chỉ dành cho Admin)' })
   @ApiParam({ name: 'id', description: 'ID của người dùng cần khóa', type: String })

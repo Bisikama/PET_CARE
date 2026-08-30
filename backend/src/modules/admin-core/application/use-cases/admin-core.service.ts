@@ -8,6 +8,35 @@ import { Role, user_status, provider_status } from '@prisma/client';
 export class AdminCoreService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getDashboardStats() {
+    const [
+      totalUsers,
+      totalProviders,
+      totalBookings,
+      openDisputes,
+      totalRevenueAgg,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.provider_profiles.count(),
+      this.prisma.bookings.count(),
+      this.prisma.bookings.count({
+        where: { status: 'DISPUTED' },
+      }),
+      this.prisma.bookings.aggregate({
+        _sum: { total_price: true },
+        where: { status: 'COMPLETED' },
+      }),
+    ]);
+
+    return {
+      totalUsers,
+      totalProviders,
+      totalBookings,
+      openDisputes,
+      totalRevenue: totalRevenueAgg._sum.total_price || 0,
+    };
+  }
+
   async suspendUser(adminId: string, targetUserId: string, suspendUserDto: SuspendUserDto) {
     const { reason } = suspendUserDto;
 

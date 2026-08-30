@@ -7,9 +7,11 @@ import { ReviewsService } from './application/use-cases/reviews.service';
 import { SupportService } from './application/use-cases/support.service';
 import { DisputesService } from './application/use-cases/disputes.service';
 import { IncidentsService } from './application/use-cases/incidents.service';
+import { SettlementsModule } from '../settlements/settlements.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
-  imports: [PrismaModule, StorageModule],
+  imports: [PrismaModule, StorageModule, SettlementsModule, ChatModule],
   controllers: [CustomerCareController, AdminCustomerCareController],
   providers: [
     ReviewsService,
