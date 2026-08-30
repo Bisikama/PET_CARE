@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AccessTokenGuard } from '../../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../../common/decorators/get-current-user-id.decorator';
@@ -11,6 +11,14 @@ import { ValidatePromotionDto } from './dto/validate-promotion.dto';
 @ApiBearerAuth()
 export class PromotionsController {
   constructor(private readonly promotionsService: PromotionsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Lấy danh sách khuyến mãi đang áp dụng' })
+  @ApiResponse({ status: 200, description: 'Danh sách mã khuyến mãi' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  async getActivePromotions() {
+    return this.promotionsService.getActivePromotions();
+  }
 
   @Post('validate')
   @ApiOperation({ summary: 'Kiểm tra tính hợp lệ của mã khuyến mãi' })

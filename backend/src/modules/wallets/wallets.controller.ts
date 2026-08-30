@@ -95,4 +95,18 @@ export class WalletsController {
   ) {
     return this.walletsService.createPayoutRequest(userId, amount);
   }
+
+  @Get('me/payout-requests')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lấy danh sách yêu cầu rút tiền của tôi (Provider)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Trang hiện tại (Mặc định: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Số bản ghi trên mỗi trang (Mặc định: 20)' })
+  @ApiResponse({ status: 200, description: 'Danh sách yêu cầu rút tiền' })
+  async getMyPayoutRequests(
+    @GetCurrentUserId() userId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.walletsService.getPayoutRequests(userId, Number(page), Number(limit));
+  }
 }

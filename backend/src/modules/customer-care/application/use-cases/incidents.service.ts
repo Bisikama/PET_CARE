@@ -56,6 +56,11 @@ export class IncidentsService {
           data: { status: booking_status.INCIDENT_REPORTED },
         });
 
+        await tx.chat_rooms.updateMany({
+          where: { booking_id: bookingId },
+          data: { is_active: false },
+        });
+
         await tx.payments.update({
           where: { booking_id: bookingId },
           data: { status: payment_status.PAID_HELD_IN_ESCROW },

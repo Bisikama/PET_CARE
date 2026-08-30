@@ -67,6 +67,11 @@ export class DisputesService {
         data: { status: booking_status.DISPUTED },
       });
 
+      await tx.chat_rooms.updateMany({
+        where: { booking_id: bookingId },
+        data: { is_active: false },
+      });
+
       await tx.payments.update({
         where: { booking_id: bookingId },
         data: { status: payment_status.ESCROW_ON_HOLD },

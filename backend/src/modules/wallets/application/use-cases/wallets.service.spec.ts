@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { WalletsService } from './wallets.service';
 import { Prisma } from '@prisma/client';
 import { wallet_transaction_type } from '@prisma/client';
+import { PrismaService } from '../../../../database/prisma.service';
 
 describe('WalletsService (Ledger Logic)', () => {
   let service: WalletsService;
@@ -10,8 +11,23 @@ describe('WalletsService (Ledger Logic)', () => {
   let txMock: any;
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      $transaction: jest.fn((callback) => callback(txMock)),
+      wallets: {
+        findUnique: jest.fn(),
+      },
+      payout_requests: {
+        create: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
+      }
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [WalletsService],
+      providers: [
+        WalletsService,
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
     }).compile();
 
     service = module.get<WalletsService>(WalletsService);
@@ -68,6 +84,7 @@ describe('WalletsService (Ledger Logic)', () => {
         where: { id: walletId },
         data: {
           balance: { increment: amountDecimal },
+          pending_balance: { increment: new Prisma.Decimal(0) },
         },
       });
     });
@@ -78,7 +95,8 @@ describe('WalletsService (Ledger Logic)', () => {
       expect(txMock.wallets.update).toHaveBeenCalledWith({
         where: { id: walletId },
         data: {
-          balance: { decrement: amountDecimal },
+          balance: { increment: amountDecimal.negated() },
+          pending_balance: { increment: new Prisma.Decimal(0) },
         },
       });
     });
@@ -89,7 +107,8 @@ describe('WalletsService (Ledger Logic)', () => {
       expect(txMock.wallets.update).toHaveBeenCalledWith({
         where: { id: walletId },
         data: {
-          balance: { decrement: amountDecimal },
+          balance: { increment: amountDecimal.negated() },
+          pending_balance: { increment: new Prisma.Decimal(0) },
         },
       });
     });
@@ -100,6 +119,7 @@ describe('WalletsService (Ledger Logic)', () => {
       expect(txMock.wallets.update).toHaveBeenCalledWith({
         where: { id: walletId },
         data: {
+          balance: { increment: new Prisma.Decimal(0) },
           pending_balance: { increment: amountDecimal },
         },
       });
@@ -111,8 +131,8 @@ describe('WalletsService (Ledger Logic)', () => {
       expect(txMock.wallets.update).toHaveBeenCalledWith({
         where: { id: walletId },
         data: {
-          pending_balance: { decrement: amountDecimal },
           balance: { increment: amountDecimal },
+          pending_balance: { increment: amountDecimal.negated() },
         },
       });
     });
@@ -125,7 +145,7 @@ describe('WalletsService (Ledger Logic)', () => {
 
       await expect(
         service.processTransaction(walletId, amountDecimal, wallet_transaction_type.DEBIT, null, null, txMock)
-      ).rejects.toThrow(`Insufficient funds in wallet ${walletId}`);
+      ).rejects.toThrow(`Số dư không đủ trong ví ${walletId}`);
     });
   });
 });

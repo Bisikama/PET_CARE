@@ -19,8 +19,10 @@ describe('DisputesService', () => {
   };
 
   const mockTx = {
-    complaints: { update: jest.fn() },
+    complaints: { update: jest.fn(), create: jest.fn() },
     bookings: { update: jest.fn() },
+    chat_rooms: { updateMany: jest.fn() },
+    payments: { update: jest.fn() },
     booking_status_logs: { create: jest.fn() },
     audit_logs: { create: jest.fn() },
   };

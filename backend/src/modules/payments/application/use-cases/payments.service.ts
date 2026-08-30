@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import * as qs from 'qs';
@@ -243,6 +243,119 @@ export class PaymentsService {
       }
       return { RspCode: '99', Message: 'Unknown error' };
     }
+  }
+
+  /**
+   * Thanh toán bằng số dư ví (Khách hàng)
+   */
+  async checkoutWithWallet(customerId: string, bookingId: string, promotionCode?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Kiểm tra Booking
+      const booking = await tx.bookings.findUnique({
+        where: { id: bookingId },
+      });
+
+      if (!booking) throw new BadRequestException('Không tìm thấy Booking');
+      if (booking.customer_id !== customerId) throw new BadRequestException('Booking không thuộc về bạn');
+      if (booking.status !== 'PENDING_PAYMENT') throw new ConflictException('Booking không ở trạng thái chờ thanh toán');
+
+      // Tính toán khuyến mãi (tương tự VNPay)
+      let finalAmount = Number(booking.total_price);
+      if (promotionCode) {
+        const promotion = await tx.promotions.findUnique({ where: { code: promotionCode } });
+        if (promotion && promotion.is_active) {
+          const now = new Date();
+          if (promotion.start_date <= now && promotion.end_date >= now) {
+            let discountAmount = 0;
+            if (promotion.discount_percent) {
+              discountAmount = finalAmount * (promotion.discount_percent / 100);
+            } else if (promotion.discount_amount) {
+              discountAmount = Number(promotion.discount_amount);
+            }
+            if (promotion.max_discount_amount && discountAmount > Number(promotion.max_discount_amount)) {
+              discountAmount = Number(promotion.max_discount_amount);
+            }
+            finalAmount -= discountAmount;
+            if (finalAmount < 0) finalAmount = 0;
+            
+            // Cập nhật khuyến mãi
+            await tx.promotions.update({
+              where: { id: promotion.id },
+              data: { used_count: { increment: 1 } }
+            });
+            await tx.promotion_usages.create({
+              data: {
+                promotion_id: promotion.id,
+                user_id: customerId,
+                booking_id: bookingId,
+              }
+            });
+          }
+        }
+      }
+
+      // 2. Kiểm tra Ví Khách Hàng
+      const customerWallet = await tx.wallets.findUnique({
+        where: { user_id: customerId },
+      });
+
+      if (!customerWallet) throw new BadRequestException('Không tìm thấy ví của Khách hàng');
+      if (customerWallet.balance.lessThan(finalAmount)) {
+        throw new ConflictException('Số dư trong ví không đủ để thanh toán Booking này');
+      }
+
+      // 3. Trừ tiền Ví Khách Hàng (DEBIT)
+      await this.walletsService.processTransaction(
+        customerWallet.id,
+        finalAmount,
+        'DEBIT',
+        bookingId,
+        `Thanh toán Booking ${bookingId}`,
+        tx,
+      );
+
+      // 4. Ký quỹ vào Ví Provider (ESCROW_HOLD)
+      if (booking.provider_id) {
+        const providerWallet = await tx.wallets.findUnique({
+          where: { user_id: booking.provider_id },
+        });
+        if (providerWallet) {
+          await this.walletsService.processTransaction(
+            providerWallet.id,
+            finalAmount,
+            'ESCROW_HOLD',
+            bookingId,
+            `Ký quỹ thanh toán từ Ví Customer`,
+            tx,
+          );
+        }
+      }
+
+      // 5. Tạo Payment record (Thành công luôn vì trừ ví trực tiếp)
+      const payment = await tx.payments.create({
+        data: {
+          booking_id: bookingId,
+          customer_id: customerId,
+          amount: finalAmount,
+          method: 'WALLET',
+          status: 'PAID_HELD_IN_ESCROW',
+          transaction_code: `WALLET_${Date.now()}`,
+          paid_at: new Date(),
+        },
+      });
+
+      // 6. Cập nhật Booking
+      await tx.bookings.update({
+        where: { id: bookingId },
+        data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
+      });
+
+      return {
+        success: true,
+        message: 'Thanh toán bằng ví thành công',
+        payment,
+      };
+    });
   }
 
   async getBookingForCheckout(bookingId: string) {

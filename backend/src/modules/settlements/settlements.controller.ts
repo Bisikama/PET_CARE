@@ -37,6 +37,28 @@ export class SettlementsController {
     return this.settlementsService.approvePayoutRequest(adminId, payoutRequestId);
   }
 
+  @Post('payout-requests/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Từ chối yêu cầu rút tiền (Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của yêu cầu rút tiền (payoutRequestId)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string', description: 'Lý do từ chối (bắt buộc)' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Từ chối thành công, tiền đã được hoàn lại vào ví Provider' })
+  @ApiResponse({ status: 400, description: 'Thiếu lý do hoặc không tìm thấy yêu cầu' })
+  async rejectPayout(
+    @GetCurrentUserId() adminId: string,
+    @Param('id') payoutRequestId: string,
+    @Body('reason') reason: string,
+  ) {
+    return this.settlementsService.rejectPayoutRequest(adminId, payoutRequestId, reason);
+  }
+
   @Post('payments/:bookingId/release-escrow')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Giải phóng tiền ký quỹ thủ công cho Provider (Admin)' })

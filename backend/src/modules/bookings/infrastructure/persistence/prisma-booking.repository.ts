@@ -212,6 +212,30 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     });
   }
 
+  async createChatRoom(bookingId: string, customerId: string, providerId: string, tx?: any): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.chat_rooms.upsert({
+      where: { booking_id: bookingId },
+      create: {
+        booking_id: bookingId,
+        customer_id: customerId,
+        provider_user_id: providerId,
+        is_active: true,
+      },
+      update: {
+        is_active: true,
+      },
+    });
+  }
+
+  async updateChatRoomStatus(bookingId: string, isActive: boolean, tx?: any): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.chat_rooms.updateMany({
+      where: { booking_id: bookingId },
+      data: { is_active: isActive },
+    });
+  }
+
   async addBookingEvent(
     bookingId: string,
     actorId: string | null,

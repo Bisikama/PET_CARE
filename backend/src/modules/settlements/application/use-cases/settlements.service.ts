@@ -48,22 +48,7 @@ export class SettlementsService {
         throw new BadRequestException('Không tìm thấy ví của Provider');
       }
 
-      // 3. Kiểm soát rủi ro: Số dư phải đủ
-      if (wallet.balance.lessThan(payoutRequest.amount)) {
-        throw new ConflictException('Số dư khả dụng không đủ để giải ngân');
-      }
-
-      // 4. Trừ tiền (DEBIT / PAYOUT)
-      await this.walletsService.processTransaction(
-        wallet.id,
-        payoutRequest.amount,
-        'PAYOUT',
-        null, // Payout không gắn với 1 booking cụ thể
-        `Duyệt rút tiền cho yêu cầu ${payoutRequestId}`,
-        tx,
-      );
-
-      // 5. Đổi trạng thái Payout Request
+      // 3. Đổi trạng thái Payout Request
       const updatedRequest = await tx.payout_requests.update({
         where: { id: payoutRequestId },
         data: {
@@ -72,7 +57,7 @@ export class SettlementsService {
         },
       });
 
-      // 6. Ghi log kiểm toán
+      // 4. Ghi log kiểm toán
       await tx.audit_logs.create({
         data: {
           actor_id: adminId,
@@ -82,6 +67,73 @@ export class SettlementsService {
           old_value: { status: 'PAYOUT_PENDING' },
           new_value: { status: 'PAID_OUT' },
           reason: 'Duyệt yêu cầu rút tiền',
+        },
+      });
+
+      return updatedRequest;
+    });
+  }
+
+  /**
+   * Từ chối yêu cầu rút tiền của Provider (Trả lại tiền vào ví)
+   */
+  async rejectPayoutRequest(adminId: string, payoutRequestId: string, reason: string) {
+    if (!reason || reason.trim() === '') {
+      throw new BadRequestException('Bắt buộc phải nhập lý do từ chối');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Lấy thông tin yêu cầu rút tiền
+      const payoutRequest = await tx.payout_requests.findUnique({
+        where: { id: payoutRequestId },
+      });
+
+      if (!payoutRequest) {
+        throw new BadRequestException('Không tìm thấy yêu cầu rút tiền');
+      }
+
+      if (payoutRequest.status !== 'PAYOUT_PENDING') {
+        throw new ConflictException('Yêu cầu rút tiền không ở trạng thái chờ duyệt');
+      }
+
+      // 2. Lấy thông tin ví
+      const wallet = await tx.wallets.findUnique({
+        where: { user_id: payoutRequest.provider_id },
+      });
+
+      if (!wallet) {
+        throw new BadRequestException('Không tìm thấy ví của Provider');
+      }
+
+      // 3. Trả lại tiền (CREDIT) do lúc yêu cầu đã bị trừ
+      await this.walletsService.processTransaction(
+        wallet.id,
+        payoutRequest.amount,
+        'CREDIT',
+        null,
+        `Hoàn tiền do từ chối yêu cầu rút tiền ${payoutRequestId}: ${reason}`,
+        tx,
+      );
+
+      // 4. Đổi trạng thái Payout Request
+      const updatedRequest = await tx.payout_requests.update({
+        where: { id: payoutRequestId },
+        data: {
+          status: 'FAILED',
+          admin_note: `Rejected by Admin ${adminId}: ${reason}`,
+        },
+      });
+
+      // 5. Ghi log kiểm toán
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'REJECT_PAYOUT',
+          target_type: 'PAYOUT_REQUEST',
+          target_id: payoutRequestId,
+          old_value: { status: 'PAYOUT_PENDING' },
+          new_value: { status: 'FAILED' },
+          reason: reason,
         },
       });
 
@@ -205,7 +257,7 @@ export class SettlementsService {
           target_type: 'PAYMENT',
           target_id: payment.id,
           old_value: { paymentStatus: payment.status, bookingStatus: booking.status },
-          new_value: { paymentStatus: 'REFUNDED', bookingStatus: 'CANCELLED' },
+          new_value: { paymentStatus: 'REFUNDED', bookingStatus: 'REJECTED' },
           reason: reason,
         },
       });
@@ -285,7 +337,7 @@ export class SettlementsService {
 
     await tx.bookings.update({
       where: { id: bookingId },
-      data: { status: 'CANCELLED' },
+      data: { status: 'REJECTED' },
     });
 
     return updatedPayment;

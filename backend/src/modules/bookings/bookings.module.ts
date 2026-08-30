@@ -12,15 +12,18 @@ import { PrismaBookingRepository } from './infrastructure/persistence/prisma-boo
 import { PrismaUnitOfWork } from './infrastructure/persistence/prisma-unit-of-work';
 
 import { PaymentsModule } from '../payments/payments.module';
+import { SettlementsModule } from '../settlements/settlements.module';
+import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
 
 @Module({
-  imports: [PrismaModule, PaymentsModule],
+  imports: [PrismaModule, PaymentsModule, SettlementsModule],
   controllers: [BookingsController, BookingMatchingController],
   providers: [
     CreateBookingRequestUseCase,
     ProviderAcceptBookingUseCase,
     ProviderRejectBookingUseCase,
     SearchMatchingProvidersUseCase,
+    CustomerCancelBookingUseCase,
     BookingStateMachineService,
     {
       provide: BOOKING_REPOSITORY,

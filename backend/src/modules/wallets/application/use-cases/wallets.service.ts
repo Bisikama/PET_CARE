@@ -101,25 +101,66 @@ export class WalletsService {
       throw new BadRequestException('Số tiền rút phải lớn hơn 0');
     }
 
-    const wallet = await this.prisma.wallets.findUnique({
-      where: { user_id: providerId },
+    return this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallets.findUnique({
+        where: { user_id: providerId },
+      });
+
+      if (!wallet) {
+        throw new BadRequestException('Không tìm thấy ví của Provider');
+      }
+
+      if (wallet.balance.lessThan(amount)) {
+        throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
+      }
+
+      // 1. Ghi nhận giao dịch trừ tiền (PAYOUT)
+      await this.processTransaction(
+        wallet.id,
+        amount,
+        'PAYOUT',
+        null,
+        'Yêu cầu rút tiền về tài khoản ngân hàng',
+        tx,
+      );
+
+      // 2. Tạo bản ghi chờ duyệt (PENDING)
+      const request = await tx.payout_requests.create({
+        data: {
+          provider_id: providerId,
+          amount: amount,
+          status: payout_status.PAYOUT_PENDING,
+        },
+      });
+
+      return request;
     });
+  }
 
-    if (!wallet) {
-      throw new BadRequestException('Không tìm thấy ví của Provider');
-    }
+  /**
+   * Lấy danh sách yêu cầu rút tiền của Provider
+   * @param providerId ID của Provider
+   */
+  async getPayoutRequests(providerId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+    
+    const [data, total] = await Promise.all([
+      this.prisma.payout_requests.findMany({
+        where: { provider_id: providerId },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
+      this.prisma.payout_requests.count({
+        where: { provider_id: providerId },
+      })
+    ]);
 
-    if (wallet.balance.lessThan(amount)) {
-      throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
-    }
-
-    // Tạo bản ghi chờ duyệt (PENDING) - Chưa trừ tiền
-    return this.prisma.payout_requests.create({
-      data: {
-        provider_id: providerId,
-        amount: amount,
-        status: payout_status.PAYOUT_PENDING,
-      },
-    });
+    return {
+      data,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
   }
 }

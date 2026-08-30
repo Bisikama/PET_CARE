@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Put, Get, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Body, Controller, Param, Post, Put, Get, UseGuards, UseInterceptors, UploadedFiles, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
@@ -25,6 +25,20 @@ export class CustomerCareController {
   ) {}
 
   // --- REVIEWS ---
+  @Get('providers/:providerId/reviews')
+  @ApiOperation({ summary: 'Lấy danh sách đánh giá của một Provider' })
+  @ApiParam({ name: 'providerId', description: 'ID của Provider', type: String })
+  @ApiResponse({ status: 200, description: 'Danh sách đánh giá phân trang' })
+  async getProviderReviews(
+    @Param('providerId') providerId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.reviewsService.getProviderReviews(providerId, pageNum, limitNum);
+  }
+
   @Post('bookings/:bookingId/reviews')
   @ApiOperation({ summary: 'Để lại đánh giá cho dịch vụ đã hoàn thành' })
   @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
@@ -56,6 +70,19 @@ export class CustomerCareController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async getMyTickets(@GetCurrentUserId() userId: string) {
     return this.supportService.getMyTickets(userId);
+  }
+
+  @Get('tickets/:ticketId')
+  @ApiOperation({ summary: 'Lấy chi tiết yêu cầu hỗ trợ (gồm tin nhắn)' })
+  @ApiParam({ name: 'ticketId', description: 'ID của yêu cầu hỗ trợ', type: String })
+  @ApiResponse({ status: 200, description: 'Chi tiết yêu cầu hỗ trợ' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hỗ trợ' })
+  async getTicketDetails(
+    @GetCurrentUserId() userId: string,
+    @Param('ticketId') ticketId: string,
+  ) {
+    return this.supportService.getTicketDetails(userId, ticketId, false);
   }
 
   @Post('tickets/:ticketId/reply')
