@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { wallet_transaction_type, payout_status } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
@@ -55,7 +60,7 @@ export class WalletsService {
         balanceIncrement = amountDecimal;
         break;
       default:
-        throw new InternalServerErrorException(`Loại giao dịch không hợp lệ: ${type}`);
+        throw new InternalServerErrorException(`Loại giao dịch không hợp lệ: ${(type as string)}`);
     }
 
     // Cập nhật nguyên tử (Atomic update) để tránh Race Condition
@@ -92,7 +97,7 @@ export class WalletsService {
 
   /**
    * Yêu cầu rút tiền (Provider Request Payout)
-   * 
+   *
    * @param providerId ID của Provider
    * @param amount Số tiền muốn rút
    */
@@ -143,7 +148,7 @@ export class WalletsService {
    */
   async getPayoutRequests(providerId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
-    
+
     const [data, total] = await Promise.all([
       this.prisma.payout_requests.findMany({
         where: { provider_id: providerId },
@@ -153,7 +158,7 @@ export class WalletsService {
       }),
       this.prisma.payout_requests.count({
         where: { provider_id: providerId },
-      })
+      }),
     ]);
 
     return {

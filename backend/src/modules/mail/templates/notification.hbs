@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{title}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px; }
+        .container { background-color: #ffffff; padding: 30px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { color: #1f2937; }
+        p { color: #4b5563; line-height: 1.6; }
+        .footer { margin-top: 30px; font-size: 12px; color: #9ca3af; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Xin chào {{userName}},</h2>
+        <p>{{content}}</p>
+        {{#if bookingId}}
+        <p><strong>Mã Booking:</strong> {{bookingId}}</p>
+        {{/if}}
+        <div class="footer">
+            <p>Email này được gửi tự động từ hệ thống Pet Care. Vui lòng không trả lời.</p>
+        </div>
+    </div>
+</body>
+</html>

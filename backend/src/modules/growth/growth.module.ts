@@ -8,19 +8,17 @@ import { SubscriptionsService } from './subscriptions/subscriptions.service';
 import { SubscriptionsController } from './subscriptions/subscriptions.controller';
 import { PrismaModule } from '../../database/prisma.module';
 
+import { MailModule } from '../mail/mail.module';
+
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MailModule],
   controllers: [
     NotificationsController,
     PromotionsController,
     AdminPromotionsController,
     SubscriptionsController,
   ],
-  providers: [
-    NotificationsService,
-    PromotionsService,
-    SubscriptionsService,
-  ],
+  providers: [NotificationsService, PromotionsService, SubscriptionsService],
   exports: [NotificationsService, PromotionsService, SubscriptionsService],
 })
 export class GrowthModule {}
