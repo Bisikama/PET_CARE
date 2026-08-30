@@ -15,7 +15,7 @@ export class RegisterUserUseCase {
   constructor(
     private readonly usersService: UsersService,
     private readonly supabaseAuthService: SupabaseAuthService,
-  ) { }
+  ) {}
 
   async execute(input: RegisterUserInput) {
     const normalizedEmail = this.supabaseAuthService.normalizeEmail(input.email);
@@ -37,6 +37,27 @@ export class RegisterUserUseCase {
     if (!remoteUser?.identities || remoteUser.identities.length === 0) {
       // User bị làm mờ (Tồn tại rồi)
       throw new ConflictException(AUTH_ERRORS.ACCOUNT_ALREADY_EXISTS);
+    }
+
+    // Lưu local user để tránh lỗi mất đồng bộ nếu DB trigger bị chậm
+    const userByEmail = await this.usersService.findByEmail(normalizedEmail);
+    if (!userByEmail) {
+      await this.usersService.create({
+        supabaseId: remoteUser.id,
+        email: normalizedEmail,
+        fullName: input.fullName || 'Unknown',
+        role: 'CUSTOMER',
+        status: 'PENDING_VERIFICATION',
+        isActive: true,
+        emailVerifiedAt: null,
+      });
+    } else {
+      await this.usersService.update(userByEmail.id, {
+        supabaseId: remoteUser.id,
+        fullName: input.fullName || userByEmail.fullName,
+        status: 'PENDING_VERIFICATION',
+        isActive: true,
+      });
     }
 
     return {
