@@ -5,11 +5,15 @@ export function useBooking() {
     currentStep,
     selectedPetId,
     selectedServiceId,
+    selectedAddressId,
+    selectedProviderId,
     petWeightClass,
     specialNeeds,
     notes,
     setSelectedPetId,
     setSelectedServiceId,
+    setSelectedAddressId,
+    setSelectedProviderId,
     setStep,
     resetBooking,
   } = useBookingStore();
@@ -18,12 +22,17 @@ export function useBooking() {
     currentStep,
     selectedPetId,
     selectedServiceId,
+    selectedAddressId,
+    selectedProviderId,
     petWeightClass,
     specialNeeds,
     notes,
     setSelectedPetId,
     setSelectedServiceId,
+    setSelectedAddressId,
+    setSelectedProviderId,
     setStep,
     resetBooking,
   };
 }
+

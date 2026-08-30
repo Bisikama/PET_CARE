@@ -10,4 +10,24 @@ export const bookingService = {
     const response = await axiosInstance.get(`/services/${serviceId}/pricing-rules`);
     return response.data;
   },
+
+  discoverProviders: async (params: {
+    serviceId: string;
+    petId?: string;
+    species?: string;
+    weight?: number;
+    addressId?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    date?: string;
+    priceMin?: number;
+    priceMax?: number;
+    ratingMin?: number;
+    hasTrustBadge?: boolean;
+  }): Promise<any[]> => {
+    const response = await axiosInstance.get('/service-discovery/providers', { params });
+    return response.data;
+  },
 };
+

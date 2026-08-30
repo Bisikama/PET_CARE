@@ -2,7 +2,18 @@ import { useEffect } from 'react';
 import { useMeStore } from '../stores/me.store';
 
 export function useMe() {
-  const { isOpen, user, isLoading, error, openModal, closeModal, fetchMe } = useMeStore();
+  const {
+    isOpen,
+    isAddressModalOpen,
+    user,
+    isLoading,
+    error,
+    openModal,
+    closeModal,
+    openAddressModal,
+    closeAddressModal,
+    fetchMe,
+  } = useMeStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -12,11 +23,14 @@ export function useMe() {
 
   return {
     isOpen,
+    isAddressModalOpen,
     user,
     isLoading,
     error,
     openModal,
     closeModal,
+    openAddressModal,
+    closeAddressModal,
     refresh: fetchMe,
   };
 }

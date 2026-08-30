@@ -1,4 +1,5 @@
 export * from './components/MeModal';
+export * from './components/CustomerAddressModal';
 export * from './components/ProviderModal';
 export * from './components/ProviderRegisterModal';
 export * from './components/ProviderAddressModal';
@@ -13,5 +14,7 @@ export * from './hooks/useProviderArea';
 export * from './hooks/useProviderCapability';
 export * from './hooks/useProviderDocument';
 export * from './hooks/useVietNamProvinces';
+export * from './hooks/useCustomerAddresses';
+export * from './services/customer-addresses.service';
 export * from './stores/me.store';
 export * from './types';

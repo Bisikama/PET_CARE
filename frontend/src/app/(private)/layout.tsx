@@ -7,7 +7,7 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { isAuthenticated } from '@/lib/auth';
 import { ROUTES } from '@/lib/constants';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
-import { MeModal, ProviderModal } from '@/features/me';
+import { MeModal, CustomerAddressModal, ProviderModal } from '@/features/me';
 import { PetModal } from '@/features/pet';
 
 export default function PrivateLayout({
@@ -67,6 +67,7 @@ export default function PrivateLayout({
       </div>
 
       <MeModal />
+      <CustomerAddressModal />
       <PetModal />
       <ProviderModal />
     </div>

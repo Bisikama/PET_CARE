@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { X, Mail, Phone, Calendar, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, Mail, Phone, Calendar, ShieldCheck, Loader2, MapPin } from 'lucide-react';
 import { useMe } from '../hooks/useMe';
 import { formatDate } from '@/utils/formatDate';
 
 export function MeModal() {
-  const { isOpen, user, isLoading, error, closeModal, refresh } = useMe();
+  const { isOpen, user, isLoading, error, closeModal, refresh, openAddressModal } = useMe();
 
   // Listen to Escape key to close the modal
   React.useEffect(() => {
@@ -167,6 +167,25 @@ export function MeModal() {
                         month: 'long',
                         day: 'numeric',
                       })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Customer Addresses Link */}
+                <div 
+                  onClick={() => {
+                    closeModal();
+                    openAddressModal();
+                  }}
+                  className="flex items-center gap-4 cursor-pointer hover:bg-slate-50 p-2.5 rounded-2xl transition-all duration-200"
+                >
+                  <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl shrink-0">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Địa chỉ của tôi</p>
+                    <p className="text-sm font-semibold text-teal-600 mt-0.5 hover:text-teal-700 transition-colors">
+                      Quản lý địa chỉ nhận dịch vụ
                     </p>
                   </div>
                 </div>

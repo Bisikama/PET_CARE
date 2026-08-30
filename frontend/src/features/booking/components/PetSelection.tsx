@@ -152,7 +152,7 @@ export function PetSelection() {
             onClick={() => setStep(2)}
             className="inline-flex items-center justify-center gap-1.5 px-5 py-3 bg-[#0a1c2a] hover:bg-[#122e44] text-white text-xs font-bold rounded-2xl shadow transition-all duration-150 cursor-pointer active:scale-[0.98] shrink-0"
           >
-            Chọn thể trạng & nhu cầu
+            Chọn dịch vụ
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

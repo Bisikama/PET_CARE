@@ -4,21 +4,27 @@ import { User } from '../types';
 
 interface MeState {
   isOpen: boolean;
+  isAddressModalOpen: boolean;
   user: User | null;
   isLoading: boolean;
   error: string | null;
   openModal: () => void;
   closeModal: () => void;
+  openAddressModal: () => void;
+  closeAddressModal: () => void;
   fetchMe: () => Promise<void>;
 }
 
 export const useMeStore = create<MeState>((set, get) => ({
   isOpen: false,
+  isAddressModalOpen: false,
   user: null,
   isLoading: false,
   error: null,
   openModal: () => set({ isOpen: true }),
   closeModal: () => set({ isOpen: false, error: null }),
+  openAddressModal: () => set({ isAddressModalOpen: true }),
+  closeAddressModal: () => set({ isAddressModalOpen: false }),
   fetchMe: async () => {
     // Nếu đã có thông tin user rồi thì không cần gọi API nữa
     if (get().user) return;
