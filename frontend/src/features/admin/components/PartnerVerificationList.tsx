@@ -55,6 +55,7 @@ export function PartnerVerificationList() {
     approveProvider,
     rejectProvider,
     updateScreening,
+    reviewDocument,
     fetchProviderDocuments,
   } = useAdminProviders();
 
@@ -68,12 +69,14 @@ export function PartnerVerificationList() {
     message: string;
     actionType: ActionType | null;
     providerId: string | null;
+    documentId?: string | null;
   }>({
     show: false,
     title: '',
     message: '',
     actionType: null,
     providerId: null,
+    documentId: null,
   });
 
   const handleExpandToggle = async (providerId: string) => {
@@ -118,14 +121,50 @@ export function PartnerVerificationList() {
     });
   };
 
+  const handleApproveDocumentClick = (providerId: string, documentId: string, docLabel: string) => {
+    setActionModal({
+      show: true,
+      title: 'Phê duyệt tài liệu',
+      message: `Bạn có chắc chắn muốn duyệt tài liệu "${docLabel}" hợp lệ?`,
+      actionType: 'approve-document',
+      providerId,
+      documentId,
+    });
+  };
+
+  const handleRejectDocumentClick = (providerId: string, documentId: string, docLabel: string) => {
+    setActionModal({
+      show: true,
+      title: 'Từ chối tài liệu',
+      message: `Bạn có chắc muốn từ chối tài liệu "${docLabel}"? Vui lòng nhập lý do từ chối.`,
+      actionType: 'reject-document',
+      providerId,
+      documentId,
+    });
+  };
+
   const handleConfirmAction = async (reason?: string) => {
-    const { actionType, providerId } = actionModal;
+    const { actionType, providerId, documentId } = actionModal;
     if (!providerId || !actionType) return;
     if (actionType === 'approve-kyc') await reviewKyc(providerId, 'APPROVED');
     else if (actionType === 'approve-partner') await approveProvider(providerId);
     else if (actionType === 'approve-screening') await updateScreening(providerId, 'PASSED');
     else if (actionType === 'reject-kyc') await reviewKyc(providerId, 'REJECTED', reason);
     else if (actionType === 'reject-partner') await rejectProvider(providerId, reason!);
+    else if (actionType === 'approve-document' && documentId) {
+      const ok = await reviewDocument(providerId, documentId, 'APPROVED');
+      if (ok) {
+        const docs = await fetchProviderDocuments(providerId);
+        setProviderDocs(docs);
+      }
+    }
+    else if (actionType === 'reject-document' && documentId) {
+      const ok = await reviewDocument(providerId, documentId, 'REJECTED', reason);
+      if (ok) {
+        const docs = await fetchProviderDocuments(providerId);
+        setProviderDocs(docs);
+      }
+    }
     setActionModal(prev => ({ ...prev, show: false }));
   };
 
@@ -488,17 +527,39 @@ export function PartnerVerificationList() {
                                     </a>
                                   </div>
                                 </div>
-                                <div className="px-3 py-2 flex items-center justify-between border-t border-slate-50 bg-slate-50/20">
-                                  <span className="text-[10px] text-slate-450 font-medium">Trạng thái</span>
-                                  <span className={`text-[10px] font-extrabold ${
-                                    doc.status === 'APPROVED' ? 'text-emerald-500'
-                                    : doc.status === 'REJECTED' ? 'text-rose-500'
-                                    : 'text-amber-500'
-                                  }`}>
-                                    {doc.status === 'APPROVED' ? '✓ Hợp lệ'
-                                      : doc.status === 'REJECTED' ? '✕ Từ chối'
-                                      : '⏳ Chờ duyệt'}
-                                  </span>
+                                <div className="px-3 py-2 flex flex-col border-t border-slate-50 bg-slate-50/20">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-slate-450 font-medium">Trạng thái</span>
+                                    <span className={`text-[10px] font-extrabold ${
+                                      doc.status === 'APPROVED' ? 'text-emerald-500'
+                                      : doc.status === 'REJECTED' ? 'text-rose-500'
+                                      : 'text-amber-500'
+                                    }`}>
+                                      {doc.status === 'APPROVED' ? '✓ Hợp lệ'
+                                        : doc.status === 'REJECTED' ? '✕ Từ chối'
+                                        : '⏳ Chờ duyệt'}
+                                    </span>
+                                  </div>
+                                  {doc.status === 'PENDING' && (
+                                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 w-full justify-end">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRejectDocumentClick(provider.id, doc.id, label)}
+                                        className="flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold rounded-lg transition-all cursor-pointer"
+                                      >
+                                        <X className="w-3 h-3" />
+                                        Từ chối
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleApproveDocumentClick(provider.id, doc.id, label)}
+                                        className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg transition-all cursor-pointer"
+                                      >
+                                        <Check className="w-3 h-3" />
+                                        Duyệt
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             );

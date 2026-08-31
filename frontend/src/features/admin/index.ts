@@ -7,3 +7,7 @@ export * from './hooks/useAdminProviders';
 export * from './components/PartnerVerificationList';
 export * from './components/ConfirmModal';
 export * from './components/RejectReasonModal';
+export * from './components/AdminDashboardStats';
+export * from './components/AdminUserManagement';
+export * from './components/AdminAuditLogsList';
+

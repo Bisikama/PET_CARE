@@ -37,4 +37,51 @@ export const adminService = {
     const response = await axiosInstance.get(`/admin/providers/${providerId}/documents`);
     return response.data;
   },
+
+  reviewDocument: async (documentId: string, data: { status: 'APPROVED' | 'REJECTED'; rejectReason?: string }): Promise<any> => {
+    const response = await axiosInstance.put(`/admin/providers/documents/${documentId}/review`, data);
+    return response.data;
+  },
+
+  grantBadge: async (providerId: string, data: { badgeCode: string }): Promise<any> => {
+    const response = await axiosInstance.post(`/admin/providers/${providerId}/badges`, data);
+    return response.data;
+  },
+
+  getDashboardStats: async (): Promise<{
+    totalUsers: number;
+    totalProviders: number;
+    totalBookings: number;
+    openDisputes: number;
+    totalRevenue: number;
+  }> => {
+    const response = await axiosInstance.get('/admin/dashboard/stats');
+    return response.data;
+  },
+
+  suspendUser: async (userId: string, reason: string): Promise<any> => {
+    const response = await axiosInstance.patch(`/admin/users/${userId}/suspend`, { reason });
+    return response.data;
+  },
+
+  reactivateUser: async (userId: string): Promise<any> => {
+    const response = await axiosInstance.patch(`/admin/users/${userId}/reactivate`);
+    return response.data;
+  },
+
+  getAuditLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    action?: string;
+    actorId?: string;
+    targetType?: string;
+    fromDate?: string;
+    toDate?: string;
+  }): Promise<{
+    data: any[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+  }> => {
+    const response = await axiosInstance.get('/admin/audit-logs', { params });
+    return response.data;
+  },
 };

@@ -21,7 +21,7 @@ export function ProviderSelection() {
 
   const { pets } = usePetStore();
   const { openAddressModal } = useMeStore();
-  const { addresses, isLoading: addressesLoading } = useCustomerAddresses();
+  const { addresses, isLoading: addressesLoading } = useCustomerAddresses({ autoFetch: true });
 
   // Fetch providers near customer address for this service
   const { providers, isLoading: providersLoading, error: providersError } = useDiscoverProviders({

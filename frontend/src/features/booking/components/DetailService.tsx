@@ -8,11 +8,11 @@ import { useChecklistTemplates } from '@/features/services/hooks/useChecklistTem
 
 export function DetailService() {
   const { setStep, selectedServiceId } = useBookingStore();
-  const { service, isLoading, error, refetch } = useServiceDetail(selectedServiceId);
+  const { service, isLoading, error, refetch } = useServiceDetail(selectedServiceId || null);
   const {
     checklistTemplates,
     isLoading: checklistLoading,
-  } = useChecklistTemplates(selectedServiceId);
+  } = useChecklistTemplates(selectedServiceId || null);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' đ';

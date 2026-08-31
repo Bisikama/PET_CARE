@@ -8,7 +8,8 @@ import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal } from '@/features/provider';
 import { providerService } from '@/features/provider/services/provider.service';
-import { AdminHeader, PartnerVerificationList } from '@/features/admin';
+import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList } from '@/features/admin';
+import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
 import { Globe, Trash2, PlusCircle, FileText } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -48,15 +49,33 @@ export default function DashboardPage() {
     loadProviderData();
   }, [loadProviderData]);
 
+  const [adminRefreshKey, setAdminRefreshKey] = React.useState(0);
+  const [isAdminSyncing, setIsAdminSyncing] = React.useState(false);
+
+  const handleAdminSync = React.useCallback(async () => {
+    setIsAdminSyncing(true);
+    setAdminRefreshKey((k) => k + 1);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    setIsAdminSyncing(false);
+  }, []);
+
   if (user?.role === 'ADMIN') {
     return (
       <div className="space-y-8 animate-fade-in animate-scale-up">
         {/* Admin Header Component */}
-        <AdminHeader />
+        <AdminHeader onSync={handleAdminSync} isSyncing={isAdminSyncing} />
         
         {/* Tab Content Panel */}
-        {adminTab === 'verify-partners' ? (
-          <PartnerVerificationList />
+        {adminTab === 'dashboard' ? (
+          <AdminDashboardStats key={adminRefreshKey} refreshKey={adminRefreshKey} />
+        ) : adminTab === 'verify-partners' ? (
+          <PartnerVerificationList key={adminRefreshKey} />
+        ) : adminTab === 'limits' ? (
+          <AdminUserManagement key={adminRefreshKey} />
+        ) : adminTab === 'logs' ? (
+          <AdminAuditLogsList key={adminRefreshKey} />
+        ) : adminTab === 'promotions' ? (
+          <AdminPromotionsManager key={adminRefreshKey} />
         ) : (
           <div className="bg-white p-12 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
             <div className="p-4 bg-teal-50 text-teal-600 rounded-3xl">
@@ -75,10 +94,18 @@ export default function DashboardPage() {
   }
 
   if (user?.role === 'PROVIDER') {
+    if (searchParams.get('tab') === 'promotions') {
+      return (
+        <div className="animate-fade-in">
+          <PromotionsView />
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="space-y-8 animate-fade-in">
-          {/* Provider Header Component */}
+        {/* Customer Header Component */}
           <ProviderHeader activeTab={providerTab} onTabChange={setProviderTab} />
           
           {/* Tab Contents */}
@@ -412,6 +439,14 @@ export default function DashboardPage() {
           onSuccess={loadProviderData}
         />
       </>
+    );
+  }
+
+  if (searchParams.get('tab') === 'promotions') {
+    return (
+      <div className="animate-fade-in">
+        <PromotionsView />
+      </div>
     );
   }
 

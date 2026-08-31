@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { customerAddressesService } from '../services/customer-addresses.service';
 import { CustomerAddress, CreateAddressInput, UpdateAddressInput } from '../types';
 
-export function useCustomerAddresses() {
+export function useCustomerAddresses({ autoFetch = false }: { autoFetch?: boolean } = {}) {
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +72,10 @@ export function useCustomerAddresses() {
   };
 
   useEffect(() => {
-    fetchAddresses();
-  }, [fetchAddresses]);
+    if (autoFetch) {
+      fetchAddresses();
+    }
+  }, [autoFetch, fetchAddresses]);
 
   return {
     addresses,

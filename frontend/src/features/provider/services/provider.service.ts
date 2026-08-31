@@ -40,7 +40,11 @@ export const providerService = {
     formData.append('documentType', documentType);
     formData.append('file', cleanFile);
     
-    const response = await axiosInstance.post('/providers/documents', formData);
+    const response = await axiosInstance.post('/providers/documents', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

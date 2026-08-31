@@ -3,18 +3,28 @@
 import * as React from 'react';
 import { Shield, RefreshCw } from 'lucide-react';
 
-export function AdminHeader() {
-  const [isSyncing, setIsSyncing] = React.useState(false);
+interface AdminHeaderProps {
+  onSync?: () => void;
+  isSyncing?: boolean;
+}
+
+export function AdminHeader({ onSync, isSyncing = false }: AdminHeaderProps) {
+  const [localSyncing, setLocalSyncing] = React.useState(false);
 
   const handleSync = async () => {
-    setIsSyncing(true);
-    // Simulate server sync
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSyncing(false);
+    if (onSync) {
+      onSync();
+    } else {
+      setLocalSyncing(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setLocalSyncing(false);
+    }
   };
 
+  const activeSyncing = isSyncing || localSyncing;
+
   return (
-    <div className="relative bg-[#031625] p-8 md:p-10 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/60">
+    <div className="relative bg-[#031625] p-8 md:p-10 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/60 select-none">
       {/* Glow effects */}
       <div className="absolute right-0 top-0 w-96 h-96 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.06),transparent_60%)] pointer-events-none" />
       <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-[radial-gradient(circle_at_bottom,rgba(20,184,166,0.04),transparent_60%)] pointer-events-none" />
@@ -41,11 +51,11 @@ export function AdminHeader() {
         {/* Sync Button */}
         <button
           onClick={handleSync}
-          disabled={isSyncing}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-700 bg-slate-800/20 hover:bg-slate-800/40 text-slate-300 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer self-start md:self-center disabled:opacity-50 shrink-0"
+          disabled={activeSyncing}
+          className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-700 bg-slate-800/40 hover:bg-slate-800 text-slate-200 hover:text-white text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer self-start md:self-center disabled:opacity-50 shrink-0 shadow-lg"
         >
-          <RefreshCw className={`w-4 h-4 text-slate-300 ${isSyncing ? 'animate-spin' : ''}`} />
-          Đồng bộ máy chủ
+          <RefreshCw className={`w-4 h-4 text-teal-400 ${activeSyncing ? 'animate-spin' : ''}`} />
+          Đồng bộ máy chủ & Dữ liệu
         </button>
       </div>
     </div>

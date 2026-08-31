@@ -107,6 +107,28 @@ export function useAdminProviders() {
     }
   };
 
+  const reviewDocument = async (providerId: string, documentId: string, status: 'APPROVED' | 'REJECTED', rejectReason?: string) => {
+    setIsLoading(true);
+    try {
+      await adminService.reviewDocument(documentId, { status, rejectReason });
+      if (status === 'APPROVED') {
+        try {
+          await adminService.grantBadge(providerId, { badgeCode: 'VERIFIED_PROVIDER' });
+        } catch (badgeErr) {
+          console.warn('Không thể cấp phù hiệu VERIFIED_PROVIDER (có thể do cơ sở dữ liệu chưa được seed phù hiệu này):', badgeErr);
+        }
+      }
+      await fetchProviders();
+      return true;
+    } catch (err: any) {
+      console.error('Error reviewing document:', err);
+      setError(err?.response?.data?.message || err?.message || 'Lỗi khi duyệt chứng chỉ.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const fetchProviderDocuments = async (providerId: string) => {
     try {
       const docs = await adminService.getProviderDocuments(providerId);
@@ -137,6 +159,7 @@ export function useAdminProviders() {
     approveProvider,
     rejectProvider,
     updateScreening,
+    reviewDocument,
     fetchProviderDocuments,
   };
 }

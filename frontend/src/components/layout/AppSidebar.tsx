@@ -13,7 +13,8 @@ import {
   ShieldCheck, 
   Gavel, 
   BarChart3, 
-  Database 
+  Database,
+  Tag 
 } from 'lucide-react';
 import { removeAuthToken } from '@/lib/auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -49,11 +50,13 @@ export const AppSidebar = () => {
         { name: 'Trọng Tài Tranh Chấp', href: `${ROUTES.DASHBOARD}?tab=arbitration`, icon: Gavel },
         { name: 'Giới Hạn Tài Khoản', href: `${ROUTES.DASHBOARD}?tab=limits`, icon: BarChart3 },
         { name: 'Nhật Ký Hệ Thống', href: `${ROUTES.DASHBOARD}?tab=logs`, icon: Database },
+        { name: 'Mã Khuyến Mãi', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
       ]
     : [
         { name: 'Tổng quan', href: ROUTES.DASHBOARD, icon: LayoutDashboard },
         { name: 'Dịch vụ thú cưng', href: ROUTES.SERVICES, icon: HeartHandshake },
         { name: 'Đặt người chăm sóc', href: ROUTES.BOOKINGS, icon: UserCheck },
+        { name: 'Kho Ưu Đãi & Voucher', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
       ];
 
   const handleLogout = () => {

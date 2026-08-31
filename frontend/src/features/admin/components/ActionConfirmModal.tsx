@@ -9,7 +9,9 @@ export type ActionType =
   | 'approve-partner'
   | 'approve-screening'
   | 'reject-kyc'
-  | 'reject-partner';
+  | 'reject-partner'
+  | 'approve-document'
+  | 'reject-document';
 
 interface ActionConfirmModalProps {
   show: boolean;
