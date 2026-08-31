@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
 
 export enum ProviderDocumentType {
   GROOMING_CERTIFICATE = 'GROOMING_CERTIFICATE',
@@ -16,5 +16,6 @@ export class UploadDocumentDto {
   documentType: ProviderDocumentType;
 
   @ApiProperty({ type: 'string', format: 'binary', description: 'File giấy tờ (Ảnh hoặc PDF)' })
+  @IsOptional()
   file?: any;
 }

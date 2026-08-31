@@ -33,4 +33,21 @@ export class BookingStateMachineService {
     }
     return 'CANCELLED';
   }
+
+  startService(status: booking_status): booking_status {
+    const validStatuses: booking_status[] = ['ACCEPTED', 'PROVIDER_ARRIVED', 'CHECKED_IN'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`Cannot start service from status: ${status}`);
+    }
+    return 'IN_PROGRESS';
+  }
+
+  completeBooking(status: booking_status): booking_status {
+    const validStatuses: booking_status[] = ['IN_PROGRESS', 'ACCEPTED', 'CHECKED_IN', 'AWAITING_CUSTOMER_CONFIRMATION'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`Cannot complete booking from status: ${status}`);
+    }
+    return 'COMPLETED';
+  }
 }
+

@@ -114,6 +114,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     },
     bookingServiceData: {
       providerServiceId: string;
+      serviceId?: string;
       price: number;
       durationMinutes: number;
       serviceName: string;
@@ -162,7 +163,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     });
 
     // 3. Create booking_services
-    await client.booking_services.create({
+    const bookingService = await client.booking_services.create({
       data: {
         booking_pet_id: bookingPet.id,
         provider_service_id: bookingServiceData.providerServiceId,
@@ -173,6 +174,30 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
         service_category: bookingServiceData.serviceCategory,
       },
     });
+
+    // 3.1 Clone service checklist templates if serviceId is present
+    if (bookingServiceData.serviceId) {
+      const templates = await client.service_checklist_templates.findMany({
+        where: {
+          service_id: bookingServiceData.serviceId,
+          deleted_at: null,
+        },
+        orderBy: {
+          sort_order: 'asc',
+        },
+      });
+
+      if (templates.length > 0) {
+        await client.booking_checklist_items.createMany({
+          data: templates.map((tpl: any) => ({
+            booking_service_id: bookingService.id,
+            template_id: tpl.id,
+            title: tpl.title,
+            status: 'PENDING',
+          })),
+        });
+      }
+    }
 
     // 4. Create booking status log
     await client.booking_status_logs.create({
@@ -192,9 +217,53 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     return await client.bookings.findUnique({
       where: { id: bookingId },
       include: {
+        provider_working_slots: {
+          include: {
+            time_slots: true,
+            provider_working_days: {
+              include: {
+                provider_profiles: {
+                  include: {
+                    users: {
+                      select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        avatarUrl: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         booking_pets: {
           include: {
-            booking_services: true,
+            booking_services: {
+              include: {
+                booking_checklist_items: {
+                  orderBy: {
+                    created_at: 'asc',
+                  },
+                },
+              },
+            },
+          },
+        },
+        booking_media: {
+          orderBy: {
+            created_at: 'desc',
+          },
+        },
+        booking_status_logs: {
+          orderBy: {
+            created_at: 'asc',
+          },
+        },
+        booking_events: {
+          orderBy: {
+            created_at: 'asc',
           },
         },
       },
@@ -212,6 +281,30 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     });
   }
 
+  async createChatRoom(bookingId: string, customerId: string, providerId: string, tx?: any): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.chat_rooms.upsert({
+      where: { booking_id: bookingId },
+      create: {
+        booking_id: bookingId,
+        customer_id: customerId,
+        provider_user_id: providerId,
+        is_active: true,
+      },
+      update: {
+        is_active: true,
+      },
+    });
+  }
+
+  async updateChatRoomStatus(bookingId: string, isActive: boolean, tx?: any): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.chat_rooms.updateMany({
+      where: { booking_id: bookingId },
+      data: { is_active: isActive },
+    });
+  }
+
   async addBookingEvent(
     bookingId: string,
     actorId: string | null,
@@ -225,6 +318,89 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
         booking_id: bookingId,
         actor_id: actorId,
         event_type: eventType,
+        note: note,
+      },
+    });
+  }
+
+  async findServiceChecklistTemplates(serviceId: string, tx?: any): Promise<any[]> {
+    const client = tx || this.prisma;
+    return await client.service_checklist_templates.findMany({
+      where: {
+        service_id: serviceId,
+        deleted_at: null,
+      },
+      orderBy: {
+        sort_order: 'asc',
+      },
+    });
+  }
+
+  async findChecklistItemById(itemId: string, tx?: any): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.booking_checklist_items.findUnique({
+      where: { id: itemId },
+      include: {
+        booking_services: {
+          include: {
+            booking_pets: {
+              include: {
+                bookings: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async updateChecklistItem(
+    itemId: string,
+    data: { status?: any; note?: string; completed_at?: Date | null },
+    tx?: any,
+  ): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.booking_checklist_items.update({
+      where: { id: itemId },
+      data: {
+        status: data.status,
+        note: data.note,
+        completed_at: data.completed_at,
+      },
+    });
+  }
+
+  async createBookingMedia(
+    medias: Array<{
+      booking_id: string;
+      uploaded_by: string;
+      media_url: string;
+      media_type: any;
+      caption?: string;
+    }>,
+    tx?: any,
+  ): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.booking_media.createMany({
+      data: medias,
+    });
+  }
+
+  async addBookingStatusLog(
+    bookingId: string,
+    oldStatus: booking_status | null,
+    newStatus: booking_status,
+    changedBy: string | null,
+    note?: string,
+    tx?: any,
+  ): Promise<any> {
+    const client = tx || this.prisma;
+    return await client.booking_status_logs.create({
+      data: {
+        booking_id: bookingId,
+        old_status: oldStatus,
+        new_status: newStatus,
+        changed_by: changedBy,
         note: note,
       },
     });

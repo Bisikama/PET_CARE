@@ -37,6 +37,7 @@ describe('AdminProvidersService', () => {
       findMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+      count: jest.fn(),
     }
   };
 
@@ -77,6 +78,19 @@ describe('AdminProvidersService', () => {
       await expect(service.approveProvider('admin1', 'provider1')).rejects.toThrow(BadRequestException);
     });
 
+    it('should throw BadRequestException if no approved documents exist', async () => {
+      mockPrisma.provider_profiles.findUnique.mockResolvedValue({
+        id: 'provider1',
+        user_id: 'user1',
+        status: provider_status.PENDING_REVIEW,
+        kyc_status: provider_document_status.APPROVED,
+        screening_status: screening_status.PASSED
+      });
+      mockPrisma.provider_documents.count.mockResolvedValue(0);
+
+      await expect(service.approveProvider('admin1', 'provider1')).rejects.toThrow(BadRequestException);
+    });
+
     it('should successfully approve provider if conditions are met', async () => {
       mockPrisma.provider_profiles.findUnique.mockResolvedValue({
         id: 'provider1',
@@ -85,6 +99,7 @@ describe('AdminProvidersService', () => {
         kyc_status: provider_document_status.APPROVED,
         screening_status: screening_status.PASSED
       });
+      mockPrisma.provider_documents.count.mockResolvedValue(1);
 
       await service.approveProvider('admin1', 'provider1');
 
@@ -139,13 +154,10 @@ describe('AdminProvidersService', () => {
       await expect(service.reviewDocument('admin1', 'doc1', { status: provider_document_status.APPROVED, rejectReason: '' })).rejects.toThrow(NotFoundException);
     });
 
-    it('should update document and trigger auto KYC approval if all docs are approved', async () => {
-      mockPrisma.provider_documents.findUnique = jest.fn().mockResolvedValue({ id: 'doc1', provider_id: 'provider1' });
-      mockPrisma.provider_documents.findMany = jest.fn().mockResolvedValue([
-        { id: 'doc2', status: provider_document_status.APPROVED },
-      ]);
+    it('should update document and auto-sync screening if document type is BACKGROUND_SCREENING and status is APPROVED', async () => {
+      mockPrisma.provider_documents.findUnique = jest.fn().mockResolvedValue({ id: 'doc1', provider_id: 'provider1', document_type: 'BACKGROUND_SCREENING' });
       mockPrisma.provider_profiles.findUnique = jest.fn().mockResolvedValue({
-        id: 'provider1', kyc_status: provider_document_status.PENDING, screening_status: screening_status.PASSED
+        id: 'provider1', kyc_status: provider_document_status.PENDING, screening_status: screening_status.PENDING
       });
 
       await service.reviewDocument('admin1', 'doc1', { status: provider_document_status.APPROVED, rejectReason: '' });
@@ -156,7 +168,7 @@ describe('AdminProvidersService', () => {
       });
       expect(mockPrisma.provider_profiles.update).toHaveBeenCalledWith({
         where: { id: 'provider1' },
-        data: { kyc_status: provider_document_status.APPROVED },
+        data: { screening_status: screening_status.PASSED },
       });
     });
   });

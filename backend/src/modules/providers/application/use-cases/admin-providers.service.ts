@@ -42,22 +42,14 @@ export class AdminProvidersService {
         },
       });
 
-      const allDocs = await tx.provider_documents.findMany({
-        where: { provider_id: document.provider_id },
-      });
-      
-      const allApproved = allDocs.every(d => 
-        (d.id === documentId ? dto.status : d.status) === provider_document_status.APPROVED
-      );
-
-      if (allApproved) {
+      if (document.document_type === 'BACKGROUND_SCREENING' && dto.status === provider_document_status.APPROVED) {
         await tx.provider_profiles.update({
           where: { id: document.provider_id },
-          data: { kyc_status: provider_document_status.APPROVED },
+          data: { screening_status: screening_status.PASSED },
         });
-        
-        await this.evaluateAndGrantBadges(tx, document.provider_id);
       }
+
+      await this.evaluateAndGrantBadges(tx, document.provider_id);
     });
   }
 
@@ -105,6 +97,17 @@ export class AdminProvidersService {
 
       if (profile.kyc_status !== provider_document_status.APPROVED || profile.screening_status !== screening_status.PASSED) {
         throw new BadRequestException('Không thể duyệt! Đối tác phải hoàn tất KYC và Sàng lọc lý lịch (Screening).');
+      }
+
+      const approvedDocumentsCount = await tx.provider_documents.count({
+        where: {
+          provider_id: providerId,
+          status: provider_document_status.APPROVED,
+        },
+      });
+
+      if (approvedDocumentsCount === 0) {
+        throw new BadRequestException('Không thể duyệt! Đối tác phải có ít nhất 1 chứng chỉ hành nghề/bằng cấp đã được duyệt.');
       }
 
       await tx.provider_profiles.update({

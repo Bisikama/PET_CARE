@@ -7,6 +7,37 @@ import { booking_status } from '@prisma/client';
 export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getProviderReviews(providerId: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    
+    const [reviews, total] = await Promise.all([
+      this.prisma.reviews.findMany({
+        where: { reviewee_id: providerId, is_hidden: false },
+        include: {
+          users_reviews_reviewer_idTousers: {
+            select: { id: true, fullName: true, avatarUrl: true },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.reviews.count({
+        where: { reviewee_id: providerId, is_hidden: false },
+      }),
+    ]);
+
+    return {
+      data: reviews,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async createReview(reviewerId: string, bookingId: string, dto: CreateReviewDto) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
