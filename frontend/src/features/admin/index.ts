@@ -10,4 +10,6 @@ export * from './components/RejectReasonModal';
 export * from './components/AdminDashboardStats';
 export * from './components/AdminUserManagement';
 export * from './components/AdminAuditLogsList';
+export * from './components/AdminServicesManager';
+
 

@@ -8,9 +8,10 @@ import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal } from '@/features/provider';
 import { providerService } from '@/features/provider/services/provider.service';
-import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList } from '@/features/admin';
+import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager } from '@/features/admin';
 import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
-import { Globe, Trash2, PlusCircle, FileText } from 'lucide-react';
+import { ServiceDetailModal } from '@/features/services';
+import { Globe, Trash2, PlusCircle, FileText, Eye } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -24,10 +25,12 @@ export default function DashboardPage() {
   const [profileData, setProfileData] = React.useState<any>(null);
   const [documentsList, setDocumentsList] = React.useState<any[]>([]);
   const [systemServices, setSystemServices] = React.useState<any[]>([]);
+  const [providerSelectedServiceId, setProviderSelectedServiceId] = React.useState<string | null>(null);
   
   const [showAreaModal, setShowAreaModal] = React.useState(false);
   const [showCapabilityModal, setShowCapabilityModal] = React.useState(false);
   const [showCertificateModal, setShowCertificateModal] = React.useState(false);
+
 
   const loadProviderData = React.useCallback(async () => {
     if (user?.role !== 'PROVIDER') return;
@@ -70,6 +73,8 @@ export default function DashboardPage() {
           <AdminDashboardStats key={adminRefreshKey} refreshKey={adminRefreshKey} />
         ) : adminTab === 'verify-partners' ? (
           <PartnerVerificationList key={adminRefreshKey} />
+        ) : adminTab === 'services-manager' ? (
+          <AdminServicesManager key={adminRefreshKey} />
         ) : adminTab === 'limits' ? (
           <AdminUserManagement key={adminRefreshKey} />
         ) : adminTab === 'logs' ? (
@@ -263,9 +268,14 @@ export default function DashboardPage() {
                         profileData.provider_services.map((item: any) => {
                           const name = systemServices.find(s => s.id === item.service_id)?.name || 'Dịch vụ đối tác';
                           return (
-                            <div key={item.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                            <div 
+                              key={item.id} 
+                              onClick={() => setProviderSelectedServiceId(item.service_id)}
+                              className="p-3 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] group"
+                              title="Click để xem chi tiết dịch vụ"
+                            >
                               <div className="space-y-0.5">
-                                <span className="text-xs font-bold text-slate-800 block">{name}</span>
+                                <span className="text-xs font-bold text-slate-800 group-hover:text-teal-600 transition-colors block">{name}</span>
                                 <span className="text-[10px] text-slate-450 font-semibold block">
                                   {item.pet_species === 'Dog' ? '🐶 Chó' : '🐱 Mèo'} ({item.min_weight} - {item.max_weight} kg)
                                 </span>
@@ -437,6 +447,11 @@ export default function DashboardPage() {
           show={showCertificateModal}
           onClose={() => setShowCertificateModal(false)}
           onSuccess={loadProviderData}
+        />
+        <ServiceDetailModal
+          serviceId={providerSelectedServiceId}
+          isOpen={!!providerSelectedServiceId}
+          onClose={() => setProviderSelectedServiceId(null)}
         />
       </>
     );

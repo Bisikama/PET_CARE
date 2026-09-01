@@ -20,20 +20,13 @@ export default function PrivateLayout({
   const { isAuthenticated: isAuth, isLoading: isAuthLoading } = useAuthStore();
 
   React.useEffect(() => {
-    // 1. Kiểm tra nhanh bằng localStorage đồng bộ để tránh chớp màn hình
-    if (!isAuthenticated()) {
-      router.replace(ROUTES.LOGIN);
-      return;
-    }
+    if (isAuthLoading) return;
 
-    // 2. Nếu có token, đợi store xác thực bất đồng bộ (initAuth)
-    if (!isAuthLoading) {
-      if (!isAuth) {
-        // Token hết hạn hoặc không hợp lệ (ví dụ lỗi 401)
-        router.replace(ROUTES.LOGIN);
-      } else {
-        setLoading(false);
-      }
+    if (!isAuth) {
+      // Token hết hạn hoặc không hợp lệ
+      router.replace(ROUTES.LOGIN);
+    } else {
+      setLoading(false);
     }
   }, [isAuth, isAuthLoading, router]);
 

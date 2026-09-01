@@ -45,6 +45,7 @@ export const AppSidebar = () => {
           badge: pendingKycCount > 0 ? pendingKycCount : undefined,
           badgeColor: 'bg-[#f0c05a] text-[#031625]'
         },
+        { name: 'Quản Lý Dịch Vụ', href: `${ROUTES.DASHBOARD}?tab=services-manager`, icon: HeartHandshake },
         { name: 'Giám Sát Ca Làm', href: `${ROUTES.DASHBOARD}?tab=monitor-shifts`, icon: Activity },
         { name: 'Quản Lý Escrow', href: `${ROUTES.DASHBOARD}?tab=escrow`, icon: ShieldCheck },
         { name: 'Trọng Tài Tranh Chấp', href: `${ROUTES.DASHBOARD}?tab=arbitration`, icon: Gavel },
