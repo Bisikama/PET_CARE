@@ -56,7 +56,13 @@ describe('RegisterUserUseCase', () => {
       'pass',
       'Test Name',
     );
-    expect(usersService.create).not.toHaveBeenCalled();
+    expect(usersService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        supabaseId: 'sb_id',
+        email: 'test@example.com',
+        fullName: 'Test Name',
+      }),
+    );
     expect(result).toEqual({
       message: AUTH_MESSAGES.REGISTER_SUCCESS_CHECK_EMAIL,
       requiresEmailConfirmation: true,

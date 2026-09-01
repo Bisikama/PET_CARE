@@ -25,6 +25,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { SettlementsModule } from './modules/settlements/settlements.module';
+import { ProviderSchedulesModule } from './modules/provider-schedules/provider-schedules.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { SettlementsModule } from './modules/settlements/settlements.module';
     WalletsModule,
     PaymentsModule,
     SettlementsModule,
+    ProviderSchedulesModule,
   ],
   controllers: [],
   providers: [

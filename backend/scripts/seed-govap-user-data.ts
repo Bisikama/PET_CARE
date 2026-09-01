@@ -12,11 +12,31 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-const providerUserId = '6ff0b18e-5a38-419b-814c-244ca56239cb';
-const customerUserId = '75555494-556d-42c5-8bd3-87cd00b366df';
+const customerEmail = process.argv[2] || process.env.CUSTOMER_EMAIL || 'nguyenminhbao28032000@gmail.com';
+const providerEmail = process.argv[3] || process.env.PROVIDER_EMAIL || 'minhbao28032005@gmail.com';
 
 async function main() {
-  console.log('🚀 Bắt đầu gán dữ liệu test Gò Vấp cho tài khoản thực...');
+  console.log('🚀 Bắt đầu gán dữ liệu test Gò Vấp cho tài khoản thực qua Email...');
+  console.log(`   - Customer Email: ${customerEmail}`);
+  console.log(`   - Provider Email: ${providerEmail}`);
+
+  // Tìm user theo email
+  const customerUser = await prisma.user.findUnique({
+    where: { email: customerEmail },
+  });
+  if (!customerUser) {
+    throw new Error(`❌ Không tìm thấy Customer với email: ${customerEmail}. Vui lòng kiểm tra lại tài khoản trong DB!`);
+  }
+
+  const providerUser = await prisma.user.findUnique({
+    where: { email: providerEmail },
+  });
+  if (!providerUser) {
+    throw new Error(`❌ Không tìm thấy Provider với email: ${providerEmail}. Vui lòng kiểm tra lại tài khoản trong DB!`);
+  }
+
+  const customerUserId = customerUser.id;
+  const providerUserId = providerUser.id;
 
   // 1. Cập nhật role của Provider sang PROVIDER
   console.log('   - Đang chuyển đổi vai trò tài khoản provider sang PROVIDER...');
@@ -221,7 +241,7 @@ async function main() {
       data: {
         customer_id: customerUserId,
         label: 'Nhà riêng Gò Vấp',
-        receiver_name: 'Bill Nguyễn',
+        receiver_name: customerUser.fullName || 'Khách Hàng',
         phone: '0909998877',
         address_line: addressLineGovap,
         ward,
@@ -295,7 +315,7 @@ async function main() {
     const slot1 = await prisma.provider_working_slots.findFirst({
       where: {
         working_day_id: govapWorkingDay.id,
-        time_slots: { start_time: '08:00' }, // Lấy slot đầu tiên
+        time_slots: { slot_order: 1 }, // Lấy slot đầu tiên (07:00 - 09:00)
       },
       include: { time_slots: true },
     });
@@ -316,9 +336,9 @@ async function main() {
       });
 
       const estimatedStart = new Date(workDateToday);
-      estimatedStart.setHours(8, 0, 0, 0);
+      estimatedStart.setHours(7, 0, 0, 0);
       const estimatedEnd = new Date(workDateToday);
-      estimatedEnd.setHours(10, 0, 0, 0);
+      estimatedEnd.setHours(9, 0, 0, 0);
 
       const booking1 = await prisma.bookings.create({
         data: {
@@ -335,9 +355,9 @@ async function main() {
           estimated_end_at: estimatedEnd,
           status: booking_status.PENDING_PROVIDER_ACCEPTANCE,
           total_price: serviceDogWalk.price,
-          customer_note: 'Bobi hơi nghịch ngợm, dắt bé đi cẩn thận nhé.',
+          customer_note: 'Bobi hơi nghịch ngợm, dắt bé đi cẩn thiện nhé.',
           address_snapshot: {
-            receiver_name: 'Bill Nguyễn',
+            receiver_name: customerUser.fullName || 'Khách Hàng',
             phone: '0909998877',
             address_line: addressLineGovap,
             ward: 'Phường 7',
@@ -377,7 +397,7 @@ async function main() {
     const slot2 = await prisma.provider_working_slots.findFirst({
       where: {
         working_day_id: govapWorkingDay.id,
-        time_slots: { start_time: '10:00' }, // Lấy slot 2
+        time_slots: { slot_order: 2 }, // Lấy slot 2 (09:00 - 11:00)
       },
       include: { time_slots: true },
     });
@@ -397,9 +417,9 @@ async function main() {
       });
 
       const estimatedStart = new Date(workDateToday);
-      estimatedStart.setHours(10, 0, 0, 0);
+      estimatedStart.setHours(9, 0, 0, 0);
       const estimatedEnd = new Date(workDateToday);
-      estimatedEnd.setHours(12, 0, 0, 0);
+      estimatedEnd.setHours(11, 0, 0, 0);
 
       const booking2 = await prisma.bookings.create({
         data: {
@@ -418,7 +438,7 @@ async function main() {
           total_price: serviceCatGroom.price,
           customer_note: 'Kiki hơi nhát nước, tắm nhẹ nhàng giúp mình.',
           address_snapshot: {
-            receiver_name: 'Bill Nguyễn',
+            receiver_name: customerUser.fullName || 'Khách Hàng',
             phone: '0909998877',
             address_line: addressLineGovap,
             ward: 'Phường 7',
