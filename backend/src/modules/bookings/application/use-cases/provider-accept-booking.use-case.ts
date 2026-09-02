@@ -5,6 +5,7 @@ import { BOOKING_REPOSITORY, UNIT_OF_WORK } from '../../booking.tokens';
 import type { BookingRepositoryPort } from '../ports/booking-repository.port';
 import type { UnitOfWorkPort } from '../ports/unit-of-work.port';
 import { BookingStateMachineService } from '../../domain/services/booking-state-machine.service';
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
 @Injectable()
 export class ProviderAcceptBookingUseCase {
@@ -14,6 +15,7 @@ export class ProviderAcceptBookingUseCase {
     @Inject(UNIT_OF_WORK)
     private readonly unitOfWork: UnitOfWorkPort,
     private readonly stateMachine: BookingStateMachineService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async execute(providerUserId: string, bookingId: string) {
@@ -38,7 +40,7 @@ export class ProviderAcceptBookingUseCase {
     // Determine next state
     const nextStatus = this.stateMachine.providerAccept(booking.status);
 
-      return this.unitOfWork.transaction(async (tx) => {
+    const result = await this.unitOfWork.transaction(async (tx) => {
       // 1. Update Booking status to ACCEPTED
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
 
@@ -64,5 +66,18 @@ export class ProviderAcceptBookingUseCase {
 
       return { bookingId, status: nextStatus };
     });
+
+    // 4. Gửi thông báo Real-time cho Customer
+    await this.notificationsService.sendNotification({
+      userId: booking.customer_id,
+      type: 'BOOKING_ACCEPTED',
+      title: 'Đơn đặt lịch đã được chấp nhận',
+      content: 'Đối tác đã đồng ý nhận đơn. Phòng chat đã được kích hoạt!',
+      bookingId,
+      actionUrl: `/customer/bookings/${bookingId}`,
+      metadata: { bookingId, status: nextStatus },
+    }).catch(() => {});
+
+    return result;
   }
 }
