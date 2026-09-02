@@ -63,7 +63,24 @@ export class WalletsService {
         throw new InternalServerErrorException(`Loại giao dịch không hợp lệ: ${(type as string)}`);
     }
 
-    // Cập nhật nguyên tử (Atomic update) để tránh Race Condition
+    // 1. Khóa bản ghi (Pessimistic Lock) để chống Race Condition
+    const lockedWallet: any[] = await tx.$queryRaw`
+      SELECT id, balance, pending_balance 
+      FROM wallets 
+      WHERE id = ${walletId}::uuid 
+      FOR UPDATE
+    `;
+
+    if (!lockedWallet || lockedWallet.length === 0) {
+      throw new BadRequestException(`Không tìm thấy ví ${walletId}`);
+    }
+
+    const currentBalance = new Prisma.Decimal(lockedWallet[0].balance);
+    if (currentBalance.plus(balanceIncrement).lessThan(0)) {
+      throw new ConflictException(`Số dư khả dụng không đủ trong ví ${walletId}`);
+    }
+
+    // Cập nhật nguyên tử (Atomic update) sau khi đã Lock an toàn
     const updatedWallet = await tx.wallets.update({
       where: { id: walletId },
       data: {
@@ -75,10 +92,6 @@ export class WalletsService {
         },
       },
     });
-
-    if (updatedWallet.balance.lessThan(0)) {
-      throw new Error(`Số dư không đủ trong ví ${walletId}`);
-    }
 
     // Ghi Sổ cái (Ledger)
     const transactionRecord = await tx.wallet_transactions.create({

@@ -23,9 +23,10 @@ export class ProvidersController {
 
   @Post('profile')
   @ApiOperation({ summary: 'Tạo hồ sơ đối tác mới' })
-  @ApiResponse({ status: 201, description: 'Tạo hồ sơ thành công' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 201, description: 'Tạo hồ sơ thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
   async createProfile(
     @GetCurrentUserId() userId: string,
     @Body() dto: CreateProviderProfileDto,
@@ -35,11 +36,11 @@ export class ProvidersController {
 
   @Post('base-address')
   @ApiOperation({ summary: 'Cập nhật địa chỉ cơ sở (Base Location)' })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác' })
+  @ApiResponse({ status: 200, description: 'Cập nhật địa chỉ thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async updateBaseAddress(
     @GetCurrentUserId() userId: string,
     @Body() dto: UpdateProviderAddressDto,
@@ -50,9 +51,11 @@ export class ProvidersController {
 
   @Post('areas')
   @ApiOperation({ summary: 'Thêm khu vực phục vụ' })
-  @ApiResponse({ status: 201, description: 'Thêm khu vực thành công' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 201, description: 'Thêm khu vực phục vụ thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async addServiceArea(
     @GetCurrentUserId() userId: string,
     @Body() dto: AddServiceAreaDto,
@@ -63,9 +66,11 @@ export class ProvidersController {
 
   @Post('capabilities')
   @ApiOperation({ summary: 'Đăng ký năng lực dịch vụ mới' })
-  @ApiResponse({ status: 201, description: 'Đăng ký năng lực thành công' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 201, description: 'Đăng ký năng lực thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async registerCapability(
     @GetCurrentUserId() userId: string,
     @Body() dto: RegisterCapabilityDto,
@@ -77,9 +82,11 @@ export class ProvidersController {
   @Post('documents')
   @ApiOperation({ summary: 'Tải lên chứng chỉ nghề nghiệp hoặc bằng cấp bổ sung' })
   @ApiConsumes('multipart/form-data')
-  @ApiResponse({ status: 201, description: 'Tải tài liệu lên thành công' })
-  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá lớn' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 201, description: 'Tải tài liệu lên thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ hoặc dung lượng quá lớn (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @GetCurrentUserId() userId: string,
@@ -101,9 +108,11 @@ export class ProvidersController {
   @Post('kyc')
   @ApiOperation({ summary: 'Tải lên tài liệu eKYC (Mặt trước, mặt sau, chân dung) và thông tin cơ bản' })
   @ApiConsumes('multipart/form-data')
-  @ApiResponse({ status: 201, description: 'Tải lên tài liệu eKYC thành công' })
-  @ApiResponse({ status: 400, description: 'Thiếu file hoặc thông tin không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 201, description: 'Tải lên tài liệu eKYC thành công.' })
+  @ApiResponse({ status: 400, description: 'Thiếu file hoặc thông tin không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   @UseInterceptors(
     FileFieldsInterceptor(
       [
@@ -149,9 +158,10 @@ export class ProvidersController {
   @UseGuards(RolesGuard)
   @Roles(Role.PROVIDER)
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ của đối tác' })
-  @ApiResponse({ status: 200, description: 'Lấy hồ sơ thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 200, description: 'Trả về hồ sơ đối tác.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async getProfile(@GetCurrentUserId() userId: string) {
     return this.providersService.getProfile(userId);
   }
@@ -160,9 +170,10 @@ export class ProvidersController {
   @UseGuards(RolesGuard)
   @Roles(Role.PROVIDER)
   @ApiOperation({ summary: 'Lấy danh sách tài liệu của đối tác' })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách tài liệu của đối tác.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async getDocuments(@GetCurrentUserId() userId: string) {
     return this.providersService.getDocuments(userId);
   }
@@ -171,10 +182,10 @@ export class ProvidersController {
   @UseGuards(RolesGuard)
   @Roles(Role.PROVIDER)
   @ApiOperation({ summary: 'Xóa một chứng chỉ/tài liệu đã tải lên' })
-  @ApiResponse({ status: 200, description: 'Xóa thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy tài liệu' })
+  @ApiResponse({ status: 200, description: 'Xóa tài liệu thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy tài liệu (DOCUMENT_NOT_FOUND).' })
   async deleteDocument(
     @GetCurrentUserId() userId: string,
     @Param('id') documentId: string,

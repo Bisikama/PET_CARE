@@ -5,10 +5,13 @@ import { SupabaseStorageService } from '../../../../storage/supabase-storage.ser
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { message_type } from '@prisma/client';
 
+import { ChatGateway } from '../../chat.gateway';
+
 describe('SendMessageUseCase', () => {
   let useCase: SendMessageUseCase;
   let prisma: PrismaService;
   let storageService: SupabaseStorageService;
+  let chatGateway: ChatGateway;
 
   const mockPrismaService = {
     chat_rooms: {
@@ -23,12 +26,17 @@ describe('SendMessageUseCase', () => {
     uploadFile: jest.fn(),
   };
 
+  const mockChatGateway = {
+    emitNewMessage: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SendMessageUseCase,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: SupabaseStorageService, useValue: mockStorageService },
+        { provide: ChatGateway, useValue: mockChatGateway },
       ],
     }).compile();
 

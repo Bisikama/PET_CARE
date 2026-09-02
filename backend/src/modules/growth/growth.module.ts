@@ -7,11 +7,12 @@ import { AdminPromotionsController } from './promotions/admin-promotions.control
 import { SubscriptionsService } from './subscriptions/subscriptions.service';
 import { SubscriptionsController } from './subscriptions/subscriptions.controller';
 import { PrismaModule } from '../../database/prisma.module';
+import { WalletsModule } from '../wallets/wallets.module';
 
 import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [PrismaModule, MailModule],
+  imports: [PrismaModule, MailModule, WalletsModule],
   controllers: [
     NotificationsController,
     PromotionsController,

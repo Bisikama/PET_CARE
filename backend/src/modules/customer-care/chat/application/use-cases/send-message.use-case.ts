@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../../database/prisma.service';
 import { SupabaseStorageService } from '../../../../storage/supabase-storage.service';
 import { message_type } from '@prisma/client';
 import * as crypto from 'crypto';
+import { ChatGateway } from '../../chat.gateway';
 
 @Injectable()
 export class SendMessageUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: SupabaseStorageService,
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   async execute(userId: string, roomId: string, content?: string, file?: Express.Multer.File) {
@@ -65,6 +68,11 @@ export class SendMessageUseCase {
         is_read: false,
       },
     });
+
+    // 4. Fire WebSocket event
+    if (this.chatGateway && this.chatGateway.server) {
+      this.chatGateway.server.to(roomId).emit('newMessage', message);
+    }
 
     // Fire event/notification to the partner here if Notification Module is ready
     // this.eventEmitter.emit('chat.message_sent', message);

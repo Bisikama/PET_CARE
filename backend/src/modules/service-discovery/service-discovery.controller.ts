@@ -24,10 +24,10 @@ export class ServiceDiscoveryController {
   @ApiOperation({
     summary: 'Khám phá danh sách các gói dịch vụ tương ứng với thú cưng (Guest/Public)',
   })
-  @ApiResponse({ status: 200, description: 'Khám phá danh sách gói dịch vụ thành công.' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách gói dịch vụ.' })
   @ApiResponse({
     status: 400,
-    description: 'Tham số đầu vào không hợp lệ (ví dụ: loài vật không phải Dog hoặc Cat).',
+    description: 'Tham số đầu vào không hợp lệ (ví dụ: loài vật không phải Dog hoặc Cat) (Validation Error).',
   })
   async findPackages(@Query() query: DiscoverPackagesDto) {
     return this.discoverPackagesUseCase.execute(query);
@@ -41,11 +41,11 @@ export class ServiceDiscoveryController {
   })
   @ApiResponse({
     status: 200,
-    description: 'So khớp đối tác thành công và trả về danh sách đã được xếp hạng kèm lý do.',
+    description: 'Trả về danh sách đối tác đã được xếp hạng kèm lý do.',
   })
-  @ApiResponse({ status: 400, description: 'Thiếu thông tin thú cưng hoặc địa chỉ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng hoặc địa chỉ yêu cầu.' })
+  @ApiResponse({ status: 400, description: 'Thiếu thông tin thú cưng hoặc địa chỉ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng hoặc địa chỉ yêu cầu (NOT_FOUND).' })
   async findProviders(@GetCurrentUserId() userId: string, @Query() query: DiscoverProvidersDto) {
     return this.discoverProvidersUseCase.execute({
       customerId: userId,

@@ -10,6 +10,8 @@ import { GetBookingChecklistUseCase } from './application/use-cases/get-booking-
 import { StartBookingServiceUseCase } from './application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from './application/use-cases/update-booking-checklist-item.use-case';
 import { CompleteBookingUseCase } from './application/use-cases/complete-booking.use-case';
+import { CustomerConfirmBookingUseCase } from './application/use-cases/customer-confirm-booking.use-case';
+import { AutoReleaseEscrowCron } from './application/cron/auto-release-escrow.cron';
 import { BookingStateMachineService } from './domain/services/booking-state-machine.service';
 import { BOOKING_REPOSITORY, UNIT_OF_WORK } from './booking.tokens';
 import { PrismaBookingRepository } from './infrastructure/persistence/prisma-booking.repository';
@@ -31,8 +33,10 @@ import { CustomerCancelBookingUseCase } from './application/use-cases/customer-c
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,
     CompleteBookingUseCase,
+    CustomerConfirmBookingUseCase,
     CustomerCancelBookingUseCase,
     BookingStateMachineService,
+    AutoReleaseEscrowCron,
     {
       provide: BOOKING_REPOSITORY,
       useClass: PrismaBookingRepository,

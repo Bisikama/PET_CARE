@@ -40,6 +40,7 @@ describe('WalletsService (Ledger Logic)', () => {
       wallet_transactions: {
         create: jest.fn(),
       },
+      $queryRaw: jest.fn().mockResolvedValue([]),
     };
   });
 
@@ -58,6 +59,7 @@ describe('WalletsService (Ledger Logic)', () => {
 
     beforeEach(() => {
       txMock.wallets.findUnique.mockResolvedValue(mockWallet);
+      txMock.$queryRaw.mockResolvedValue([mockWallet]);
       txMock.wallets.update.mockImplementation(({ data }) => {
         return {
           ...mockWallet,
@@ -77,8 +79,15 @@ describe('WalletsService (Ledger Logic)', () => {
       txMock.wallet_transactions.create.mockResolvedValue({ id: 'txn-1' });
     });
 
-    it('CREDIT: should increase balance', async () => {
+    it('CREDIT: should apply pessimistic lock and increase balance', async () => {
       await service.processTransaction(walletId, amountDecimal, wallet_transaction_type.CREDIT, null, null, txMock);
+
+      expect(txMock.$queryRaw).toHaveBeenCalled();
+      const queryCall = txMock.$queryRaw.mock.calls[0][0] as string[];
+      // Due to Prisma's tagged template literal handling, the query strings are in an array.
+      // We can assert the string part of it to verify FOR UPDATE exists
+      const fullQueryString = queryCall.join('?');
+      expect(fullQueryString).toContain('FOR UPDATE');
 
       expect(txMock.wallets.update).toHaveBeenCalledWith({
         where: { id: walletId },
@@ -138,14 +147,15 @@ describe('WalletsService (Ledger Logic)', () => {
     });
 
     it('should throw error if resulting balance is negative (Insufficient funds)', async () => {
-      txMock.wallets.update.mockResolvedValue({
-        ...mockWallet,
-        balance: new Prisma.Decimal(-50), // Mocking a negative result
-      });
+      txMock.$queryRaw.mockResolvedValue([{
+        id: walletId,
+        balance: new Prisma.Decimal(50), // Balance is 50, but we will deduct 100.50
+        pending_balance: new Prisma.Decimal(0),
+      }]);
 
       await expect(
         service.processTransaction(walletId, amountDecimal, wallet_transaction_type.DEBIT, null, null, txMock)
-      ).rejects.toThrow(`Số dư không đủ trong ví ${walletId}`);
+      ).rejects.toThrow(`S\u1ed1 d\u01b0 kh\u1ea3 d\u1ee5ng kh\u00f4ng \u0111\u1ee7 trong v\u00ed ${walletId}`); // "Số dư khả dụng không đủ trong ví"
     });
   });
 });

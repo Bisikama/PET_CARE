@@ -38,7 +38,10 @@ describe('AdminProvidersService', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
-    }
+    },
+    provider_services: {
+      updateMany: jest.fn(),
+    },
   };
 
   beforeEach(async () => {

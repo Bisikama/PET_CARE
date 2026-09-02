@@ -34,19 +34,21 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ cá nhân' })
-  @ApiResponse({ status: 200, description: 'Trả về thông tin user đang login' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 200, description: 'Trả về thông tin user đang login.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy thông tin hồ sơ (USER_NOT_FOUND).' })
   async getMe(@GetCurrentUserId() userId: string) {
     return this.usersService.findPublicById(userId);
   }
 
   @Patch('me')
   @ApiOperation({ summary: 'Cập nhật thông tin cơ bản (Tên, SĐT)' })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công, trả về thông tin user mới.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy thông tin hồ sơ (USER_NOT_FOUND).' })
   async updateProfile(
     @GetCurrentUserId() userId: string,
     @Body() dto: UpdateProfileDto,
@@ -69,10 +71,11 @@ export class UsersController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật ảnh thành công' })
-  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá lớn' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden)' })
+  @ApiResponse({ status: 200, description: 'Cập nhật ảnh thành công, trả về link ảnh mới.' })
+  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá giới hạn dung lượng (Max 5MB).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ.' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
     @GetCurrentUserId() userId: string,

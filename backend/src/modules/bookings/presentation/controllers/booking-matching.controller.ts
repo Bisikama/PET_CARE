@@ -22,13 +22,13 @@ export class BookingMatchingController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Dữ liệu đầu vào không hợp lệ.',
+    description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).',
   })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 404,
-    description: 'Thú cưng hoặc địa chỉ của khách hàng không tồn tại.',
+    description: 'Thú cưng hoặc địa chỉ của khách hàng không tồn tại (NOT_FOUND).',
   })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async search(@Body() dto: SearchProviderDto) {
     return this.searchMatchingUseCase.execute(dto);
   }

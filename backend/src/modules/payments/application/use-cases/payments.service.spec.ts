@@ -3,6 +3,7 @@ import { PaymentsService } from './payments.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
+import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('PaymentsService', () => {
@@ -16,14 +17,25 @@ describe('PaymentsService', () => {
     },
     payments: {
       create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
     },
     bookings: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
+    wallets: {
+      findUnique: jest.fn(),
+    },
+    $transaction: jest.fn(async (cb) => cb(mockPrisma)),
   };
 
-  const mockWallets = {
+  const mockWalletsService = {
     processTransaction: jest.fn(),
+  };
+
+  const mockSubscriptionsService = {
+    handleSubscriptionSuccess: jest.fn(),
   };
 
   const mockConfig = {
@@ -35,8 +47,9 @@ describe('PaymentsService', () => {
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: WalletsService, useValue: mockWallets },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: WalletsService, useValue: mockWalletsService },
+        { provide: SubscriptionsService, useValue: mockSubscriptionsService },
       ],
     }).compile();
 
@@ -98,6 +111,91 @@ describe('PaymentsService', () => {
       });
 
       await expect(service.createVNPayUrl(bookingId, amount, ipAddress, 'SALE20')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('processMomoIPN', () => {
+    const mockMomoPayload = {
+      partnerCode: 'MOMO',
+      orderId: 'booking-123',
+      requestId: 'req-123',
+      amount: 100000,
+      orderInfo: 'Thanh toan booking',
+      orderType: 'momo_wallet',
+      transId: 123456789,
+      resultCode: 0,
+      message: 'Success',
+      payType: 'qr',
+      responseTime: 1616161616,
+      extraData: '',
+      signature: '', // will be set dynamically
+    };
+
+    it('should return 97 if signature is invalid', async () => {
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === 'MOMO_ACCESS_KEY') return 'valid_access_key';
+        if (key === 'MOMO_SECRET_KEY') return 'valid_secret_key';
+        return 'mock-value';
+      });
+
+      const payload = { ...mockMomoPayload, signature: 'invalid_signature' };
+      const result = await service.processMomoIPN(payload);
+
+      expect(result.RspCode).toBe('97');
+      expect(result.Message).toBe('Checksum failed');
+    });
+
+    it('should process payment successfully and hold funds in escrow', async () => {
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === 'MOMO_ACCESS_KEY') return 'valid_access_key';
+        if (key === 'MOMO_SECRET_KEY') return 'valid_secret_key';
+        return 'mock-value';
+      });
+
+      // Generate valid signature
+      const rawSignature = `accessKey=valid_access_key&amount=${mockMomoPayload.amount}&extraData=${mockMomoPayload.extraData}&message=${mockMomoPayload.message}&orderId=${mockMomoPayload.orderId}&orderInfo=${mockMomoPayload.orderInfo}&orderType=${mockMomoPayload.orderType}&partnerCode=${mockMomoPayload.partnerCode}&payType=${mockMomoPayload.payType}&requestId=${mockMomoPayload.requestId}&responseTime=${mockMomoPayload.responseTime}&resultCode=${mockMomoPayload.resultCode}&transId=${mockMomoPayload.transId}`;
+      const crypto = require('crypto');
+      const validSignature = crypto.createHmac('sha256', 'valid_secret_key').update(Buffer.from(rawSignature, 'utf-8')).digest('hex');
+
+      const payload = { ...mockMomoPayload, signature: validSignature };
+
+      mockPrisma.payments.findFirst.mockResolvedValue({
+        id: 'payment-1',
+        transaction_code: 'booking-123',
+        status: 'PENDING',
+        booking_id: 'booking-123',
+        idempotency_key: null,
+        bookings: {
+          provider_id: 'provider-1',
+          total_price: 100000,
+        },
+      });
+
+      mockPrisma.wallets.findUnique.mockResolvedValue({
+        id: 'wallet-1',
+        user_id: 'provider-1',
+      });
+
+      const result = await service.processMomoIPN(payload);
+
+      expect(result.RspCode).toBe('00');
+      expect(mockPrisma.payments.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'payment-1' },
+          data: expect.objectContaining({
+            status: 'PAID_HELD_IN_ESCROW',
+            idempotency_key: '123456789',
+          })
+        })
+      );
+      expect(mockWalletsService.processTransaction).toHaveBeenCalledWith(
+        'wallet-1',
+        100000,
+        'ESCROW_HOLD',
+        'booking-123',
+        'Ký quỹ thanh toán từ Momo',
+        mockPrisma
+      );
     });
   });
 });

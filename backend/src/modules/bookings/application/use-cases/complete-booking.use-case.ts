@@ -89,7 +89,7 @@ export class CompleteBookingUseCase {
       await this.bookingRepo.addBookingEvent(
         bookingId,
         providerUserId,
-        'CUSTOMER_CONFIRMED',
+        'COMPLETION_REQUESTED',
         'Booking service completed by provider',
         tx,
       );
