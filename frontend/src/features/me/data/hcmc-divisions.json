@@ -1,0 +1,755 @@
+[
+  {
+    "name": "Thành phố Hồ Chí Minh",
+    "code": 79,
+    "division_type": "thành phố trung ương",
+    "codename": "thanh_pho_ho_chi_minh",
+    "phone_code": 28,
+    "districts": [
+      {
+        "name": "Huyện Bình Chánh",
+        "code": 785,
+        "wards": [
+          {
+            "name": "Xã Bình Chánh",
+            "code": 27637,
+            "codename": "xa_binh_chanh",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Bình Hưng",
+            "code": 27619,
+            "codename": "xa_binh_hung",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Bình Lợi",
+            "code": 27610,
+            "codename": "xa_binh_loi",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Hưng Long",
+            "code": 27628,
+            "codename": "xa_hung_long",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Tân Nhựt",
+            "code": 27595,
+            "codename": "xa_tan_nhut",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Tân Vĩnh Lộc",
+            "code": 27604,
+            "codename": "xa_tan_vinh_loc",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Vĩnh Lộc",
+            "code": 27601,
+            "codename": "xa_vinh_loc",
+            "division_type": "xã"
+          }
+        ]
+      },
+      {
+        "name": "Huyện Cần Giờ",
+        "code": 787,
+        "wards": [
+          {
+            "name": "Xã An Thới Đông",
+            "code": 27673,
+            "codename": "xa_an_thoi_dong",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Bình Khánh",
+            "code": 27667,
+            "codename": "xa_binh_khanh",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Cần Giờ",
+            "code": 27664,
+            "codename": "xa_can_gio",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Thạnh An",
+            "code": 27676,
+            "codename": "xa_thanh_an",
+            "division_type": "xã"
+          }
+        ]
+      },
+      {
+        "name": "Huyện Củ Chi",
+        "code": 783,
+        "wards": [
+          {
+            "name": "Xã An Nhơn Tây",
+            "code": 27508,
+            "codename": "xa_an_nhon_tay",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Bình Mỹ",
+            "code": 27544,
+            "codename": "xa_binh_my",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Củ Chi",
+            "code": 27553,
+            "codename": "xa_cu_chi",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Nhuận Đức",
+            "code": 27511,
+            "codename": "xa_nhuan_duc",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Phú Hòa Đông",
+            "code": 27541,
+            "codename": "xa_phu_hoa_dong",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Tân An Hội",
+            "code": 27496,
+            "codename": "xa_tan_an_hoi",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Thái Mỹ",
+            "code": 27526,
+            "codename": "xa_thai_my",
+            "division_type": "xã"
+          }
+        ]
+      },
+      {
+        "name": "Huyện Hóc Môn",
+        "code": 784,
+        "wards": [
+          {
+            "name": "Xã Bà Điểm",
+            "code": 27592,
+            "codename": "xa_ba_diem",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Đông Thạnh",
+            "code": 27568,
+            "codename": "xa_dong_thanh",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Hóc Môn",
+            "code": 27559,
+            "codename": "xa_hoc_mon",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Xuân Thới Sơn",
+            "code": 27577,
+            "codename": "xa_xuan_thoi_son",
+            "division_type": "xã"
+          }
+        ]
+      },
+      {
+        "name": "Huyện Nhà Bè",
+        "code": 786,
+        "wards": [
+          {
+            "name": "Xã Hiệp Phước",
+            "code": 27658,
+            "codename": "xa_hiep_phuoc",
+            "division_type": "xã"
+          },
+          {
+            "name": "Xã Nhà Bè",
+            "code": 27655,
+            "codename": "xa_nha_be",
+            "division_type": "xã"
+          }
+        ]
+      },
+      {
+        "name": "Quận 1",
+        "code": 760,
+        "wards": [
+          {
+            "name": "Phường Bến Thành",
+            "code": 26743,
+            "codename": "phuong_ben_thanh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Cầu Ông Lãnh",
+            "code": 26758,
+            "codename": "phuong_cau_ong_lanh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Sài Gòn",
+            "code": 26740,
+            "codename": "phuong_sai_gon",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Định",
+            "code": 26737,
+            "codename": "phuong_tan_dinh",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 10",
+        "code": 771,
+        "wards": [
+          {
+            "name": "Phường Diên Hồng",
+            "code": 27169,
+            "codename": "phuong_dien_hong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Hòa Hưng",
+            "code": 27163,
+            "codename": "phuong_hoa_hung",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Vườn Lài",
+            "code": 27190,
+            "codename": "phuong_vuon_lai",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 11",
+        "code": 772,
+        "wards": [
+          {
+            "name": "Phường Bình Thới",
+            "code": 27232,
+            "codename": "phuong_binh_thoi",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Hòa Bình",
+            "code": 27211,
+            "codename": "phuong_hoa_binh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Minh Phụng",
+            "code": 27238,
+            "codename": "phuong_minh_phung",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phú Thọ",
+            "code": 27226,
+            "codename": "phuong_phu_tho",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 12",
+        "code": 761,
+        "wards": [
+          {
+            "name": "Phường An Phú Đông",
+            "code": 26767,
+            "codename": "phuong_an_phu_dong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Đông Hưng Thuận",
+            "code": 26791,
+            "codename": "phuong_dong_hung_thuan",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Thới Hiệp",
+            "code": 26782,
+            "codename": "phuong_tan_thoi_hiep",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Thới An",
+            "code": 26773,
+            "codename": "phuong_thoi_an",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Trung Mỹ Tây",
+            "code": 26785,
+            "codename": "phuong_trung_my_tay",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 3",
+        "code": 770,
+        "wards": [
+          {
+            "name": "Phường Bàn Cờ",
+            "code": 27154,
+            "codename": "phuong_ban_co",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Nhiêu Lộc",
+            "code": 27142,
+            "codename": "phuong_nhieu_loc",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Xuân Hòa",
+            "code": 27139,
+            "codename": "phuong_xuan_hoa",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 4",
+        "code": 773,
+        "wards": [
+          {
+            "name": "Phường Khánh Hội",
+            "code": 27265,
+            "codename": "phuong_khanh_hoi",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Vĩnh Hội",
+            "code": 27286,
+            "codename": "phuong_vinh_hoi",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Xóm Chiếu",
+            "code": 27259,
+            "codename": "phuong_xom_chieu",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 5",
+        "code": 774,
+        "wards": [
+          {
+            "name": "Phường An Đông",
+            "code": 27316,
+            "codename": "phuong_an_dong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Chợ Lớn",
+            "code": 27343,
+            "codename": "phuong_cho_lon",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Chợ Quán",
+            "code": 27301,
+            "codename": "phuong_cho_quan",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 6",
+        "code": 775,
+        "wards": [
+          {
+            "name": "Phường Bình Phú",
+            "code": 27364,
+            "codename": "phuong_binh_phu",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Tây",
+            "code": 27367,
+            "codename": "phuong_binh_tay",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Tiên",
+            "code": 27373,
+            "codename": "phuong_binh_tien",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phú Lâm",
+            "code": 27349,
+            "codename": "phuong_phu_lam",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 7",
+        "code": 778,
+        "wards": [
+          {
+            "name": "Phường Phú Thuận",
+            "code": 27484,
+            "codename": "phuong_phu_thuan",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Hưng",
+            "code": 27475,
+            "codename": "phuong_tan_hung",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Mỹ",
+            "code": 27487,
+            "codename": "phuong_tan_my",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Thuận",
+            "code": 27478,
+            "codename": "phuong_tan_thuan",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận 8",
+        "code": 776,
+        "wards": [
+          {
+            "name": "Phường Bình Đông",
+            "code": 27424,
+            "codename": "phuong_binh_dong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Chánh Hưng",
+            "code": 27418,
+            "codename": "phuong_chanh_hung",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phú Định",
+            "code": 27427,
+            "codename": "phuong_phu_dinh",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận Bình Tân",
+        "code": 777,
+        "wards": [
+          {
+            "name": "Phường An Lạc",
+            "code": 27460,
+            "codename": "phuong_an_lac",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Tân",
+            "code": 27442,
+            "codename": "phuong_binh_tan",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Trị Đông",
+            "code": 27448,
+            "codename": "phuong_binh_tri_dong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Tạo",
+            "code": 27457,
+            "codename": "phuong_tan_tao",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận Bình Thạnh",
+        "code": 765,
+        "wards": [
+          {
+            "name": "Phường Bình Lợi Trung",
+            "code": 26905,
+            "codename": "phuong_binh_loi_trung",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Quới",
+            "code": 26911,
+            "codename": "phuong_binh_quoi",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Thạnh",
+            "code": 26929,
+            "codename": "phuong_binh_thanh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Gia Định",
+            "code": 26944,
+            "codename": "phuong_gia_dinh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Thạnh Mỹ Tây",
+            "code": 26956,
+            "codename": "phuong_thanh_my_tay",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận Gò Vấp",
+        "code": 764,
+        "wards": [
+          {
+            "name": "Phường An Hội Đông",
+            "code": 26878,
+            "codename": "phuong_an_hoi_dong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường An Hội Tây",
+            "code": 26882,
+            "codename": "phuong_an_hoi_tay",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường An Nhơn",
+            "code": 26876,
+            "codename": "phuong_an_nhon",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Gò Vấp",
+            "code": 26884,
+            "codename": "phuong_go_vap",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Hạnh Thông",
+            "code": 26890,
+            "codename": "phuong_hanh_thong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Thông Tây Hội",
+            "code": 26898,
+            "codename": "phuong_thong_tay_hoi",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận Phú Nhuận",
+        "code": 768,
+        "wards": [
+          {
+            "name": "Phường Cầu Kiệu",
+            "code": 27058,
+            "codename": "phuong_cau_kieu",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Đức Nhuận",
+            "code": 27043,
+            "codename": "phuong_duc_nhuan",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phú Nhuận",
+            "code": 27073,
+            "codename": "phuong_phu_nhuan",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận Tân Bình",
+        "code": 766,
+        "wards": [
+          {
+            "name": "Phường Bảy Hiền",
+            "code": 26983,
+            "codename": "phuong_bay_hien",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Bình",
+            "code": 27004,
+            "codename": "phuong_tan_binh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Hòa",
+            "code": 26995,
+            "codename": "phuong_tan_hoa",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Sơn",
+            "code": 27007,
+            "codename": "phuong_tan_son",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Sơn Hòa",
+            "code": 26977,
+            "codename": "phuong_tan_son_hoa",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Sơn Nhất",
+            "code": 26968,
+            "codename": "phuong_tan_son_nhat",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Quận Tân Phú",
+        "code": 767,
+        "wards": [
+          {
+            "name": "Phường Bình Hưng Hòa",
+            "code": 27439,
+            "codename": "phuong_binh_hung_hoa",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phú Thạnh",
+            "code": 27028,
+            "codename": "phuong_phu_thanh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phú Thọ Hòa",
+            "code": 27022,
+            "codename": "phuong_phu_tho_hoa",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Phú",
+            "code": 27031,
+            "codename": "phuong_tan_phu",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tân Sơn Nhì",
+            "code": 27019,
+            "codename": "phuong_tan_son_nhi",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tây Thạnh",
+            "code": 27013,
+            "codename": "phuong_tay_thanh",
+            "division_type": "phường"
+          }
+        ]
+      },
+      {
+        "name": "Thành phố Thủ Đức",
+        "code": 769,
+        "wards": [
+          {
+            "name": "Phường An Khánh",
+            "code": 27094,
+            "codename": "phuong_an_khanh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Bình Trưng",
+            "code": 27097,
+            "codename": "phuong_binh_trung",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Cát Lái",
+            "code": 27112,
+            "codename": "phuong_cat_lai",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Hiệp Bình",
+            "code": 26809,
+            "codename": "phuong_hiep_binh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Linh Xuân",
+            "code": 26800,
+            "codename": "phuong_linh_xuan",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Long Bình",
+            "code": 26833,
+            "codename": "phuong_long_binh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Long Phước",
+            "code": 26857,
+            "codename": "phuong_long_phuoc",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Long Trường",
+            "code": 26860,
+            "codename": "phuong_long_truong",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Phước Long",
+            "code": 26848,
+            "codename": "phuong_phuoc_long",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tam Bình",
+            "code": 26803,
+            "codename": "phuong_tam_binh",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Tăng Nhơn Phú",
+            "code": 26842,
+            "codename": "phuong_tang_nhon_phu",
+            "division_type": "phường"
+          },
+          {
+            "name": "Phường Thủ Đức",
+            "code": 26824,
+            "codename": "phuong_thu_duc",
+            "division_type": "phường"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: typeof window !== 'undefined' ? getAuthToken() : null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: typeof window !== 'undefined' ? !!getAuthToken() : false,
   error: null,
 
   login: async (credentials) => {
@@ -159,10 +159,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initAuth: async () => {
-    const token = getAuthToken();
+    let token = getAuthToken();
+
     if (!token) {
-      set({ isAuthenticated: false, isLoading: false });
-      return;
+      set({ isLoading: true });
+      try {
+        const refreshResponse = await authService.refreshToken();
+        if (refreshResponse?.accessToken) {
+          token = refreshResponse.accessToken;
+          setAuthToken(token);
+        } else {
+          set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false, error: null });
+          return;
+        }
+      } catch {
+        set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false, error: null });
+        return;
+      }
     }
 
     set({ isLoading: true, accessToken: token });
@@ -170,12 +183,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authService.getMe();
       set({
         user,
+        accessToken: getAuthToken(),
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
-    } catch (err) {
-      console.error('Lỗi khi khôi phục phiên đăng nhập:', err);
+    } catch {
       removeAuthToken();
       set({
         user: null,

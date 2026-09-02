@@ -6,6 +6,9 @@ import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { isAuthenticated } from '@/lib/auth';
 import { ROUTES } from '@/lib/constants';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
+import { MeModal, CustomerAddressModal, ProviderModal } from '@/features/me';
+import { PetModal } from '@/features/pet';
 
 export default function PrivateLayout({
   children,
@@ -14,17 +17,20 @@ export default function PrivateLayout({
 }) {
   const router = useRouter();
   const [loading, setLoading] = React.useState(true);
+  const { isAuthenticated: isAuth, isLoading: isAuthLoading } = useAuthStore();
 
   React.useEffect(() => {
-    // Kiểm tra trạng thái đăng nhập cơ bản
-    if (!isAuthenticated()) {
+    if (isAuthLoading) return;
+
+    if (!isAuth) {
+      // Token hết hạn hoặc không hợp lệ
       router.replace(ROUTES.LOGIN);
     } else {
       setLoading(false);
     }
-  }, [router]);
+  }, [isAuth, isAuthLoading, router]);
 
-  if (loading) {
+  if (loading || isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
@@ -52,6 +58,11 @@ export default function PrivateLayout({
           </div>
         </main>
       </div>
+
+      <MeModal />
+      <CustomerAddressModal />
+      <PetModal />
+      <ProviderModal />
     </div>
   );
 }

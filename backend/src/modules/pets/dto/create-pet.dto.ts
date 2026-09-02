@@ -55,6 +55,11 @@ export class CreatePetDto {
   @IsOptional()
   behaviorNote?: string;
 
+  @ApiPropertyOptional({ description: 'URL ảnh avatar (nếu dùng ảnh mặc định)' })
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
+
   @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'File ảnh avatar' })
   @IsOptional()
   avatar?: any;
