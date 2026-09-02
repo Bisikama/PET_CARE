@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { availability_slot_status, working_mode } from '@prisma/client';
-import { PrismaService } from '../../../database/prisma.service';
+import { PrismaService } from '../../../../database/prisma.service';
 import { ProviderSchedulesRepositoryPort } from '../../application/ports/provider-schedules.repository.port';
 import { TimeSlotRecord } from '../../application/types/provider-schedules.types';
 
@@ -132,7 +132,7 @@ export class PrismaProviderSchedulesRepository implements ProviderSchedulesRepos
           });
         } else {
           // If already booked or held, preserve status
-          const protectedStatuses = [
+          const protectedStatuses: availability_slot_status[] = [
             availability_slot_status.BOOKED,
             availability_slot_status.HELD_FOR_PAYMENT,
             availability_slot_status.RESERVED_FOR_PROVIDER_RESPONSE,

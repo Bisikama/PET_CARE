@@ -77,7 +77,7 @@ export class GetProviderScheduleUseCase {
           (s: any) => s.slot_id === ts.id,
         );
 
-        let bookingSummary = null;
+        let bookingSummary: any = null;
         if (pws?.bookings && pws.bookings.length > 0) {
           const b = pws.bookings[0];
           bookingSummary = {
