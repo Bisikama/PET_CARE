@@ -17,10 +17,11 @@ import { PrismaUnitOfWork } from './infrastructure/persistence/prisma-unit-of-wo
 
 import { PaymentsModule } from '../payments/payments.module';
 import { SettlementsModule } from '../settlements/settlements.module';
+import { GrowthModule } from '../growth/growth.module';
 import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
 
 @Module({
-  imports: [PrismaModule, PaymentsModule, SettlementsModule],
+  imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule],
   controllers: [BookingsController, BookingMatchingController],
   providers: [
     CreateBookingRequestUseCase,
@@ -51,4 +52,3 @@ import { CustomerCancelBookingUseCase } from './application/use-cases/customer-c
   ],
 })
 export class BookingsModule {}
-
