@@ -23,7 +23,6 @@ import { DeleteServiceUseCase } from './application/use-cases/delete-service.use
 import { GetServicesUseCase } from './application/use-cases/get-services.use-case';
 import { ManagePricingRuleUseCase } from './application/use-cases/manage-pricing-rule.use-case';
 import { ManageChecklistTemplateUseCase } from './application/use-cases/manage-checklist-template.use-case';
-import { ManageCancellationPolicyUseCase } from './application/use-cases/manage-cancellation-policy.use-case';
 
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -31,7 +30,6 @@ import { CreatePricingRuleDto } from './dto/create-pricing-rule.dto';
 import { UpdatePricingRuleDto } from './dto/update-pricing-rule.dto';
 import { CreateChecklistTemplateDto } from './dto/create-checklist-template.dto';
 import { UpdateChecklistTemplateDto } from './dto/update-checklist-template.dto';
-import { CreateCancellationPolicyDto } from './dto/create-cancellation-policy.dto';
 
 @ApiTags('Services')
 @ApiBearerAuth()
@@ -44,7 +42,6 @@ export class ServicesController {
     private readonly getServicesUseCase: GetServicesUseCase,
     private readonly managePricingRuleUseCase: ManagePricingRuleUseCase,
     private readonly manageChecklistTemplateUseCase: ManageChecklistTemplateUseCase,
-    private readonly manageCancellationPolicyUseCase: ManageCancellationPolicyUseCase,
   ) {}
 
   // ==========================================
@@ -243,31 +240,5 @@ export class ServicesController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ yêu cầu.' })
   async getChecklistTemplates(@Param('id') serviceId: string) {
     return this.manageChecklistTemplateUseCase.getByServiceId(serviceId);
-  }
-
-  // ==========================================
-  // CANCELLATION POLICY ENDPOINTS
-  // ==========================================
-
-  @Post('../cancellation-policies') // Custom route
-  @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Tạo chính sách hủy mới (Admin)' })
-  @ApiResponse({ status: 201, description: 'Tạo chính sách hủy thành công.' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu cấu hình không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
-  @ApiResponse({ status: 403, description: 'Không có quyền thực hiện hành động này.' })
-  async createCancellationPolicy(@Body() dto: CreateCancellationPolicyDto) {
-    return this.manageCancellationPolicyUseCase.create(dto);
-  }
-
-  @Public()
-  @Get('../cancellation-policies') // Custom route
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Lấy danh sách các chính sách hủy' })
-  @ApiResponse({ status: 200, description: 'Trả về danh sách chính sách hủy thành công.' })
-  async getCancellationPolicies() {
-    return this.manageCancellationPolicyUseCase.getList();
   }
 }
