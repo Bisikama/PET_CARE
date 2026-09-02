@@ -16,6 +16,7 @@ interface AuthState {
   logout: () => Promise<void>;
   initAuth: () => Promise<void>;
   clearError: () => void;
+  setUser: (user: User | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -24,6 +25,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: typeof window !== 'undefined' ? !!getAuthToken() : false,
   error: null,
+
+  setUser: (user) => set({ user }),
 
   login: async (credentials) => {
     set({ isLoading: true, error: null });

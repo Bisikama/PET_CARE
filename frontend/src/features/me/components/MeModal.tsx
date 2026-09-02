@@ -1,12 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { X, Mail, Phone, Calendar, ShieldCheck, Loader2, MapPin } from 'lucide-react';
+import { X, Mail, Phone, Calendar, ShieldCheck, Loader2, MapPin, Edit3 } from 'lucide-react';
 import { useMe } from '../hooks/useMe';
 import { formatDate } from '@/utils/formatDate';
+import { UpdateProfileModal } from './UpdateProfileModal';
 
 export function MeModal() {
   const { isOpen, user, isLoading, error, closeModal, refresh, openAddressModal } = useMe();
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = React.useState(false);
 
   // Listen to Escape key to close the modal
   React.useEffect(() => {
@@ -192,7 +194,13 @@ export function MeModal() {
               </div>
 
               {/* Close Button Footer */}
-              <div className="pt-4 flex justify-end">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-4">
+                <button
+                  onClick={() => setIsUpdateModalOpen(true)}
+                  className="px-6 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer border border-transparent"
+                >
+                  Cập nhật hồ sơ
+                </button>
                 <button
                   onClick={closeModal}
                   className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer border border-transparent"
@@ -204,6 +212,11 @@ export function MeModal() {
           </>
         ) : null}
       </div>
+
+      <UpdateProfileModal 
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+      />
     </div>
   );
 }

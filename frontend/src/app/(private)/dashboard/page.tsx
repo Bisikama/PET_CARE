@@ -11,6 +11,7 @@ import { providerService } from '@/features/provider/services/provider.service';
 import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager } from '@/features/admin';
 import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
 import { ServiceDetailModal } from '@/features/services';
+import { ScheduleManager } from '@/features/schedule';
 import { Globe, Trash2, PlusCircle, FileText, Eye } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -329,42 +330,7 @@ export default function DashboardPage() {
                 {/* Right Column: Working Hours & Professional Certificates */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Working hours */}
-                  <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-                    <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Khung giờ nhận lịch nhận việc</h4>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs font-bold">
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-slate-700">
-                        Thứ Hai<br/>
-                        <span className="text-[10px] text-slate-400 font-medium">08:00 - 18:00</span>
-                      </div>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-slate-700">
-                        Thứ Ba<br/>
-                        <span className="text-[10px] text-slate-400 font-medium">08:00 - 18:00</span>
-                      </div>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-slate-700">
-                        Thứ Tư<br/>
-                        <span className="text-[10px] text-slate-400 font-medium">08:00 - 18:00</span>
-                      </div>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-slate-700">
-                        Thứ Năm<br/>
-                        <span className="text-[10px] text-slate-400 font-medium">08:00 - 18:00</span>
-                      </div>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-slate-700">
-                        Thứ Sáu<br/>
-                        <span className="text-[10px] text-slate-400 font-medium">08:00 - 18:00</span>
-                      </div>
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-slate-700">
-                        Thứ Bảy<br/>
-                        <span className="text-[10px] text-slate-400 font-medium">08:00 - 20:00</span>
-                      </div>
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
-                        Chủ Nhật<br/>
-                        <span className="text-[10px] text-amber-600 font-medium">08:00 - 22:00</span>
-                      </div>
-                      <div className="p-3 bg-slate-100 border border-dashed border-slate-200 rounded-xl text-slate-400 flex items-center justify-center cursor-pointer hover:bg-slate-200/50 transition-all duration-150">
-                        + Thêm lịch
-                      </div>
-                    </div>
-                  </div>
+                  <ScheduleManager />
 
                   {/* Certificates */}
                   <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">

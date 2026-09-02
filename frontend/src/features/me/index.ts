@@ -18,3 +18,5 @@ export * from './hooks/useCustomerAddresses';
 export * from './services/customer-addresses.service';
 export * from './stores/me.store';
 export * from './types';
+export * from './components/UpdateProfileModal';
+export * from './hooks/useUpdateProfile';

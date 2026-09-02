@@ -3,6 +3,8 @@ export * from './components/PetSelection';
 export * from './components/ServiceSelection';
 export * from './components/DetailService';
 export * from './components/ProviderSelection';
+export * from './components/ProviderDetail';
+export * from './components/TimeSelection';
 export * from './components/ConditionSelection';
 export * from './stores/booking.store';
 export * from './types';

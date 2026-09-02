@@ -287,11 +287,11 @@ export function ConditionSelection() {
       <div className="flex items-center justify-between pt-4 border-t border-slate-100">
         <button
           type="button"
-          onClick={() => setStep(4)}
+          onClick={() => setStep(6)}
           className="flex items-center gap-1.5 px-5 py-3 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs md:text-sm font-bold rounded-2xl transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
-          Chọn chuyên viên
+          Chọn khung giờ
         </button>
 
         <button
