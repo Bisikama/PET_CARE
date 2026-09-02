@@ -1,10 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { notification_type } from '@prisma/client';
+import { MailService } from '../../mail/mail.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(NotificationsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async sendNotification(
     userId: string,
@@ -29,7 +35,8 @@ export class NotificationsService {
       return recentDuplicate;
     }
 
-    return this.prisma.notifications.create({
+    // 1. Lưu thông báo vào DB
+    const notification = await this.prisma.notifications.create({
       data: {
         user_id: userId,
         type,
@@ -38,6 +45,32 @@ export class NotificationsService {
         related_booking_id: bookingId,
       },
     });
+
+    // 2. Lấy thông tin user để gửi Email
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, fullName: true },
+    });
+
+    if (user && user.email) {
+      // 3. Gửi mail bất đồng bộ (Fire and forget) với Fault Tolerance
+      this.mailService
+        .sendNotificationEmail(user.email, {
+          title,
+          content,
+          userName: user.fullName || 'Khách hàng',
+          type,
+          bookingId,
+        })
+        .catch((error) => {
+          this.logger.error(
+            `[Email Notification Failed] Không thể gửi mail thông báo cho user ${userId}: ${(error as Error).message}`,
+            (error as Error).stack,
+          );
+        });
+    }
+
+    return notification;
   }
 
   async getMyNotifications(userId: string) {
