@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
+import { bookingService } from '../services/booking.service';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
 import { scheduleService } from '@/features/schedule/services/schedule.service';
 import { ProviderWorkingSlotView } from '@/features/schedule/types';
@@ -67,7 +68,7 @@ export function TimeSelection() {
   const [holdTimer, setHoldTimer] = React.useState<number | null>(null);
   const [isHolding, setIsHolding] = React.useState(false);
 
-  const { slots, loading } = useProviderSchedule(selectedProviderId, selectedDate);
+  const { slots, loading } = useProviderSchedule(selectedProviderId || null, selectedDate);
 
   // Countdown logic
   React.useEffect(() => {
