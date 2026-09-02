@@ -3,6 +3,8 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
+  SERVICES: '/services',
+  BOOKINGS: '/bookings',
   VERIFY_OTP: '/verify-otp',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
@@ -16,4 +18,5 @@ export const API_ENDPOINTS = {
   RESEND_CONFIRMATION_OTP: '/auth/resend-confirmation-otp',
   FORGOT_PASSWORD: '/auth/forgot-password',
   RESET_PASSWORD: '/auth/reset-password',
+  SERVICES: '/services',
 } as const;

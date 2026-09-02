@@ -59,6 +59,13 @@ export class PrismaProvidersRepository implements IProvidersRepository {
   }
 
   async registerService(providerId: string, data: RegisterCapabilityInput): Promise<void> {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { id: providerId },
+      select: { status: true },
+    });
+
+    const capabilityStatus = profile?.status === 'APPROVED' ? 'APPROVED' : 'PENDING';
+
     await this.prisma.provider_services.create({
       data: {
         provider_id: providerId,
@@ -67,6 +74,7 @@ export class PrismaProvidersRepository implements IProvidersRepository {
         min_weight: data.minWeight,
         max_weight: data.maxWeight,
         price: data.price,
+        status: capabilityStatus as any,
       },
     });
   }

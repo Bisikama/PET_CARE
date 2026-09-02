@@ -115,6 +115,12 @@ export class AdminProvidersService {
         data: { status: provider_status.APPROVED },
       });
 
+      // Tự động duyệt toàn bộ dịch vụ đối tác đã đăng ký đang ở trạng thái PENDING
+      await tx.provider_services.updateMany({
+        where: { provider_id: providerId, status: 'PENDING' },
+        data: { status: 'APPROVED' },
+      });
+
       await tx.user.update({
         where: { id: profile.user_id },
         data: { role: Role.PROVIDER },
