@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsUUID, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SearchProviderDto {

@@ -19,6 +19,11 @@ export const authService = {
     return response.data;
   },
 
+  refreshToken: async (): Promise<{ accessToken: string }> => {
+    const response = await axiosInstance.post<{ accessToken: string }>('/auth/refresh');
+    return response.data;
+  },
+
   logout: async (): Promise<{ message: string }> => {
     const response = await axiosInstance.post<{ message: string }>('/auth/logout');
     return response.data;

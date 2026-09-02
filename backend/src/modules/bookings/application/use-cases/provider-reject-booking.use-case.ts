@@ -5,6 +5,7 @@ import { BOOKING_REPOSITORY, UNIT_OF_WORK } from '../../booking.tokens';
 import type { BookingRepositoryPort } from '../ports/booking-repository.port';
 import type { UnitOfWorkPort } from '../ports/unit-of-work.port';
 import { BookingStateMachineService } from '../../domain/services/booking-state-machine.service';
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
 @Injectable()
 export class ProviderRejectBookingUseCase {
@@ -14,6 +15,7 @@ export class ProviderRejectBookingUseCase {
     @Inject(UNIT_OF_WORK)
     private readonly unitOfWork: UnitOfWorkPort,
     private readonly stateMachine: BookingStateMachineService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async execute(providerUserId: string, bookingId: string) {
@@ -38,7 +40,7 @@ export class ProviderRejectBookingUseCase {
     // Determine next state
     const nextStatus = this.stateMachine.providerReject(booking.status);
 
-    return this.unitOfWork.transaction(async (tx) => {
+    const result = await this.unitOfWork.transaction(async (tx) => {
       // 1. Update Booking status to REJECTED
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
 
@@ -61,5 +63,18 @@ export class ProviderRejectBookingUseCase {
 
       return { bookingId, status: nextStatus };
     });
+
+    // 4. Gửi thông báo Real-time cho Customer
+    await this.notificationsService.sendNotification({
+      userId: booking.customer_id,
+      type: 'BOOKING_REJECTED',
+      title: 'Đơn đặt lịch bị từ chối',
+      content: 'Đối tác đã từ chối nhận đơn. Tiền ký quỹ đã được hoàn về ví của bạn.',
+      bookingId,
+      actionUrl: `/customer/bookings/${bookingId}`,
+      metadata: { bookingId, status: nextStatus },
+    }).catch(() => {});
+
+    return result;
   }
 }
