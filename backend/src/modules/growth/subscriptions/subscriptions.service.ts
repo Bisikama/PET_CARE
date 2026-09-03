@@ -131,6 +131,22 @@ export class SubscriptionsService {
 
   // Được gọi từ PaymentsService khi nhận IPN VNPay thành công
   async handleSubscriptionSuccess(userId: string, tierName: string) {
+    // FIX BUG: Idempotency check — chống duplicate khi VNPay retry IPN nhiều lần
+    const existingActiveSub = await this.prisma.subscriptions.findFirst({
+      where: {
+        user_id: userId,
+        status: subscription_status.ACTIVE,
+        end_date: { gt: new Date() },
+      },
+    });
+
+    if (existingActiveSub) {
+      this.logger.warn(
+        `IPN Retry detected: User ${userId} đã có gói ${existingActiveSub.tier_name} ACTIVE đến ${existingActiveSub.end_date.toISOString()}. Bỏ qua.`,
+      );
+      return;
+    }
+
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 30);

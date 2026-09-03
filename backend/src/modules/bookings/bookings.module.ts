@@ -21,6 +21,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { SettlementsModule } from '../settlements/settlements.module';
 import { GrowthModule } from '../growth/growth.module';
 import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
+import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id.use-case';
 
 @Module({
   imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule],
@@ -30,6 +31,7 @@ import { CustomerCancelBookingUseCase } from './application/use-cases/customer-c
     ProviderAcceptBookingUseCase,
     ProviderRejectBookingUseCase,
     SearchMatchingProvidersUseCase,
+    GetBookingByIdUseCase,
     GetBookingChecklistUseCase,
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,

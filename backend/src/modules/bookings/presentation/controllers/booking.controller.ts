@@ -1,38 +1,37 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetCurrentUserId } from '../../../../common/decorators/get-current-user-id.decorator';
+import { AccessTokenGuard } from '../../../../common/guards/access-token.guard';
 import { CreateBookingRequestUseCase } from '../../application/use-cases/create-booking-request.use-case';
 import { ProviderAcceptBookingUseCase } from '../../application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from '../../application/use-cases/provider-reject-booking.use-case';
+import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
 import { GetBookingChecklistUseCase } from '../../application/use-cases/get-booking-checklist.use-case';
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
 import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
-import type { BookingRepositoryPort } from '../../application/ports/booking-repository.port';
-import { BOOKING_REPOSITORY } from '../../booking.tokens';
-import { Inject } from '@nestjs/common';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { CompleteBookingDto } from '../dto/complete-booking.dto';
 import { UpdateSingleChecklistItemDto } from '../dto/update-checklist-item.dto';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
+@UseGuards(AccessTokenGuard)
 @Controller('bookings')
 export class BookingsController {
   constructor(
     private readonly createBookingUseCase: CreateBookingRequestUseCase,
     private readonly acceptBookingUseCase: ProviderAcceptBookingUseCase,
     private readonly rejectBookingUseCase: ProviderRejectBookingUseCase,
+    private readonly getBookingByIdUseCase: GetBookingByIdUseCase,
     private readonly getBookingChecklistUseCase: GetBookingChecklistUseCase,
     private readonly startBookingServiceUseCase: StartBookingServiceUseCase,
     private readonly updateBookingChecklistItemUseCase: UpdateBookingChecklistItemUseCase,
     private readonly completeBookingUseCase: CompleteBookingUseCase,
     private readonly customerConfirmBookingUseCase: CustomerConfirmBookingUseCase,
     private readonly cancelBookingUseCase: CustomerCancelBookingUseCase,
-    @Inject(BOOKING_REPOSITORY)
-    private readonly bookingRepo: BookingRepositoryPort,
   ) {}
 
   @Post()
@@ -195,8 +194,11 @@ export class BookingsController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
-  async findById(@Param('id') bookingId: string) {
-    return this.bookingRepo.findBookingById(bookingId);
+  async findById(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+  ) {
+    return this.getBookingByIdUseCase.execute(userId, bookingId);
   }
 
   @Post(':id/cancel')
