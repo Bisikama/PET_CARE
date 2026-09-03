@@ -4,10 +4,14 @@ import { WalletsService } from './application/use-cases/wallets.service';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
 import { PrismaService } from '../../database/prisma.service';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
+import { CustomerPayoutRequestDto } from './dto/customer-payout-request.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Role } from '@prisma/client';
 
 @ApiTags('Wallets')
 @Controller('wallets')
-@UseGuards(AccessTokenGuard)
+@UseGuards(AccessTokenGuard, RolesGuard)
 @ApiBearerAuth()
 export class WalletsController {
   constructor(
@@ -97,6 +101,22 @@ export class WalletsController {
     @Body('amount') amount: number,
   ) {
     return this.walletsService.createPayoutRequest(userId, amount);
+  }
+
+  @Post('me/customer-payout-requests')
+  @Roles(Role.CUSTOMER)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Gửi yêu cầu rút tiền về tài khoản ngân hàng (Customer)' })
+  @ApiResponse({ status: 201, description: 'Yêu cầu rút tiền được tạo thành công chờ duyệt.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  @ApiResponse({ status: 409, description: 'Số dư khả dụng không đủ.' })
+  async requestCustomerPayout(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: CustomerPayoutRequestDto,
+  ) {
+    return this.walletsService.createCustomerPayoutRequest(userId, dto.amount, dto.bankDetails);
   }
 
   @Get('me/payout-requests')

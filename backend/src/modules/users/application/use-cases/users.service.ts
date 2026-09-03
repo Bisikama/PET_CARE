@@ -159,6 +159,22 @@ export class UsersService {
     });
   }
 
+  async updateNotificationSettings(userId: string, settings: Record<string, any>) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    const currentSettings = user.notification_settings as Record<string, any> || {};
+    const newSettings = { ...currentSettings, ...settings };
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { notification_settings: newSettings },
+      select: { id: true, notification_settings: true },
+    });
+  }
+
   async uploadAvatar(userId: string, file: Express.Multer.File) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {

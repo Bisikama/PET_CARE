@@ -40,8 +40,11 @@ export class SettlementsService {
       }
 
       // 2. Lấy thông tin ví
+      const userIdToQuery = payoutRequest.provider_id || payoutRequest.customer_id;
+      if (!userIdToQuery) throw new BadRequestException('Không xác định được chủ sở hữu yêu cầu rút tiền');
+
       const wallet = await tx.wallets.findUnique({
-        where: { user_id: payoutRequest.provider_id },
+        where: { user_id: userIdToQuery },
       });
 
       if (!wallet) {
@@ -97,8 +100,11 @@ export class SettlementsService {
       }
 
       // 2. Lấy thông tin ví
+      const userIdToQuery = payoutRequest.provider_id || payoutRequest.customer_id;
+      if (!userIdToQuery) throw new BadRequestException('Không xác định được chủ sở hữu yêu cầu rút tiền');
+
       const wallet = await tx.wallets.findUnique({
-        where: { user_id: payoutRequest.provider_id },
+        where: { user_id: userIdToQuery },
       });
 
       if (!wallet) {

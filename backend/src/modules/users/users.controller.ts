@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -24,13 +25,18 @@ import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
 import { UsersService } from './application/use-cases/users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
+import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
 
 @ApiTags('Users Profile')
 @Controller('users')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly deleteAccountUseCase: DeleteAccountUseCase,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ cá nhân' })
@@ -54,6 +60,18 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Patch('me/notification-settings')
+  @ApiOperation({ summary: 'Cập nhật cấu hình thông báo (Email, Push, Marketing)' })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ.' })
+  async updateNotificationSettings(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: UpdateNotificationSettingsDto,
+  ) {
+    return this.usersService.updateNotificationSettings(userId, dto);
   }
 
   @Patch('me/avatar')
@@ -90,5 +108,14 @@ export class UsersController {
     ) file: Express.Multer.File,
   ) {
     return this.usersService.uploadAvatar(userId, file);
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: 'Xóa tài khoản vĩnh viễn (Soft Delete)' })
+  @ApiResponse({ status: 200, description: 'Xóa tài khoản thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng.' })
+  async deleteAccount(@GetCurrentUserId() userId: string) {
+    return this.deleteAccountUseCase.execute(userId);
   }
 }

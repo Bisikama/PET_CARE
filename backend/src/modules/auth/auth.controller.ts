@@ -9,7 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import * as express from 'express';
@@ -31,6 +31,8 @@ import { GoogleIdTokenDto } from './dto/google-id-token.dto';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { Patch } from '@nestjs/common';
 
 type RequestWithCookies = Omit<express.Request, 'cookies'> & {
   cookies?: Record<string, string>;
@@ -175,6 +177,19 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản (USER_NOT_FOUND).' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Patch('change-password')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đổi mật khẩu cho người dùng đã đăng nhập' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Mật khẩu cũ không chính xác hoặc chưa đăng nhập.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng.' })
+  async changePassword(@GetCurrentUserId() userId: string, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(userId, dto);
   }
 
   @Get('me')

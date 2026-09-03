@@ -156,6 +156,54 @@ export class WalletsService {
   }
 
   /**
+   * Tạo yêu cầu rút tiền cho Khách hàng
+   * @param customerId ID của Khách hàng
+   * @param amount Số tiền muốn rút
+   * @param bankDetails Thông tin ngân hàng
+   */
+  async createCustomerPayoutRequest(customerId: string, amount: number, bankDetails: any) {
+    if (amount < 50000) {
+      throw new BadRequestException('Số tiền rút tối thiểu là 50.000đ');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallets.findUnique({
+        where: { user_id: customerId },
+      });
+
+      if (!wallet) {
+        throw new BadRequestException('Không tìm thấy ví của Khách hàng');
+      }
+
+      if (wallet.balance.lessThan(amount)) {
+        throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
+      }
+
+      // 1. Ghi nhận giao dịch trừ tiền (PAYOUT)
+      await this.processTransaction(
+        wallet.id,
+        amount,
+        'PAYOUT',
+        null,
+        'Yêu cầu rút tiền về tài khoản ngân hàng (Khách hàng)',
+        tx,
+      );
+
+      // 2. Tạo bản ghi chờ duyệt (PENDING)
+      const request = await tx.payout_requests.create({
+        data: {
+          customer_id: customerId,
+          amount: amount,
+          status: payout_status.PAYOUT_PENDING,
+          bank_details: bankDetails,
+        },
+      });
+
+      return request;
+    });
+  }
+
+  /**
    * Lấy danh sách yêu cầu rút tiền của Provider
    * @param providerId ID của Provider
    */

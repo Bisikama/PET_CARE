@@ -13,6 +13,8 @@ import { RegisterCapabilityDto } from './dto/register-capability.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
 import { UpdateProviderAddressDto } from './dto/update-provider-address.dto';
+import { UpdateProviderStatusDto } from './dto/update-provider-status.dto';
+import { Patch } from '@nestjs/common';
 
 @ApiTags('Providers')
 @Controller('providers')
@@ -164,6 +166,21 @@ export class ProvidersController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async getProfile(@GetCurrentUserId() userId: string) {
     return this.providersService.getProfile(userId);
+  }
+
+  @Patch('me/status')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PROVIDER)
+  @ApiOperation({ summary: 'Bật/Tắt trạng thái nhận lịch (ACTIVE / PAUSED)' })
+  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công.' })
+  @ApiResponse({ status: 400, description: 'Trạng thái không hợp lệ hoặc chưa được duyệt KYC.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  async updateStatus(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: UpdateProviderStatusDto,
+  ) {
+    return this.providersService.updateStatus(userId, dto.status);
   }
 
   @Get('documents')
