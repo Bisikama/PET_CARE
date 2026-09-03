@@ -16,6 +16,13 @@ export class PrismaProviderSchedulesRepository implements ProviderSchedulesRepos
     });
   }
 
+  async findProviderProfileById(providerId: string): Promise<{ id: string } | null> {
+    return this.prisma.provider_profiles.findUnique({
+      where: { id: providerId },
+      select: { id: true },
+    });
+  }
+
   async findAllTimeSlots(): Promise<TimeSlotRecord[]> {
     return this.prisma.time_slots.findMany({
       orderBy: { slot_order: 'asc' },
