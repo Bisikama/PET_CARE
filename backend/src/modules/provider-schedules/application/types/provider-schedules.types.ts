@@ -39,6 +39,24 @@ export interface ProviderWorkingDayView {
   slots: ProviderWorkingSlotView[];
 }
 
+export interface ProviderAvailableSlotView {
+  providerWorkingSlotId: string | null;
+  slotId: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  slotOrder: number;
+  status: availability_slot_status | 'BLOCKED';
+  isAvailable: boolean;
+}
+
+export interface ProviderAvailableDayView {
+  workingDayId: string | null;
+  workDate: string; // YYYY-MM-DD
+  workingMode: working_mode;
+  slots: ProviderAvailableSlotView[];
+}
+
 export interface UpdateDayScheduleItem {
   workDate: string; // YYYY-MM-DD
   workingMode?: working_mode;
