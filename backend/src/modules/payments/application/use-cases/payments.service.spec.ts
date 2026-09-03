@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
 import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('PaymentsService', () => {
@@ -38,6 +39,10 @@ describe('PaymentsService', () => {
     handleSubscriptionSuccess: jest.fn(),
   };
 
+  const mockNotificationsService = {
+    sendNotification: jest.fn(),
+  };
+
   const mockConfig = {
     get: jest.fn().mockReturnValue('mock-value'),
   };
@@ -50,6 +55,7 @@ describe('PaymentsService', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: WalletsService, useValue: mockWalletsService },
         { provide: SubscriptionsService, useValue: mockSubscriptionsService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 
@@ -111,6 +117,88 @@ describe('PaymentsService', () => {
       });
 
       await expect(service.createVNPayUrl(bookingId, amount, ipAddress, 'SALE20')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('processPaymentCallback', () => {
+    const mockVnpPayload = {
+      vnp_TxnRef: 'booking-123',
+      vnp_ResponseCode: '00',
+      vnp_TransactionNo: '123456',
+      vnp_OrderInfo: 'Thanh toan booking booking-123',
+      vnp_SecureHash: 'valid_hash'
+    };
+
+    it('should process subscription payment if orderInfo starts with SUB_', async () => {
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === 'VNP_HASH_SECRET') return 'secret';
+        return 'mock';
+      });
+
+      // generate signature
+      const crypto = require('crypto');
+      const qs = require('qs');
+      const payload = { ...mockVnpPayload, vnp_OrderInfo: 'SUB_user1_PREMIUM' };
+      delete payload.vnp_SecureHash;
+      const sorted = (service as any).sortObject(payload);
+      const signData = qs.stringify(sorted, { encode: false });
+      const validHash = crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');
+      
+      const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: validHash });
+      
+      expect(result.RspCode).toBe('00');
+      expect(mockSubscriptionsService.handleSubscriptionSuccess).toHaveBeenCalledWith('user1', 'PREMIUM');
+    });
+
+    it('should process booking payment successfully and send notification', async () => {
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === 'VNP_HASH_SECRET') return 'secret';
+        return 'mock';
+      });
+
+      const crypto = require('crypto');
+      const qs = require('qs');
+      const payload = { ...mockVnpPayload };
+      delete payload.vnp_SecureHash;
+      const sorted = (service as any).sortObject(payload);
+      const signData = qs.stringify(sorted, { encode: false });
+      const validHash = crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');
+      
+      mockPrisma.payments.findFirst.mockResolvedValue({
+        id: 'payment-1',
+        transaction_code: 'booking-123',
+        status: 'PENDING',
+        booking_id: 'booking-123',
+        customer_id: 'cust-1',
+        amount: 100000,
+        idempotency_key: null,
+        bookings: {
+          provider_id: 'provider-1',
+          total_price: 100000,
+        },
+      });
+
+      mockPrisma.wallets.findUnique.mockResolvedValue({
+        id: 'wallet-1',
+        user_id: 'provider-1',
+      });
+
+      mockPrisma.bookings.findUnique.mockResolvedValue({
+        id: 'booking-123',
+        provider_profiles: { user_id: 'provider-1' }
+      });
+
+      const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: validHash });
+
+      expect(result.RspCode).toBe('00');
+      expect(mockPrisma.payments.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'PAID_HELD_IN_ESCROW'
+          })
+        })
+      );
+      expect(mockNotificationsService.sendNotification).toHaveBeenCalled();
     });
   });
 

@@ -14,7 +14,7 @@ import { WalletsModule } from '../wallets/wallets.module';
 import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [PrismaModule, MailModule, WalletsModule],
+  imports: [PrismaModule, MailModule, WalletsModule, JwtModule],
   controllers: [
     NotificationsController,
     PromotionsController,

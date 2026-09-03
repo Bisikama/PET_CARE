@@ -4,11 +4,8 @@ import * as crypto from 'crypto';
 import * as qs from 'qs';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
-<<<<<<< HEAD
 import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
-=======
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
->>>>>>> develop
 
 @Injectable()
 export class PaymentsService {
@@ -18,11 +15,8 @@ export class PaymentsService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly walletsService: WalletsService,
-<<<<<<< HEAD
     private readonly subscriptionsService: SubscriptionsService,
-=======
     private readonly notificationsService: NotificationsService,
->>>>>>> develop
   ) {}
 
   /**
@@ -151,7 +145,6 @@ export class PaymentsService {
     const idempotencyKey = vnp_Params['vnp_TransactionNo']; // Mã giao dịch của VNPay
     const orderInfo = vnp_Params['vnp_OrderInfo'] as string;
 
-<<<<<<< HEAD
     // 1. Nếu là giao dịch mua gói Subscription
     if (orderInfo && orderInfo.startsWith('SUB_')) {
       if (rspCode === '00') {
@@ -167,10 +160,7 @@ export class PaymentsService {
     }
 
     // 2. Nếu là giao dịch thanh toán Booking
-=======
     let confirmedPayment: any;
-
->>>>>>> develop
     // Bọc trong Transaction để xử lý nghiệp vụ thanh toán & ví (Idempotency)
     try {
       await this.prisma.$transaction(async (tx) => {

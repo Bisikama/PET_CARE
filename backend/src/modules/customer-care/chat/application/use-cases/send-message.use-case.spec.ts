@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SendMessageUseCase } from './send-message.use-case';
 import { PrismaService } from '../../../../../database/prisma.service';
 import { SupabaseStorageService } from '../../../../storage/supabase-storage.service';
+import { NotificationsService } from '../../../../growth/notifications/notifications.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { message_type } from '@prisma/client';
 
@@ -26,6 +27,10 @@ describe('SendMessageUseCase', () => {
     uploadFile: jest.fn(),
   };
 
+  const mockNotificationsService = {
+    sendNotification: jest.fn().mockResolvedValue({}),
+  };
+
   const mockChatGateway = {
     emitNewMessage: jest.fn(),
   };
@@ -36,6 +41,7 @@ describe('SendMessageUseCase', () => {
         SendMessageUseCase,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: SupabaseStorageService, useValue: mockStorageService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: ChatGateway, useValue: mockChatGateway },
       ],
     }).compile();
