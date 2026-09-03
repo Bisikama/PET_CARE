@@ -1,84 +1,107 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { notification_type } from '@prisma/client';
-import { MailService } from '../../mail/mail.service';
+import { NotificationGateway } from './notification.gateway';
+
+export interface SendNotificationDto {
+  userId: string;
+  type: notification_type;
+  title: string;
+  content: string;
+  bookingId?: string;
+  actionUrl?: string;
+  metadata?: Record<string, any>;
+}
 
 @Injectable()
 export class NotificationsService {
-  private readonly logger = new Logger(NotificationsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailService: MailService,
-  ) {}
+    private readonly notificationGateway: NotificationGateway,
+  ) { }
 
   async sendNotification(
-    userId: string,
-    type: notification_type,
-    title: string,
-    content: string,
+    userIdOrDto: string | SendNotificationDto,
+    type?: notification_type,
+    title?: string,
+    content?: string,
     bookingId?: string,
+    actionUrl?: string,
+    metadata?: Record<string, any>,
   ) {
-    // Chống spam: Kiểm tra xem trong 1 phút qua đã có thông báo cùng loại chưa
+    let params: SendNotificationDto;
+    if (typeof userIdOrDto === 'object') {
+      params = userIdOrDto;
+    } else {
+      params = {
+        userId: userIdOrDto,
+        type: type!,
+        title: title!,
+        content: content!,
+        bookingId,
+        actionUrl,
+        metadata,
+      };
+    }
+
+    // Chống spam: Kiểm tra xem trong 1 phút qua đã có thông báo cùng loại và bookingId chưa
     const oneMinuteAgo = new Date(Date.now() - 60000);
     const recentDuplicate = await this.prisma.notifications.findFirst({
       where: {
-        user_id: userId,
-        type,
-        related_booking_id: bookingId,
+        user_id: params.userId,
+        type: params.type,
+        related_booking_id: params.bookingId || null,
         created_at: { gte: oneMinuteAgo },
       },
     });
 
     if (recentDuplicate) {
-      // Bỏ qua không gửi nữa
+      // Đã có thông báo gần đây, bỏ qua tạo mới nhưng vẫn đảm bảo emit lại nếu cần
       return recentDuplicate;
     }
 
-    // 1. Lưu thông báo vào DB
-    const notification = await this.prisma.notifications.create({
+    const created = await this.prisma.notifications.create({
       data: {
-        user_id: userId,
-        type,
-        title,
-        content,
-        related_booking_id: bookingId,
+        user_id: params.userId,
+        type: params.type,
+        title: params.title,
+        content: params.content,
+        related_booking_id: params.bookingId || null,
+        action_url: params.actionUrl || null,
+        metadata: params.metadata || undefined,
       },
     });
 
-    // 2. Lấy thông tin user để gửi Email
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true, fullName: true },
+    // Bắn WebSocket Real-time Push Event tới phòng riêng của User
+    this.notificationGateway.sendToUser(params.userId, 'notification:new', {
+      id: created.id,
+      userId: created.user_id,
+      type: created.type,
+      title: created.title,
+      content: created.content,
+      actionUrl: created.action_url,
+      metadata: created.metadata,
+      relatedBookingId: created.related_booking_id,
+      isRead: created.is_read,
+      createdAt: created.created_at,
     });
 
-    if (user && user.email) {
-      // 3. Gửi mail bất đồng bộ (Fire and forget) với Fault Tolerance
-      this.mailService
-        .sendNotificationEmail(user.email, {
-          title,
-          content,
-          userName: user.fullName || 'Khách hàng',
-          type,
-          bookingId,
-        })
-        .catch((error) => {
-          this.logger.error(
-            `[Email Notification Failed] Không thể gửi mail thông báo cho user ${userId}: ${(error as Error).message}`,
-            (error as Error).stack,
-          );
-        });
-    }
-
-    return notification;
+    return created;
   }
 
-  async getMyNotifications(userId: string) {
+  async getMyNotifications(userId: string, limit = 50) {
     return this.prisma.notifications.findMany({
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
-      take: 50,
+      take: limit,
     });
+  }
+
+  async getUnreadCount(userId: string): Promise<{ unreadCount: number }> {
+    const unreadCount = await this.prisma.notifications.count({
+      where: { user_id: userId, is_read: false },
+    });
+    return { unreadCount };
   }
 
   async markAsRead(userId: string, notificationId: string) {
@@ -90,16 +113,26 @@ export class NotificationsService {
       throw new NotFoundException('Thông báo không tồn tại');
     }
 
-    return this.prisma.notifications.update({
+    const updated = await this.prisma.notifications.update({
       where: { id: notificationId },
       data: { is_read: true },
     });
+
+    // Cập nhật số lượng unread qua socket
+    const { unreadCount } = await this.getUnreadCount(userId);
+    this.notificationGateway.sendToUser(userId, 'notification:unread_count', { unreadCount });
+
+    return updated;
   }
 
   async markAllAsRead(userId: string) {
-    return this.prisma.notifications.updateMany({
+    const result = await this.prisma.notifications.updateMany({
       where: { user_id: userId, is_read: false },
       data: { is_read: true },
     });
+
+    this.notificationGateway.sendToUser(userId, 'notification:unread_count', { unreadCount: 0 });
+
+    return result;
   }
 }

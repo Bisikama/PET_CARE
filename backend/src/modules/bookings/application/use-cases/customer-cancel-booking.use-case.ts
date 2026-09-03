@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, ConflictException } from '@nestjs/comm
 import { PrismaService } from '../../../../database/prisma.service';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { BookingStateMachineService } from '../../domain/services/booking-state-machine.service';
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
 @Injectable()
 export class CustomerCancelBookingUseCase {
@@ -9,13 +10,16 @@ export class CustomerCancelBookingUseCase {
     private readonly prisma: PrismaService,
     private readonly settlementsService: SettlementsService,
     private readonly stateMachine: BookingStateMachineService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async execute(customerId: string, bookingId: string, reason: string = 'Khách hàng tự hủy Booking') {
-    return this.prisma.$transaction(async (tx) => {
+    let providerUserId: string | undefined;
+
+    const result = await this.prisma.$transaction(async (tx) => {
       const booking = await tx.bookings.findUnique({
         where: { id: bookingId },
-        include: { payments: true },
+        include: { payments: true, provider_profiles: true },
       });
 
       if (!booking) {
@@ -25,6 +29,8 @@ export class CustomerCancelBookingUseCase {
       if (booking.customer_id !== customerId) {
         throw new BadRequestException('Booking không thuộc về bạn');
       }
+
+      providerUserId = booking.provider_profiles?.user_id;
 
       // Kiểm tra xem Booking có thể hủy không (chỉ hủy trước khi Provider bắt đầu)
       const allowedCancelStatuses = ['PENDING_PAYMENT', 'PENDING_PROVIDER_ACCEPTANCE', 'ACCEPTED'];
@@ -68,5 +74,20 @@ export class CustomerCancelBookingUseCase {
 
       throw new ConflictException('Không thể xử lý hủy với trạng thái thanh toán hiện tại');
     });
+
+    // Gửi thông báo Real-time cho Provider nếu có
+    if (providerUserId) {
+      await this.notificationsService.sendNotification({
+        userId: providerUserId,
+        type: 'BOOKING_CANCELLED',
+        title: 'Khách hàng đã hủy đơn đặt lịch',
+        content: 'Đơn đặt lịch đã được khách hàng hủy. Ca làm việc của bạn đã được giải phóng.',
+        bookingId,
+        actionUrl: `/provider/schedule`,
+        metadata: { bookingId, status: 'CANCELLED' },
+      }).catch(() => {});
+    }
+
+    return result;
   }
 }
