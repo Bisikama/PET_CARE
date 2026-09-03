@@ -11,6 +11,14 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @Get('unread-count')
+  @ApiOperation({ summary: 'Lấy số lượng thông báo chưa đọc' })
+  @ApiResponse({ status: 200, description: 'Số lượng thông báo chưa đọc' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  async getUnreadCount(@GetCurrentUserId() userId: string) {
+    return this.notificationsService.getUnreadCount(userId);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách thông báo' })
   @ApiResponse({ status: 200, description: 'Danh sách thông báo.' })

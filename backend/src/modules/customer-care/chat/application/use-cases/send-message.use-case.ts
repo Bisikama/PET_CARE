@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../../database/prisma.service';
 import { SupabaseStorageService } from '../../../../storage/supabase-storage.service';
+import { NotificationsService } from '../../../../growth/notifications/notifications.service';
 import { message_type } from '@prisma/client';
 import * as crypto from 'crypto';
 import { ChatGateway } from '../../chat.gateway';
@@ -22,6 +23,10 @@ export class SendMessageUseCase {
     // 1. Validate Room
     const room = await this.prisma.chat_rooms.findUnique({
       where: { id: roomId },
+      include: {
+        users_chat_rooms_customer_idTousers: { select: { fullName: true } },
+        users_chat_rooms_provider_user_idTousers: { select: { fullName: true } },
+      },
     });
 
     if (!room) {
@@ -69,13 +74,27 @@ export class SendMessageUseCase {
       },
     });
 
-    // 4. Fire WebSocket event
-    if (this.chatGateway && this.chatGateway.server) {
-      this.chatGateway.server.to(roomId).emit('newMessage', message);
-    }
+    // 4. Bắn thông báo Real-time cho đối phương
+    const recipientId = room.customer_id === userId ? room.provider_user_id : room.customer_id;
+    const senderName = room.customer_id === userId
+      ? room.users_chat_rooms_customer_idTousers?.fullName || 'Khách hàng'
+      : room.users_chat_rooms_provider_user_idTousers?.fullName || 'Đối tác';
 
-    // Fire event/notification to the partner here if Notification Module is ready
-    // this.eventEmitter.emit('chat.message_sent', message);
+    await this.notificationsService.sendNotification({
+      userId: recipientId,
+      type: 'NEW_MESSAGE',
+      title: `Tin nhắn mới từ ${senderName}`,
+      content: content || (msgType === 'IMAGE' ? '[Đã gửi một hình ảnh]' : '[Đã gửi một video]'),
+      bookingId: room.booking_id,
+      actionUrl: `/chat/${roomId}`,
+      metadata: {
+        roomId,
+        messageId: message.id,
+        senderId: userId,
+        senderName,
+        messageType: msgType,
+      },
+    }).catch(() => {});
 
     return message;
   }

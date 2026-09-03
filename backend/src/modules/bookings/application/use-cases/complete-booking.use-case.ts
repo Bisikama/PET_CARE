@@ -6,6 +6,7 @@ import type { BookingRepositoryPort } from '../ports/booking-repository.port';
 import type { UnitOfWorkPort } from '../ports/unit-of-work.port';
 import { BookingStateMachineService } from '../../domain/services/booking-state-machine.service';
 import { CompleteBookingDto } from '../../presentation/dto/complete-booking.dto';
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
 @Injectable()
 export class CompleteBookingUseCase {
@@ -15,6 +16,7 @@ export class CompleteBookingUseCase {
     @Inject(UNIT_OF_WORK)
     private readonly unitOfWork: UnitOfWorkPort,
     private readonly stateMachine: BookingStateMachineService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async execute(providerUserId: string, bookingId: string, dto: CompleteBookingDto) {
@@ -32,7 +34,7 @@ export class CompleteBookingUseCase {
 
     const nextStatus = this.stateMachine.completeBooking(booking.status);
 
-    return this.unitOfWork.transaction(async (tx) => {
+    const result = await this.unitOfWork.transaction(async (tx) => {
       const now = new Date();
 
       // 1. Batch update checklist items if provided
@@ -101,5 +103,18 @@ export class CompleteBookingUseCase {
         message: 'Hoàn thành dịch vụ và cập nhật checklist thành công.',
       };
     });
+
+    // 6. Gửi thông báo Real-time cho Customer
+    await this.notificationsService.sendNotification({
+      userId: booking.customer_id,
+      type: 'BOOKING_COMPLETED',
+      title: 'Dịch vụ đã hoàn tất',
+      content: 'Đối tác đã cập nhật xong checklist và ảnh nghiệm thu. Hãy để lại đánh giá trải nghiệm nhé!',
+      bookingId,
+      actionUrl: `/customer/bookings/${bookingId}`,
+      metadata: { bookingId, status: nextStatus },
+    }).catch(() => {});
+
+    return result;
   }
 }

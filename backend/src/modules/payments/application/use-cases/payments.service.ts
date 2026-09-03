@@ -4,7 +4,11 @@ import * as crypto from 'crypto';
 import * as qs from 'qs';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
+<<<<<<< HEAD
 import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
+=======
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
+>>>>>>> develop
 
 @Injectable()
 export class PaymentsService {
@@ -14,7 +18,11 @@ export class PaymentsService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly walletsService: WalletsService,
+<<<<<<< HEAD
     private readonly subscriptionsService: SubscriptionsService,
+=======
+    private readonly notificationsService: NotificationsService,
+>>>>>>> develop
   ) {}
 
   /**
@@ -143,6 +151,7 @@ export class PaymentsService {
     const idempotencyKey = vnp_Params['vnp_TransactionNo']; // Mã giao dịch của VNPay
     const orderInfo = vnp_Params['vnp_OrderInfo'] as string;
 
+<<<<<<< HEAD
     // 1. Nếu là giao dịch mua gói Subscription
     if (orderInfo && orderInfo.startsWith('SUB_')) {
       if (rspCode === '00') {
@@ -158,6 +167,10 @@ export class PaymentsService {
     }
 
     // 2. Nếu là giao dịch thanh toán Booking
+=======
+    let confirmedPayment: any;
+
+>>>>>>> develop
     // Bọc trong Transaction để xử lý nghiệp vụ thanh toán & ví (Idempotency)
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -181,6 +194,8 @@ export class PaymentsService {
         }
 
         if (rspCode === '00') {
+          confirmedPayment = payment;
+
           // Thanh toán THÀNH CÔNG
           // 1. Cập nhật trạng thái Payment sang Ký Quỹ
           await tx.payments.update({
@@ -253,6 +268,42 @@ export class PaymentsService {
         }
       });
 
+      // Gửi thông báo Real-time sau khi giao dịch thành công
+      if (rspCode === '00' && confirmedPayment) {
+        try {
+          const booking = await this.prisma.bookings.findUnique({
+            where: { id: confirmedPayment.booking_id },
+            include: { provider_profiles: true },
+          });
+
+          if (booking) {
+            if (booking.provider_profiles?.user_id) {
+              await this.notificationsService.sendNotification({
+                userId: booking.provider_profiles.user_id,
+                type: 'BOOKING_NEW',
+                title: 'Đơn đặt lịch mới cần duyệt',
+                content: 'Bạn có đơn đặt lịch mới cần duyệt trong vòng 10 phút!',
+                bookingId: confirmedPayment.booking_id,
+                actionUrl: `/provider/bookings/${confirmedPayment.booking_id}`,
+                metadata: { bookingId: confirmedPayment.booking_id, amount: Number(confirmedPayment.amount) },
+              });
+            }
+
+            await this.notificationsService.sendNotification({
+              userId: confirmedPayment.customer_id,
+              type: 'PAYMENT_SUCCESS',
+              title: 'Thanh toán cọc thành công',
+              content: 'Tiền đã được ký quỹ an toàn, đang chờ đối tác xác nhận.',
+              bookingId: confirmedPayment.booking_id,
+              actionUrl: `/customer/bookings/${confirmedPayment.booking_id}`,
+              metadata: { bookingId: confirmedPayment.booking_id, amount: Number(confirmedPayment.amount) },
+            });
+          }
+        } catch (notifErr: any) {
+          this.logger.error(`Error sending payment notification: ${notifErr.message}`);
+        }
+      }
+
       return { RspCode: '00', Message: 'Confirm Success' };
     } catch (error) {
       this.logger.error(`VNPay IPN Error: ${error.message}`);
@@ -267,7 +318,7 @@ export class PaymentsService {
    * Thanh toán bằng số dư ví (Khách hàng)
    */
   async checkoutWithWallet(customerId: string, bookingId: string, promotionCode?: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // 1. Kiểm tra Booking
       const booking = await tx.bookings.findUnique({
         where: { id: bookingId },
@@ -374,6 +425,42 @@ export class PaymentsService {
         payment,
       };
     });
+
+    // Gửi thông báo Real-time cho Provider và Customer
+    try {
+      const booking = await this.prisma.bookings.findUnique({
+        where: { id: bookingId },
+        include: { provider_profiles: true },
+      });
+
+      if (booking) {
+        if (booking.provider_profiles?.user_id) {
+          await this.notificationsService.sendNotification({
+            userId: booking.provider_profiles.user_id,
+            type: 'BOOKING_NEW',
+            title: 'Đơn đặt lịch mới cần duyệt',
+            content: 'Bạn có đơn đặt lịch mới cần duyệt trong vòng 10 phút!',
+            bookingId,
+            actionUrl: `/provider/bookings/${bookingId}`,
+            metadata: { bookingId, amount: Number(result.payment.amount) },
+          });
+        }
+
+        await this.notificationsService.sendNotification({
+          userId: customerId,
+          type: 'PAYMENT_SUCCESS',
+          title: 'Thanh toán cọc thành công',
+          content: 'Tiền đã được ký quỹ an toàn, đang chờ đối tác xác nhận.',
+          bookingId,
+          actionUrl: `/customer/bookings/${bookingId}`,
+          metadata: { bookingId, amount: Number(result.payment.amount) },
+        });
+      }
+    } catch (notifErr: any) {
+      this.logger.error(`Error sending wallet payment notification: ${notifErr.message}`);
+    }
+
+    return result;
   }
 
   async getBookingForCheckout(bookingId: string) {
