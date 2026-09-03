@@ -26,6 +26,32 @@ export class PaymentsService {
     ipAddress: string,
     promotionCode?: string,
   ): Promise<string> {
+    const booking = await this.prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: { payments: true },
+    });
+
+    if (!booking) {
+      throw new BadRequestException('Không tìm thấy thông tin đơn đặt lịch');
+    }
+
+    if (booking.status !== 'PENDING_PAYMENT') {
+      throw new BadRequestException(`Đơn đặt lịch không ở trạng thái chờ thanh toán (trạng thái: ${booking.status})`);
+    }
+
+    if (booking.payments) {
+      const paidStatuses = [
+        'PAID_HELD_IN_ESCROW',
+        'RELEASE_PENDING',
+        'RELEASED_TO_PROVIDER',
+        'REFUNDED',
+        'PARTIALLY_SETTLED',
+      ];
+      if (paidStatuses.includes(booking.payments.status)) {
+        throw new BadRequestException('Đơn đặt lịch này đã được thanh toán trước đó');
+      }
+    }
+
     let finalAmount = amount;
 
     if (promotionCode) {
@@ -103,11 +129,20 @@ export class PaymentsService {
 
     const paymentUrl = vnpUrl + '?' + qs.stringify(sortedParams, { encode: false });
 
-    // Lưu lại thông tin thanh toán dạng PENDING
-    await this.prisma.payments.create({
-      data: {
+    // Lưu hoặc cập nhật thông tin thanh toán dạng PENDING (upsert để tránh trùng booking_id)
+    await this.prisma.payments.upsert({
+      where: {
         booking_id: bookingId,
-        customer_id: await this.getCustomerIdFromBooking(bookingId),
+      },
+      update: {
+        amount: finalAmount,
+        method: 'VNPAY',
+        status: 'PENDING',
+        transaction_code: orderId,
+      },
+      create: {
+        booking_id: bookingId,
+        customer_id: booking.customer_id,
         amount: finalAmount,
         method: 'VNPAY',
         status: 'PENDING',
@@ -373,9 +408,17 @@ export class PaymentsService {
         }
       }
 
-      // 5. Tạo Payment record (Thành công luôn vì trừ ví trực tiếp)
-      const payment = await tx.payments.create({
-        data: {
+      // 5. Tạo hoặc cập nhật Payment record (Thành công luôn vì trừ ví trực tiếp)
+      const payment = await tx.payments.upsert({
+        where: { booking_id: bookingId },
+        update: {
+          amount: finalAmount,
+          method: 'WALLET',
+          status: 'PAID_HELD_IN_ESCROW',
+          transaction_code: `WALLET_${Date.now()}`,
+          paid_at: new Date(),
+        },
+        create: {
           booking_id: bookingId,
           customer_id: customerId,
           amount: finalAmount,
