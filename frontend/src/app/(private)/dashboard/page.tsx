@@ -12,6 +12,8 @@ import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserMan
 import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
 import { ServiceDetailModal } from '@/features/services';
 import { ScheduleManager } from '@/features/schedule';
+import { EscrowManagement } from '@/features/settlement';
+import { AreaManager } from '@/features/areas';
 import { Globe, Trash2, PlusCircle, FileText, Eye } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -82,6 +84,8 @@ export default function DashboardPage() {
           <AdminAuditLogsList key={adminRefreshKey} />
         ) : adminTab === 'promotions' ? (
           <AdminPromotionsManager key={adminRefreshKey} />
+        ) : adminTab === 'escrow' ? (
+          <EscrowManagement key={adminRefreshKey} />
         ) : (
           <div className="bg-white p-12 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
             <div className="p-4 bg-teal-50 text-teal-600 rounded-3xl">
@@ -296,35 +300,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Service Areas */}
-                  <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                      <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Khu vực phục vụ</h4>
-                      <button
-                        onClick={() => setShowAreaModal(true)}
-                        className="text-xs text-indigo-650 hover:text-indigo-700 font-bold flex items-center gap-1 cursor-pointer bg-indigo-50 hover:bg-indigo-100/80 px-2.5 py-1 rounded-xl transition-all"
-                      >
-                        <PlusCircle className="w-3.5 h-3.5" />
-                        Thêm vùng
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {profileData?.provider_service_areas && profileData.provider_service_areas.length > 0 ? (
-                        profileData.provider_service_areas.map((area: any) => (
-                          <div key={area.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-2">
-                            <Globe className="w-3.5 h-3.5 text-teal-650 shrink-0" />
-                            <span className="text-[11px] font-bold text-slate-700 leading-normal truncate">
-                              {area.ward}, {area.district}, {area.city}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-6 text-slate-400 text-xs font-semibold">
-                          Chưa thiết lập khu vực hoạt động.
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <AreaManager />
                 </div>
 
                 {/* Right Column: Working Hours & Professional Certificates */}
