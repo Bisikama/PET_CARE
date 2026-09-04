@@ -7,7 +7,7 @@ import {
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { AUTH_ERRORS } from '../../../../common/constants/error-messages.constant';
 import { AuthSessionService } from '../services/auth-session.service';
-import { UsersService } from '../../../users/users.service';
+import { UsersService } from '../../../users/application/use-cases/users.service';
 import { DeviceContext } from '../types/device-context.type';
 
 export interface VerifyEmailOtpInput {
@@ -53,11 +53,8 @@ export class VerifyEmailOtpUseCase {
           null,
       });
 
-    // Check account status after provisioning
-    // Since the new rule states ensureLocalUserFromVerifiedSupabaseUser doesn't update status,
-    // if it returns PENDING_VERIFICATION, we should either throw or assume the trigger will handle it.
-    // Wait, if it's PENDING_VERIFICATION, we shouldn't throw ACCOUNT_LOCKED. We should only throw if SUSPENDED/BANNED.
-    // Or if isActive === false.
+    // Kiểm tra trạng thái tài khoản sau khi đồng bộ
+    // Chỉ chặn nếu bị khóa (SUSPENDED/BANNED) hoặc vô hiệu hóa (isActive = false)
     if (!localUser.isActive || localUser.status === 'SUSPENDED' || localUser.status === 'BANNED') {
       throw new ForbiddenException(AUTH_ERRORS.ACCOUNT_LOCKED);
     }

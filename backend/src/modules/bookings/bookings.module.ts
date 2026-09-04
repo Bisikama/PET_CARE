@@ -6,20 +6,40 @@ import { CreateBookingRequestUseCase } from './application/use-cases/create-book
 import { ProviderAcceptBookingUseCase } from './application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from './application/use-cases/provider-reject-booking.use-case';
 import { SearchMatchingProvidersUseCase } from './application/use-cases/search-matching-providers.use-case';
+import { GetBookingChecklistUseCase } from './application/use-cases/get-booking-checklist.use-case';
+import { StartBookingServiceUseCase } from './application/use-cases/start-booking-service.use-case';
+import { UpdateBookingChecklistItemUseCase } from './application/use-cases/update-booking-checklist-item.use-case';
+import { CompleteBookingUseCase } from './application/use-cases/complete-booking.use-case';
+import { CustomerConfirmBookingUseCase } from './application/use-cases/customer-confirm-booking.use-case';
+import { AutoReleaseEscrowCron } from './application/cron/auto-release-escrow.cron';
 import { BookingStateMachineService } from './domain/services/booking-state-machine.service';
 import { BOOKING_REPOSITORY, UNIT_OF_WORK } from './booking.tokens';
 import { PrismaBookingRepository } from './infrastructure/persistence/prisma-booking.repository';
 import { PrismaUnitOfWork } from './infrastructure/persistence/prisma-unit-of-work';
 
+import { PaymentsModule } from '../payments/payments.module';
+import { SettlementsModule } from '../settlements/settlements.module';
+import { GrowthModule } from '../growth/growth.module';
+import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
+import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id.use-case';
+
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule],
   controllers: [BookingsController, BookingMatchingController],
   providers: [
     CreateBookingRequestUseCase,
     ProviderAcceptBookingUseCase,
     ProviderRejectBookingUseCase,
     SearchMatchingProvidersUseCase,
+    GetBookingByIdUseCase,
+    GetBookingChecklistUseCase,
+    StartBookingServiceUseCase,
+    UpdateBookingChecklistItemUseCase,
+    CompleteBookingUseCase,
+    CustomerConfirmBookingUseCase,
+    CustomerCancelBookingUseCase,
     BookingStateMachineService,
+    AutoReleaseEscrowCron,
     {
       provide: BOOKING_REPOSITORY,
       useClass: PrismaBookingRepository,
@@ -29,6 +49,12 @@ import { PrismaUnitOfWork } from './infrastructure/persistence/prisma-unit-of-wo
       useClass: PrismaUnitOfWork,
     },
   ],
-  exports: [BOOKING_REPOSITORY],
+  exports: [
+    BOOKING_REPOSITORY,
+    GetBookingChecklistUseCase,
+    StartBookingServiceUseCase,
+    UpdateBookingChecklistItemUseCase,
+    CompleteBookingUseCase,
+  ],
 })
 export class BookingsModule {}

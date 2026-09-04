@@ -1,26 +1,37 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetCurrentUserId } from '../../../../common/decorators/get-current-user-id.decorator';
+import { AccessTokenGuard } from '../../../../common/guards/access-token.guard';
 import { CreateBookingRequestUseCase } from '../../application/use-cases/create-booking-request.use-case';
 import { ProviderAcceptBookingUseCase } from '../../application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from '../../application/use-cases/provider-reject-booking.use-case';
-import type { BookingRepositoryPort } from '../../application/ports/booking-repository.port';
-import { BOOKING_REPOSITORY } from '../../booking.tokens';
-import { Inject } from '@nestjs/common';
+import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
+import { GetBookingChecklistUseCase } from '../../application/use-cases/get-booking-checklist.use-case';
+import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
+import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
+import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
+import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
+import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import { CreateBookingDto } from '../dto/create-booking.dto';
+import { CompleteBookingDto } from '../dto/complete-booking.dto';
+import { UpdateSingleChecklistItemDto } from '../dto/update-checklist-item.dto';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
+@UseGuards(AccessTokenGuard)
 @Controller('bookings')
 export class BookingsController {
   constructor(
     private readonly createBookingUseCase: CreateBookingRequestUseCase,
     private readonly acceptBookingUseCase: ProviderAcceptBookingUseCase,
     private readonly rejectBookingUseCase: ProviderRejectBookingUseCase,
-    @Inject(BOOKING_REPOSITORY)
-    private readonly bookingRepo: BookingRepositoryPort,
+    private readonly getBookingByIdUseCase: GetBookingByIdUseCase,
+    private readonly getBookingChecklistUseCase: GetBookingChecklistUseCase,
+    private readonly startBookingServiceUseCase: StartBookingServiceUseCase,
+    private readonly updateBookingChecklistItemUseCase: UpdateBookingChecklistItemUseCase,
+    private readonly completeBookingUseCase: CompleteBookingUseCase,
+    private readonly customerConfirmBookingUseCase: CustomerConfirmBookingUseCase,
+    private readonly cancelBookingUseCase: CustomerCancelBookingUseCase,
   ) {}
 
   @Post()
@@ -32,16 +43,20 @@ export class BookingsController {
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Dữ liệu đầu vào không hợp lệ hoặc tài nguyên không thuộc quyền sở hữu của khách hàng.',
+    description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).',
+  })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({
+    status: 403,
+    description: 'Không có quyền truy cập hoặc tài nguyên không thuộc quyền sở hữu (Forbidden).',
   })
   @ApiResponse({
     status: 404,
-    description: 'Thú cưng, địa chỉ, slot làm việc hoặc dịch vụ không tồn tại.',
+    description: 'Thú cưng, địa chỉ, slot làm việc hoặc dịch vụ không tồn tại (NOT_FOUND).',
   })
   @ApiResponse({
     status: 409,
-    description: 'Slot làm việc này đã được người khác đặt hoặc khóa trước đó.',
+    description: 'Slot làm việc này đã được người khác đặt hoặc khóa trước đó (Conflict).',
   })
   async create(@GetCurrentUserId() userId: string, @Body() dto: CreateBookingDto) {
     return this.createBookingUseCase.execute(userId, dto);
@@ -60,13 +75,14 @@ export class BookingsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Trạng thái đơn hàng không hợp lệ để thực hiện thao tác này.',
+    description: 'Trạng thái đơn hàng không hợp lệ để thực hiện thao tác này (Validation Error).',
   })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này.',
+    description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này (Forbidden).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng hoặc thông tin liên quan.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng hoặc thông tin liên quan (BOOKING_NOT_FOUND).' })
   async accept(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
     return this.acceptBookingUseCase.execute(userId, bookingId);
   }
@@ -81,24 +97,125 @@ export class BookingsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Trạng thái đơn hàng không hợp lệ để thực hiện thao tác này.',
+    description: 'Trạng thái đơn hàng không hợp lệ để thực hiện thao tác này (Validation Error).',
   })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này.',
+    description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này (Forbidden).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng hoặc thông tin liên quan.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng hoặc thông tin liên quan (BOOKING_NOT_FOUND).' })
   async reject(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
     return this.rejectBookingUseCase.execute(userId, bookingId);
+  }
+
+  @Post(':id/start-service')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đối tác bắt đầu thực hiện dịch vụ (chuyển sang IN_PROGRESS)' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Bắt đầu dịch vụ thành công.' })
+  @ApiResponse({ status: 400, description: 'Trạng thái đơn hàng không hợp lệ để bắt đầu (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không phải đối tác được phân công (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  async startService(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
+    return this.startBookingServiceUseCase.execute(userId, bookingId);
+  }
+
+  @Get(':id/checklist')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lấy danh sách checklist và media của đơn đặt lịch' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách checklist.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  async getChecklist(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
+    return this.getBookingChecklistUseCase.execute(userId, bookingId);
+  }
+
+  @Patch(':id/checklist/:itemId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đối tác cập nhật trạng thái của một mục checklist' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiParam({ name: 'itemId', description: 'ID của mục checklist cần cập nhật', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Cập nhật mục checklist thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền thao tác trên đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy mục checklist hoặc đơn đặt lịch (NOT_FOUND).' })
+  async updateChecklistItem(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateSingleChecklistItemDto,
+  ) {
+    return this.updateBookingChecklistItemUseCase.execute(userId, bookingId, itemId, dto);
+  }
+
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đối tác xác nhận checklist và hoàn tất đơn dịch vụ' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Dịch vụ đã hoàn tất thành công (COMPLETED).' })
+  @ApiResponse({ status: 400, description: 'Trạng thái đơn hàng không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền thao tác trên đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  async completeBooking(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: CompleteBookingDto,
+  ) {
+    return this.completeBookingUseCase.execute(userId, bookingId, dto);
+  }
+
+  @Post(':id/customer-confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Khách hàng xác nhận dịch vụ hoàn tất' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Đã xác nhận thành công (COMPLETED) và giải phóng ký quỹ.' })
+  @ApiResponse({ status: 400, description: 'Trạng thái đơn hàng không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Bạn không phải là khách hàng của đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  async customerConfirm(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+  ) {
+    return this.customerConfirmBookingUseCase.execute(userId, bookingId);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy thông tin chi tiết của một đơn đặt lịch' })
   @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Chi tiết đơn đặt lịch được truy xuất thành công.' })
-  @ApiResponse({ status: 404, description: 'Đơn đặt lịch không tồn tại.' })
-  async findById(@Param('id') bookingId: string) {
-    return this.bookingRepo.findBookingById(bookingId);
+  @ApiResponse({ status: 200, description: 'Trả về chi tiết đơn đặt lịch.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  async findById(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+  ) {
+    return this.getBookingByIdUseCase.execute(userId, bookingId);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Hủy đơn đặt lịch (Khách hàng)' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Đơn đặt lịch đã được hủy thành công. Tiền đã được hoàn lại nếu thanh toán bằng Ví/Ký quỹ.' })
+  @ApiResponse({ status: 400, description: 'Đơn đặt lịch không tồn tại hoặc không thuộc quyền sở hữu (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  @ApiResponse({ status: 409, description: 'Trạng thái đơn đặt lịch không cho phép hủy (Conflict).' })
+  async cancel(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+  ) {
+    return this.cancelBookingUseCase.execute(userId, bookingId);
   }
 }
+

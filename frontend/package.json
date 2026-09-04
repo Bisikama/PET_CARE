@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@radix-ui/react-select": "^2.3.7",
     "axios": "^1.18.0",
     "clsx": "^2.1.1",
+    "dvhcvn": "^1.2.20250301",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
