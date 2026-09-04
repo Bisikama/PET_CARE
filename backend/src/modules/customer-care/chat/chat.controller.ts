@@ -33,8 +33,8 @@ export class ChatController {
 
   @Get('rooms')
   @ApiOperation({ summary: 'Lấy danh sách phòng chat của tôi' })
-  @ApiResponse({ status: 200, description: 'Trả về danh sách phòng chat kèm tin nhắn mới nhất' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách phòng chat kèm tin nhắn mới nhất.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   async getChatRooms(@GetCurrentUserId() userId: string) {
     return this.getChatRoomsUseCase.execute(userId);
   }
@@ -42,10 +42,10 @@ export class ChatController {
   @Get('rooms/:roomId/messages')
   @ApiOperation({ summary: 'Lấy tin nhắn trong một phòng chat (Tự động đánh dấu đã đọc)' })
   @ApiParam({ name: 'roomId', description: 'ID phòng chat', type: String })
-  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn phân trang' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền xem phòng chat' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy phòng chat' })
+  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn phân trang.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền xem phòng chat (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy phòng chat (ROOM_NOT_FOUND).' })
   async getMessages(
     @GetCurrentUserId() userId: string,
     @Param('roomId') roomId: string,
@@ -70,11 +70,11 @@ export class ChatController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Tin nhắn đã được gửi' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ (Quá dung lượng, sai định dạng)' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 403, description: 'Không có quyền gửi hoặc phòng bị khóa' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy phòng chat' })
+  @ApiResponse({ status: 201, description: 'Tin nhắn đã được gửi.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ (Quá dung lượng, sai định dạng).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền gửi hoặc phòng bị khóa (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy phòng chat (ROOM_NOT_FOUND).' })
   @UseInterceptors(FileInterceptor('file'))
   async sendMessage(
     @GetCurrentUserId() userId: string,

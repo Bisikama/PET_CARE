@@ -14,7 +14,7 @@ export class TimeSlotsController {
   @ApiOperation({ summary: 'Lấy danh sách các khung giờ làm việc chuẩn của hệ thống' })
   @ApiResponse({
     status: 200,
-    description: 'Danh sách khung giờ được trả về thành công.',
+    description: 'Trả về danh sách các khung giờ làm việc chuẩn.',
   })
   async findAll() {
     return this.getTimeSlotsUseCase.execute();

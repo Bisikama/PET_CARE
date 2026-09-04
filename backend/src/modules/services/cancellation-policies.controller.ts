@@ -31,9 +31,9 @@ export class CancellationPoliciesController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Tạo chính sách hủy mới (Admin)' })
   @ApiResponse({ status: 201, description: 'Tạo chính sách hủy thành công.' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu cấu hình không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
-  @ApiResponse({ status: 403, description: 'Không có quyền thực hiện hành động này.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu cấu hình không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
   async createCancellationPolicy(@Body() dto: CreateCancellationPolicyDto) {
     return this.manageCancellationPolicyUseCase.create(dto);
   }
@@ -42,7 +42,7 @@ export class CancellationPoliciesController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách các chính sách hủy' })
-  @ApiResponse({ status: 200, description: 'Trả về danh sách chính sách hủy thành công.' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách các chính sách hủy.' })
   async getCancellationPolicies() {
     return this.manageCancellationPolicyUseCase.getList();
   }

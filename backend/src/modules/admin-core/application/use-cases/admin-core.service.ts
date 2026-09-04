@@ -202,4 +202,41 @@ export class AdminCoreService {
       },
     };
   }
+
+  async getConfigs() {
+    return this.prisma.system_configs.findMany({
+      orderBy: { key: 'asc' },
+    });
+  }
+
+  async updateConfigs(adminId: string, configs: { key: string; value: string }[]) {
+    return this.prisma.$transaction(async (tx) => {
+      const updatedConfigs: any[] = [];
+
+      for (const config of configs) {
+        // Upsert logic for system configs
+        const updated = await tx.system_configs.upsert({
+          where: { key: config.key },
+          update: { value: config.value, updated_at: new Date() },
+          create: { key: config.key, value: config.value },
+        });
+        updatedConfigs.push(updated);
+      }
+
+      // Log to audit_logs
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'UPDATE_SYSTEM_CONFIGS',
+          target_type: 'SYSTEM_CONFIG',
+          target_id: 'GLOBAL',
+          old_value: {},
+          new_value: { configs },
+          reason: 'Cập nhật cấu hình hệ thống',
+        },
+      });
+
+      return { success: true, data: updatedConfigs };
+    });
+  }
 }

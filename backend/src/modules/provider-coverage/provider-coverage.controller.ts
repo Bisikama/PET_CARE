@@ -32,11 +32,11 @@ export class ProviderCoverageController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Đăng ký khu vực phục vụ mới cho đối tác' })
-  @ApiResponse({ status: 201, description: 'Đăng ký khu vực thành công.' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (yêu cầu role PROVIDER).' })
-  @ApiResponse({ status: 409, description: 'Khu vực phục vụ này đã được đăng ký trước đó.' })
+  @ApiResponse({ status: 201, description: 'Đăng ký khu vực phục vụ thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role PROVIDER).' })
+  @ApiResponse({ status: 409, description: 'Khu vực phục vụ này đã được đăng ký trước đó (Conflict).' })
   async create(@GetCurrentUserId() userId: string, @Body() dto: CreateProviderAreaDto) {
     return this.manageProviderAreaUseCase.create(userId, dto);
   }
@@ -44,9 +44,9 @@ export class ProviderCoverageController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách khu vực phục vụ của đối tác đang đăng nhập' })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách khu vực thành công.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (yêu cầu role PROVIDER).' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách khu vực phục vụ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role PROVIDER).' })
   async findAll(@GetCurrentUserId() userId: string) {
     return this.manageProviderAreaUseCase.getList(userId);
   }
@@ -56,14 +56,14 @@ export class ProviderCoverageController {
   @ApiOperation({ summary: 'Cập nhật khu vực phục vụ của đối tác' })
   @ApiParam({ name: 'id', description: 'ID của khu vực phục vụ', type: String })
   @ApiResponse({ status: 200, description: 'Cập nhật khu vực thành công.' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu cập nhật không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Không có quyền truy cập hoặc khu vực không thuộc quản lý của bạn.',
+    description: 'Không có quyền truy cập hoặc khu vực không thuộc quản lý của bạn (Forbidden).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy khu vực hoạt động.' })
-  @ApiResponse({ status: 409, description: 'Khu vực phục vụ mới đã được đăng ký trước đó.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy khu vực hoạt động (AREA_NOT_FOUND).' })
+  @ApiResponse({ status: 409, description: 'Khu vực phục vụ mới đã được đăng ký trước đó (Conflict).' })
   async update(
     @GetCurrentUserId() userId: string,
     @Param('id') id: string,
@@ -77,12 +77,12 @@ export class ProviderCoverageController {
   @ApiOperation({ summary: 'Xóa mềm khu vực phục vụ của đối tác' })
   @ApiParam({ name: 'id', description: 'ID của khu vực phục vụ', type: String })
   @ApiResponse({ status: 204, description: 'Xóa mềm khu vực thành công.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Không có quyền truy cập hoặc khu vực không thuộc quản lý của bạn.',
+    description: 'Không có quyền truy cập hoặc khu vực không thuộc quản lý của bạn (Forbidden).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy khu vực hoạt động.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy khu vực hoạt động (AREA_NOT_FOUND).' })
   async delete(@GetCurrentUserId() userId: string, @Param('id') id: string) {
     await this.manageProviderAreaUseCase.delete(id, userId);
   }

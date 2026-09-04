@@ -18,7 +18,9 @@ export class SettlementsController {
   @Get('payout-requests')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách yêu cầu rút tiền đang chờ duyệt (Admin)' })
-  @ApiResponse({ status: 200, description: 'Trả về danh sách yêu cầu rút tiền trạng thái PAYOUT_PENDING' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách yêu cầu rút tiền trạng thái PAYOUT_PENDING.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
   async getPendingPayoutRequests() {
     return this.settlementsService.getPendingPayoutRequests();
   }
@@ -27,9 +29,11 @@ export class SettlementsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Duyệt yêu cầu rút tiền và giải ngân (Admin)' })
   @ApiParam({ name: 'id', description: 'ID của yêu cầu rút tiền (payoutRequestId)' })
-  @ApiResponse({ status: 200, description: 'Giải ngân thành công', schema: { example: { success: true, payoutRequest: { id: '...', status: 'PAID_OUT' } } } })
-  @ApiResponse({ status: 400, description: 'Không tìm thấy yêu cầu hoặc ví' })
-  @ApiResponse({ status: 409, description: 'Yêu cầu không hợp lệ hoặc số dư ví không đủ' })
+  @ApiResponse({ status: 200, description: 'Giải ngân thành công.', schema: { example: { success: true, payoutRequest: { id: '...', status: 'PAID_OUT' } } } })
+  @ApiResponse({ status: 400, description: 'Không tìm thấy yêu cầu hoặc ví (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
+  @ApiResponse({ status: 409, description: 'Yêu cầu không hợp lệ hoặc số dư ví không đủ (Conflict).' })
   async approvePayout(
     @GetCurrentUserId() adminId: string,
     @Param('id') payoutRequestId: string,
@@ -49,8 +53,10 @@ export class SettlementsController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Từ chối thành công, tiền đã được hoàn lại vào ví Provider' })
-  @ApiResponse({ status: 400, description: 'Thiếu lý do hoặc không tìm thấy yêu cầu' })
+  @ApiResponse({ status: 200, description: 'Từ chối thành công, tiền đã được hoàn lại vào ví Provider.' })
+  @ApiResponse({ status: 400, description: 'Thiếu lý do hoặc không tìm thấy yêu cầu (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
   async rejectPayout(
     @GetCurrentUserId() adminId: string,
     @Param('id') payoutRequestId: string,
@@ -71,9 +77,11 @@ export class SettlementsController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Giải phóng tiền ký quỹ thành công' })
-  @ApiResponse({ status: 400, description: 'Booking/Payment không tồn tại' })
-  @ApiResponse({ status: 409, description: 'Trạng thái thanh toán không hợp lệ' })
+  @ApiResponse({ status: 200, description: 'Giải phóng tiền ký quỹ thành công.' })
+  @ApiResponse({ status: 400, description: 'Booking/Payment không tồn tại (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
+  @ApiResponse({ status: 409, description: 'Trạng thái thanh toán không hợp lệ (Conflict).' })
   async manualReleaseEscrow(
     @GetCurrentUserId() adminId: string,
     @Param('bookingId') bookingId: string,
@@ -94,8 +102,10 @@ export class SettlementsController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Hoàn tiền thành công', schema: { example: { success: true, message: 'Hoàn tiền thành công' } } })
-  @ApiResponse({ status: 400, description: 'Trạng thái Booking/Payment không cho phép hoàn tiền' })
+  @ApiResponse({ status: 200, description: 'Hoàn tiền thành công.', schema: { example: { success: true, message: 'Hoàn tiền thành công' } } })
+  @ApiResponse({ status: 400, description: 'Trạng thái Booking/Payment không cho phép hoàn tiền (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
   async manualRefund(
     @GetCurrentUserId() adminId: string,
     @Param('bookingId') bookingId: string,

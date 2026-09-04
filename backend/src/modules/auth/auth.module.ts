@@ -20,6 +20,7 @@ import { AuthSessionService } from './application/services/auth-session.service'
 import { SupabaseUserSyncService } from './application/services/supabase-user-sync.service';
 import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.use-case';
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
 
 @Module({
   imports: [PassportModule, JwtModule.register({}), UsersModule, PrismaModule],
@@ -36,6 +37,7 @@ import { ResetPasswordUseCase } from './application/use-cases/reset-password.use
     RefreshAuthSessionUseCase,
     ForgotPasswordUseCase,
     ResetPasswordUseCase,
+    ChangePasswordUseCase,
     AccessTokenStrategy,
     RefreshTokenStrategy,
     RolesGuard,

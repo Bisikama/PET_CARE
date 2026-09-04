@@ -28,7 +28,8 @@ export class CustomerCareController {
   @Get('providers/:providerId/reviews')
   @ApiOperation({ summary: 'Lấy danh sách đánh giá của một Provider' })
   @ApiParam({ name: 'providerId', description: 'ID của Provider', type: String })
-  @ApiResponse({ status: 200, description: 'Danh sách đánh giá phân trang' })
+  @ApiResponse({ status: 200, description: 'Danh sách đánh giá phân trang.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy Provider.' })
   async getProviderReviews(
     @Param('providerId') providerId: string,
     @Query('page') page?: string,
@@ -42,10 +43,11 @@ export class CustomerCareController {
   @Post('bookings/:bookingId/reviews')
   @ApiOperation({ summary: 'Để lại đánh giá cho dịch vụ đã hoàn thành' })
   @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
-  @ApiResponse({ status: 201, description: 'Đánh giá thành công' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy lịch đặt' })
+  @ApiResponse({ status: 201, description: 'Đánh giá thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập hoặc lịch đặt chưa hoàn thành.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy lịch đặt (BOOKING_NOT_FOUND).' })
   async createReview(
     @GetCurrentUserId() userId: string,
     @Param('bookingId') bookingId: string,
@@ -57,17 +59,17 @@ export class CustomerCareController {
   // --- SUPPORT TICKETS ---
   @Post('tickets')
   @ApiOperation({ summary: 'Tạo yêu cầu hỗ trợ mới' })
-  @ApiResponse({ status: 201, description: 'Tạo yêu cầu hỗ trợ thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 201, description: 'Tạo yêu cầu hỗ trợ thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   async createTicket(@GetCurrentUserId() userId: string, @Body() dto: CreateTicketDto) {
     return this.supportService.createTicket(userId, dto);
   }
 
   @Get('tickets')
   @ApiOperation({ summary: 'Lấy danh sách yêu cầu hỗ trợ của tôi' })
-  @ApiResponse({ status: 200, description: 'Trả về danh sách yêu cầu hỗ trợ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách yêu cầu hỗ trợ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   async getMyTickets(@GetCurrentUserId() userId: string) {
     return this.supportService.getMyTickets(userId);
   }
@@ -75,9 +77,10 @@ export class CustomerCareController {
   @Get('tickets/:ticketId')
   @ApiOperation({ summary: 'Lấy chi tiết yêu cầu hỗ trợ (gồm tin nhắn)' })
   @ApiParam({ name: 'ticketId', description: 'ID của yêu cầu hỗ trợ', type: String })
-  @ApiResponse({ status: 200, description: 'Chi tiết yêu cầu hỗ trợ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hỗ trợ' })
+  @ApiResponse({ status: 200, description: 'Chi tiết yêu cầu hỗ trợ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập yêu cầu hỗ trợ này.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hỗ trợ (TICKET_NOT_FOUND).' })
   async getTicketDetails(
     @GetCurrentUserId() userId: string,
     @Param('ticketId') ticketId: string,
@@ -88,9 +91,11 @@ export class CustomerCareController {
   @Post('tickets/:ticketId/reply')
   @ApiOperation({ summary: 'Phản hồi yêu cầu hỗ trợ' })
   @ApiParam({ name: 'ticketId', description: 'ID của yêu cầu hỗ trợ', type: String })
-  @ApiResponse({ status: 201, description: 'Phản hồi thành công' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hỗ trợ' })
+  @ApiResponse({ status: 201, description: 'Phản hồi thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền phản hồi yêu cầu hỗ trợ này.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu hỗ trợ (TICKET_NOT_FOUND).' })
   async replyTicket(
     @GetCurrentUserId() userId: string,
     @Param('ticketId') ticketId: string,
@@ -119,10 +124,11 @@ export class CustomerCareController {
     },
   })
   @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
-  @ApiResponse({ status: 201, description: 'Mở tranh chấp thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy lịch đặt' })
+  @ApiResponse({ status: 201, description: 'Mở tranh chấp thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào hoặc file đính kèm không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền mở tranh chấp cho lịch đặt này.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy lịch đặt (BOOKING_NOT_FOUND).' })
   @UseInterceptors(FilesInterceptor('files', 5))
   async openDispute(
     @GetCurrentUserId() userId: string,
@@ -153,10 +159,11 @@ export class CustomerCareController {
     },
   })
   @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
-  @ApiResponse({ status: 201, description: 'Báo cáo sự cố thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy lịch đặt' })
+  @ApiResponse({ status: 201, description: 'Báo cáo sự cố thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào hoặc file đính kèm không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền báo cáo sự cố cho lịch đặt này.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy lịch đặt (BOOKING_NOT_FOUND).' })
   @UseInterceptors(FilesInterceptor('files', 5))
   async reportIncident(
     @GetCurrentUserId() userId: string,

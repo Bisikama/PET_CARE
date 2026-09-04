@@ -6,6 +6,7 @@ import { ChatController } from './chat.controller';
 import { GetChatRoomsUseCase } from './application/use-cases/get-chat-rooms.use-case';
 import { GetMessagesUseCase } from './application/use-cases/get-messages.use-case';
 import { SendMessageUseCase } from './application/use-cases/send-message.use-case';
+import { ChatGateway } from './chat.gateway';
 
 @Module({
   imports: [PrismaModule, StorageModule, GrowthModule],
@@ -14,6 +15,7 @@ import { SendMessageUseCase } from './application/use-cases/send-message.use-cas
     GetChatRoomsUseCase,
     GetMessagesUseCase,
     SendMessageUseCase,
+    ChatGateway,
   ],
   exports: [],
 })

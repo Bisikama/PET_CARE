@@ -63,7 +63,24 @@ export class WalletsService {
         throw new InternalServerErrorException(`Loại giao dịch không hợp lệ: ${(type as string)}`);
     }
 
-    // Cập nhật nguyên tử (Atomic update) để tránh Race Condition
+    // 1. Khóa bản ghi (Pessimistic Lock) để chống Race Condition
+    const lockedWallet: any[] = await tx.$queryRaw`
+      SELECT id, balance, pending_balance 
+      FROM wallets 
+      WHERE id = ${walletId}::uuid 
+      FOR UPDATE
+    `;
+
+    if (!lockedWallet || lockedWallet.length === 0) {
+      throw new BadRequestException(`Không tìm thấy ví ${walletId}`);
+    }
+
+    const currentBalance = new Prisma.Decimal(lockedWallet[0].balance);
+    if (currentBalance.plus(balanceIncrement).lessThan(0)) {
+      throw new ConflictException(`Số dư khả dụng không đủ trong ví ${walletId}`);
+    }
+
+    // Cập nhật nguyên tử (Atomic update) sau khi đã Lock an toàn
     const updatedWallet = await tx.wallets.update({
       where: { id: walletId },
       data: {
@@ -75,10 +92,6 @@ export class WalletsService {
         },
       },
     });
-
-    if (updatedWallet.balance.lessThan(0)) {
-      throw new Error(`Số dư không đủ trong ví ${walletId}`);
-    }
 
     // Ghi Sổ cái (Ledger)
     const transactionRecord = await tx.wallet_transactions.create({
@@ -135,6 +148,54 @@ export class WalletsService {
           provider_id: providerId,
           amount: amount,
           status: payout_status.PAYOUT_PENDING,
+        },
+      });
+
+      return request;
+    });
+  }
+
+  /**
+   * Tạo yêu cầu rút tiền cho Khách hàng
+   * @param customerId ID của Khách hàng
+   * @param amount Số tiền muốn rút
+   * @param bankDetails Thông tin ngân hàng
+   */
+  async createCustomerPayoutRequest(customerId: string, amount: number, bankDetails: any) {
+    if (amount < 50000) {
+      throw new BadRequestException('Số tiền rút tối thiểu là 50.000đ');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallets.findUnique({
+        where: { user_id: customerId },
+      });
+
+      if (!wallet) {
+        throw new BadRequestException('Không tìm thấy ví của Khách hàng');
+      }
+
+      if (wallet.balance.lessThan(amount)) {
+        throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
+      }
+
+      // 1. Ghi nhận giao dịch trừ tiền (PAYOUT)
+      await this.processTransaction(
+        wallet.id,
+        amount,
+        'PAYOUT',
+        null,
+        'Yêu cầu rút tiền về tài khoản ngân hàng (Khách hàng)',
+        tx,
+      );
+
+      // 2. Tạo bản ghi chờ duyệt (PENDING)
+      const request = await tx.payout_requests.create({
+        data: {
+          customer_id: customerId,
+          amount: amount,
+          status: payout_status.PAYOUT_PENDING,
+          bank_details: bankDetails,
         },
       });
 
