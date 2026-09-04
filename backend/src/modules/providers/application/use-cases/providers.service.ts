@@ -311,4 +311,43 @@ export class ProvidersService {
     // Xóa mềm trong DB
     await this.providersRepository.deleteDocument(documentId);
   }
+
+  async getReviews(userId: string) {
+    const provider = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+
+    return this.prisma.reviews.findMany({
+      where: { reviewee_id: userId },
+      orderBy: { created_at: 'desc' },
+      include: {
+        bookings: {
+          select: { id: true, status: true },
+        },
+      }
+    });
+  }
+
+  async getTrustScoreLogs(userId: string) {
+    const provider = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+
+    return this.prisma.audit_logs.findMany({
+      where: { 
+        target_id: provider.id,
+        target_type: 'PROVIDER_PROFILE',
+        action: 'RESOLVE_DISPUTE'
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
 }

@@ -210,4 +210,18 @@ export class ProvidersController {
     await this.providersService.deleteDocument(userId, documentId);
     return { success: true, message: 'Xóa chứng chỉ thành công' };
   }
+
+  @Get('me/reviews')
+  @ApiOperation({ summary: 'Lấy danh sách đánh giá của Provider' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách đánh giá.' })
+  async getMyReviews(@GetCurrentUserId() userId: string) {
+    return this.providersService.getReviews(userId);
+  }
+
+  @Get('me/trust-score-logs')
+  @ApiOperation({ summary: 'Lấy lịch sử biến động Trust Score' })
+  @ApiResponse({ status: 200, description: 'Trả về lịch sử trust score.' })
+  async getMyTrustScoreLogs(@GetCurrentUserId() userId: string) {
+    return this.providersService.getTrustScoreLogs(userId);
+  }
 }

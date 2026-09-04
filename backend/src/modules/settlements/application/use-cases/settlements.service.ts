@@ -348,4 +348,90 @@ export class SettlementsService {
 
     return updatedPayment;
   }
+
+  /**
+   * Admin: Giải quyết tranh chấp với tỷ lệ hoàn tiền một phần (Phase 3)
+   */
+  async resolveDisputeSettlement(
+    bookingId: string,
+    customerRefundPercentage: number,
+    tx: Prisma.TransactionClient,
+    reason: string,
+  ) {
+    if (customerRefundPercentage < 0 || customerRefundPercentage > 100) {
+      throw new BadRequestException('Tỷ lệ hoàn tiền phải từ 0 đến 100');
+    }
+
+    const booking = await tx.bookings.findUnique({
+      where: { id: bookingId },
+      include: { payments: true },
+    });
+
+    if (!booking) throw new BadRequestException('Không tìm thấy Booking');
+    const payment = booking.payments;
+    if (!payment) throw new BadRequestException('Không tìm thấy thông tin thanh toán');
+
+    if (payment.status !== 'ESCROW_ON_HOLD' && payment.status !== 'PAID_HELD_IN_ESCROW') {
+      throw new ConflictException('Thanh toán không ở trạng thái ký quỹ để phân xử.');
+    }
+
+    const totalAmount = Number(booking.total_price);
+    const customerRefundAmount = (totalAmount * customerRefundPercentage) / 100;
+    const providerReleaseAmount = totalAmount - customerRefundAmount;
+
+    // 1. Release Toàn bộ Escrow cho Provider trước (chuyển từ pending -> balance)
+    if (booking.provider_id) {
+      const providerWallet = await tx.wallets.findUnique({ where: { user_id: booking.provider_id } });
+      if (providerWallet) {
+        await this.walletsService.processTransaction(
+          providerWallet.id,
+          totalAmount,
+          'ESCROW_RELEASE',
+          bookingId,
+          `Giải phóng toàn bộ ký quỹ Booking ${bookingId} để phân xử tranh chấp`,
+          tx,
+        );
+
+        // 2. Trừ phần tiền phạt (Customer Refund) khỏi ví Provider (DEBIT)
+        if (customerRefundAmount > 0) {
+          await this.walletsService.processTransaction(
+            providerWallet.id,
+            customerRefundAmount,
+            'DEBIT',
+            bookingId,
+            `Khấu trừ ${customerRefundPercentage}% tiền hoàn cho khách. Lý do: ${reason}`,
+            tx,
+          );
+        }
+      }
+    }
+
+    // 3. Hoàn phần tiền (CREDIT) cho Customer (nếu có)
+    if (customerRefundAmount > 0) {
+      const customerWallet = await tx.wallets.findUnique({ where: { user_id: booking.customer_id } });
+      if (customerWallet) {
+        await this.walletsService.processTransaction(
+          customerWallet.id,
+          customerRefundAmount,
+          'CREDIT',
+          bookingId,
+          `Hoàn lại ${customerRefundPercentage}% tiền Booking ${bookingId}. Lý do: ${reason}`,
+          tx,
+        );
+      }
+    }
+
+    // 4. Update trạng thái Payment
+    const finalPaymentStatus = customerRefundPercentage === 100 ? 'REFUNDED' : 'RELEASED_TO_PROVIDER';
+    const updatedPayment = await tx.payments.update({
+      where: { id: payment.id },
+      data: {
+        status: finalPaymentStatus,
+        refunded_at: customerRefundPercentage === 100 ? new Date() : undefined,
+        released_at: customerRefundPercentage < 100 ? new Date() : undefined,
+      },
+    });
+
+    return updatedPayment;
+  }
 }

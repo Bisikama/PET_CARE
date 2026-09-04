@@ -15,6 +15,10 @@ import { CustomerCancelBookingUseCase } from '../../application/use-cases/custom
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { CompleteBookingDto } from '../dto/complete-booking.dto';
 import { UpdateSingleChecklistItemDto } from '../dto/update-checklist-item.dto';
+import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
+import { CreateReviewDto } from '../../dto/create-review.dto';
+import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
+import { OpenDisputeDto } from '../../dto/open-dispute.dto';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
@@ -32,6 +36,8 @@ export class BookingsController {
     private readonly completeBookingUseCase: CompleteBookingUseCase,
     private readonly customerConfirmBookingUseCase: CustomerConfirmBookingUseCase,
     private readonly cancelBookingUseCase: CustomerCancelBookingUseCase,
+    private readonly createReviewUseCase: CreateReviewUseCase,
+    private readonly openDisputeUseCase: OpenDisputeUseCase,
   ) {}
 
   @Post()
@@ -216,6 +222,40 @@ export class BookingsController {
     @Param('id') bookingId: string,
   ) {
     return this.cancelBookingUseCase.execute(userId, bookingId);
+  }
+
+  @Post(':id/reviews')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Đánh giá chất lượng dịch vụ của đơn đặt lịch' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiResponse({ status: 201, description: 'Đánh giá thành công.' })
+  @ApiResponse({ status: 400, description: 'Chỉ có thể đánh giá khi đơn đã hoàn thành hoặc đã đánh giá rồi.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Chỉ khách hàng của đơn này mới được đánh giá.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch.' })
+  async createReview(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: CreateReviewDto,
+  ) {
+    return this.createReviewUseCase.execute(bookingId, userId, dto);
+  }
+
+  @Post(':id/dispute')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Mở khiếu nại (Dispute) cho đơn dịch vụ' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 201, description: 'Mở khiếu nại thành công.' })
+  @ApiResponse({ status: 400, description: 'Trạng thái đơn hàng không hợp lệ hoặc đã có khiếu nại.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Chỉ khách hàng của đơn này mới được khiếu nại.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch.' })
+  async openDispute(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: OpenDisputeDto,
+  ) {
+    return this.openDisputeUseCase.execute(bookingId, userId, dto);
   }
 }
 

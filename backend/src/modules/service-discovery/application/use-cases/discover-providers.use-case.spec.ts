@@ -1,119 +1,109 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DiscoverProvidersUseCase } from './discover-providers.use-case';
-import { SERVICE_DISCOVERY_REPOSITORY } from '../../service-discovery.tokens';
+import { PrismaService } from '../../../../database/prisma.service';
+import { provider_status } from '@prisma/client';
 
 describe('DiscoverProvidersUseCase', () => {
   let useCase: DiscoverProvidersUseCase;
-  let repository: jest.Mocked<any>;
+  let prismaService: PrismaService;
+
+  const mockPrisma = {
+    provider_profiles: {
+      findMany: jest.fn(),
+    },
+  };
 
   beforeEach(async () => {
-    repository = {
-      findPetById: jest.fn(),
-      findAddressById: jest.fn(),
-      findMatchedProviders: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DiscoverProvidersUseCase,
-        { provide: SERVICE_DISCOVERY_REPOSITORY, useValue: repository },
+        { provide: PrismaService, useValue: mockPrisma },
       ],
     }).compile();
 
     useCase = module.get<DiscoverProvidersUseCase>(DiscoverProvidersUseCase);
+    prismaService = module.get<PrismaService>(PrismaService);
   });
 
-  it('nên ném lỗi NotFoundException nếu truyền petId không tồn tại', async () => {
-    repository.findPetById.mockResolvedValue(null);
-
-    await expect(
-      useCase.execute({
-        serviceId: 'service-id',
-        customerId: 'customer-id',
-        petId: 'invalid-pet-id',
-      }),
-    ).rejects.toThrow(NotFoundException);
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('nên ném lỗi NotFoundException nếu truyền addressId không tồn tại', async () => {
-    repository.findPetById.mockResolvedValue({ species: 'Dog', weight: 8.5 });
-    repository.findAddressById.mockResolvedValue(null);
+  it('TEST CASE 1: Xếp hạng thuật toán Normalize đúng đắn (C > B > A)', async () => {
+    // Provider A: Rating 5.0, Trust Score 100, Bookings 2 (Người mới xuất sắc)
+    // Provider B: Rating 4.0, Trust Score 80, Bookings 500 (Người cũ bình thường)
+    // Provider C: Rating 4.8, Trust Score 90, Bookings 100 (Người phong độ ổn định)
+    
+    // Theo thuật toán (max = 500 bookings):
+    // C: 0.96*0.4 + 0.9*0.3 + (log10(101)/log10(501))*0.3 ≈ 0.384 + 0.27 + 0.222 = 0.876 (88 điểm)
+    // B: 0.8*0.4 + 0.8*0.3 + 1*0.3 = 0.32 + 0.24 + 0.3 = 0.86 (86 điểm)
+    // A: 1*0.4 + 1*0.3 + (log10(3)/log10(501))*0.3 ≈ 0.4 + 0.3 + 0.053 = 0.753 (75 điểm)
 
-    await expect(
-      useCase.execute({
-        serviceId: 'service-id',
-        customerId: 'customer-id',
-        petId: 'pet-id',
-        addressId: 'invalid-address-id',
-      }),
-    ).rejects.toThrow(NotFoundException);
-  });
-
-  it('nên matching thành công và xếp hạng đúng đối tác theo điểm score tổng', async () => {
-    repository.findPetById.mockResolvedValue({ species: 'Dog', weight: 8.5 });
-    repository.findAddressById.mockResolvedValue({
-      city: 'Hồ Chí Minh',
-      district: 'Quận 7',
-      ward: 'Tân Kiểng',
-    });
-
-    const mockProviders = [
+    mockPrisma.provider_profiles.findMany.mockResolvedValueOnce([
       {
-        id: 'provider-1',
-        userId: 'user-1',
-        fullName: 'Provider Tốt Nhất',
-        avatarUrl: null,
-        bio: 'Kinh nghiệm nhiều',
-        experienceYears: 5,
-        ratingAvg: 4.9,
-        totalReviews: 20,
-        totalCompletedBookings: 15,
-        price: 250000,
-        durationMinutes: 120,
-        kycStatus: 'APPROVED',
-        trustBadges: [{ code: 'IDENTITY_VERIFIED', name: 'Đã xác minh' }],
-        hasSlotTomorrow: true,
-        servesDistrict: true,
+        id: 'provider-a',
+        user_id: 'user-a',
+        status: provider_status.APPROVED,
+        rating_avg: 5.0,
+        trust_score: 100,
+        rating_count: 2, // Map to completedBookings
+        provider_services: [{ price: 200000 }],
+        provider_trust_badges: [],
       },
       {
-        id: 'provider-2',
-        userId: 'user-2',
-        fullName: 'Provider Bình Thường',
-        avatarUrl: null,
-        bio: 'Mới làm việc',
-        experienceYears: 1,
-        ratingAvg: 4.2,
-        totalReviews: 2,
-        totalCompletedBookings: 2,
-        price: 300000,
-        durationMinutes: 120,
-        kycStatus: 'APPROVED',
-        trustBadges: [],
-        hasSlotTomorrow: false,
-        servesDistrict: true,
+        id: 'provider-b',
+        user_id: 'user-b',
+        status: provider_status.APPROVED,
+        rating_avg: 4.0,
+        trust_score: 80,
+        rating_count: 500,
+        provider_services: [{ price: 150000 }],
+        provider_trust_badges: [],
       },
-    ];
+      {
+        id: 'provider-c',
+        user_id: 'user-c',
+        status: provider_status.APPROVED,
+        rating_avg: 4.8,
+        trust_score: 90,
+        rating_count: 100,
+        provider_services: [{ price: 250000 }],
+        provider_trust_badges: [],
+      }
+    ]);
 
-    repository.findMatchedProviders.mockResolvedValue(mockProviders);
+    const result = await useCase.execute({ serviceId: 'service-id' });
 
-    const result = await useCase.execute({
-      serviceId: 'service-id',
-      customerId: 'customer-id',
-      petId: 'pet-id',
-      addressId: 'address-id',
-    });
+    expect(result).toHaveLength(3);
+    
+    // Kiểm tra tính toán điểm số (cho phép sai số làm tròn Math.round)
+    expect(result.find(p => p.id === 'provider-c')?.score).toBe(88);
+    expect(result.find(p => p.id === 'provider-b')?.score).toBe(86);
+    expect(result.find(p => p.id === 'provider-a')?.score).toBe(75);
 
-    expect(result).toHaveLength(2);
-    // Điểm số của provider-1 phải cao hơn provider-2 và đứng trước
-    expect(result[0].id).toBe('provider-1');
-    expect(result[0].score).toBeGreaterThan(result[1].score);
+    // Kiểm tra Index sau khi Sort (C > B > A)
+    expect(result[0].id).toBe('provider-c');
+    expect(result[1].id).toBe('provider-b');
+    expect(result[2].id).toBe('provider-a');
+  });
 
-    // Kiểm tra các lý do đề xuất (recommendation reasons)
-    expect(result[0].recommendationReasons).toContain('Phù hợp chó 8.5kg');
-    expect(result[0].recommendationReasons).toContain('Đã xác minh danh tính');
-    expect(result[0].recommendationReasons).toContain('Có slot ngày mai');
-    expect(result[0].recommendationReasons).toContain('Rating cao 4.9');
-    expect(result[0].recommendationReasons).toContain('Phục vụ tại Quận 7');
+  it('TEST CASE 2: Gọi DB lấy đúng Provider đang APPROVED', async () => {
+    mockPrisma.provider_profiles.findMany.mockResolvedValueOnce([]);
+
+    await useCase.execute({ serviceId: 'service-1', city: 'Hà Nội' });
+
+    expect(mockPrisma.provider_profiles.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'APPROVED',
+          provider_services: expect.objectContaining({
+            some: { service_id: 'service-1' }
+          }),
+          provider_service_areas: expect.objectContaining({
+            some: { city: 'Hà Nội' }
+          })
+        })
+      })
+    );
   });
 });

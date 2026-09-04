@@ -56,6 +56,22 @@ export class CustomerCareController {
     return this.reviewsService.createReview(userId, bookingId, dto);
   }
 
+  @Put('bookings/:bookingId/reviews')
+  @ApiOperation({ summary: 'Sửa đánh giá trong 7 ngày' })
+  @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
+  @ApiResponse({ status: 200, description: 'Sửa đánh giá thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập hoặc quá 7 ngày.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đánh giá (REVIEW_NOT_FOUND).' })
+  async updateReview(
+    @GetCurrentUserId() userId: string,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: CreateReviewDto,
+  ) {
+    return this.reviewsService.updateReview(userId, bookingId, dto);
+  }
+
   // --- SUPPORT TICKETS ---
   @Post('tickets')
   @ApiOperation({ summary: 'Tạo yêu cầu hỗ trợ mới' })

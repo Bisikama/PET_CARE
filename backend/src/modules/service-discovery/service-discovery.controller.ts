@@ -48,7 +48,6 @@ export class ServiceDiscoveryController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng hoặc địa chỉ yêu cầu (NOT_FOUND).' })
   async findProviders(@GetCurrentUserId() userId: string, @Query() query: DiscoverProvidersDto) {
     return this.discoverProvidersUseCase.execute({
-      customerId: userId,
       ...query,
     });
   }

@@ -148,4 +148,50 @@ export class ReviewsService {
       return updatedReview;
     });
   }
+
+  async updateReview(reviewerId: string, bookingId: string, dto: CreateReviewDto) {
+    const review = await this.prisma.reviews.findFirst({
+      where: { booking_id: bookingId, reviewer_id: reviewerId },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const createdAt = review.created_at ? review.created_at.getTime() : new Date().getTime();
+    const timeDiff = new Date().getTime() - createdAt;
+    if (timeDiff > 7 * 24 * 60 * 60 * 1000) {
+      throw new ForbiddenException('You can only edit a review within 7 days of its creation');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedReview = await tx.reviews.update({
+        where: { id: review.id },
+        data: {
+          rating: dto.rating,
+          comment: dto.comment,
+        },
+      });
+
+      // Recalculate average
+      const agg = await tx.reviews.aggregate({
+        _avg: { rating: true },
+        _count: { rating: true },
+        where: { reviewee_id: review.reviewee_id, is_hidden: false },
+      });
+
+      const newRatingAvg = agg._avg.rating || 0;
+      const newTotalReviews = agg._count.rating || 0;
+
+      await tx.provider_profiles.updateMany({
+        where: { user_id: review.reviewee_id },
+        data: {
+          rating_avg: newRatingAvg,
+          total_reviews: newTotalReviews,
+        },
+      });
+
+      return updatedReview;
+    });
+  }
 }
