@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import * as qs from 'qs';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
+import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class PaymentsService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly walletsService: WalletsService,
+    private readonly subscriptionsService: SubscriptionsService,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -176,9 +178,24 @@ export class PaymentsService {
     const orderId = vnp_Params['vnp_TxnRef'];
     const rspCode = vnp_Params['vnp_ResponseCode'];
     const idempotencyKey = vnp_Params['vnp_TransactionNo']; // Mã giao dịch của VNPay
+    const orderInfo = vnp_Params['vnp_OrderInfo'] as string;
 
+    // 1. Nếu là giao dịch mua gói Subscription
+    if (orderInfo && orderInfo.startsWith('SUB_')) {
+      if (rspCode === '00') {
+        // Parse orderInfo: SUB_userId_tierName
+        const parts = orderInfo.split('_');
+        if (parts.length >= 3) {
+          const userId = parts[1];
+          const tierName = parts.slice(2).join('_');
+          await this.subscriptionsService.handleSubscriptionSuccess(userId, tierName);
+        }
+      }
+      return { RspCode: '00', Message: 'Confirm Success' };
+    }
+
+    // 2. Nếu là giao dịch thanh toán Booking
     let confirmedPayment: any;
-
     // Bọc trong Transaction để xử lý nghiệp vụ thanh toán & ví (Idempotency)
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -517,5 +534,101 @@ export class PaymentsService {
       sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, '+');
     }
     return sorted;
+  }
+  /**
+   * Xử lý IPN Webhook từ Momo gửi về
+   */
+  async processMomoIPN(momo_Params: any): Promise<{ RspCode: string; Message: string }> {
+    const {
+      partnerCode, orderId, requestId, amount, orderInfo, orderType, 
+      transId, resultCode, message, payType, responseTime, extraData, signature
+    } = momo_Params;
+
+    const accessKey = this.configService.get<string>('MOMO_ACCESS_KEY', 'DUMMY_ACCESS_KEY');
+    const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
+
+    // Chữ ký Momo yêu cầu các tham số xếp theo thứ tự nhất định
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
+    
+    const hmac = crypto.createHmac('sha256', secretKey);
+    const expectedSignature = hmac.update(Buffer.from(rawSignature, 'utf-8')).digest('hex');
+
+    if (signature !== expectedSignature) {
+      this.logger.error('Momo IPN: Lỗi xác thực chữ ký (Checksum failed)');
+      return { RspCode: '97', Message: 'Checksum failed' };
+    }
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const payment = await tx.payments.findFirst({
+          where: { transaction_code: orderId },
+          include: { bookings: true },
+        });
+
+        if (!payment) {
+          throw new BadRequestException('Không tìm thấy giao dịch');
+        }
+
+        if (payment.status !== 'PENDING') {
+          return { RspCode: '02', Message: 'Order already confirmed' };
+        }
+
+        // idempotency
+        if (payment.idempotency_key === String(transId)) {
+          return { RspCode: '02', Message: 'Idempotent request detected' };
+        }
+
+        if (String(resultCode) === '0') { // 0 là thành công của Momo
+          await tx.payments.update({
+            where: { id: payment.id },
+            data: {
+              status: 'PAID_HELD_IN_ESCROW',
+              paid_at: new Date(),
+              idempotency_key: String(transId),
+            },
+          });
+
+          await tx.bookings.update({
+            where: { id: payment.booking_id },
+            data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
+          });
+
+          const providerId = payment.bookings?.provider_id;
+          if (providerId) {
+            const providerWallet = await tx.wallets.findUnique({
+              where: { user_id: providerId }
+            });
+            
+            if (providerWallet) {
+              await this.walletsService.processTransaction(
+                providerWallet.id,
+                Number(payment.bookings.total_price),
+                'ESCROW_HOLD',
+                payment.booking_id,
+                'Ký quỹ thanh toán từ Momo',
+                tx,
+              );
+            }
+          }
+        } else {
+          // Thất bại
+          await tx.payments.update({
+            where: { id: payment.id },
+            data: {
+              status: 'FAILED',
+              idempotency_key: String(transId),
+            },
+          });
+        }
+      });
+
+      return { RspCode: '00', Message: 'Confirm Success' };
+    } catch (error) {
+      this.logger.error(`Momo IPN Error: ${error.message}`);
+      if (error.message === 'Không tìm thấy giao dịch') {
+        return { RspCode: '01', Message: 'Order not found' };
+      }
+      return { RspCode: '99', Message: 'Unknown error' };
+    }
   }
 }

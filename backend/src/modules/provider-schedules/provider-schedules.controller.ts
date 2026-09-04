@@ -4,7 +4,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
   Query,
   UseGuards,
@@ -20,10 +19,12 @@ import { CopyWeekScheduleUseCase } from './application/use-cases/copy-week-sched
 import { GetProviderAvailableSlotsUseCase } from './application/use-cases/get-provider-available-slots.use-case';
 import { GetProviderScheduleUseCase } from './application/use-cases/get-provider-schedule.use-case';
 import { UpdateProviderScheduleUseCase } from './application/use-cases/update-provider-schedule.use-case';
+import { BlockProviderSlotUseCase } from './application/use-cases/block-provider-slot.use-case';
 import { CopyWeekScheduleDto } from './dto/copy-week-schedule.dto';
 import { GetProviderAvailableSlotsQueryDto } from './dto/get-provider-available-slots-query.dto';
 import { GetProviderScheduleQueryDto } from './dto/get-provider-schedule-query.dto';
 import { UpdateProviderScheduleDto } from './dto/update-provider-schedule.dto';
+import { Put, Param } from '@nestjs/common';
 
 @ApiTags('Provider Schedules')
 @ApiBearerAuth()
@@ -35,7 +36,26 @@ export class ProviderSchedulesController {
     private readonly getProviderAvailableSlotsUseCase: GetProviderAvailableSlotsUseCase,
     private readonly updateProviderScheduleUseCase: UpdateProviderScheduleUseCase,
     private readonly copyWeekScheduleUseCase: CopyWeekScheduleUseCase,
+    private readonly blockProviderSlotUseCase: BlockProviderSlotUseCase,
   ) {}
+
+  @Put('slots/:slotId/block')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Tạm khóa (block) một slot làm việc cụ thể',
+    description: 'Dành cho Provider tự động khóa khẩn cấp những Slot đang mở. Yêu cầu Slot phải rảnh và thuộc về Provider đang đăng nhập.',
+  })
+  @ApiResponse({ status: 200, description: 'Khóa slot thành công.' })
+  @ApiResponse({ status: 400, description: 'Slot không tồn tại, đã bị khóa, hoặc đang có Booking (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role PROVIDER).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy slot (SLOT_NOT_FOUND).' })
+  async blockSlot(
+    @GetCurrentUserId() userId: string,
+    @Param('slotId') slotId: string,
+  ) {
+    return this.blockProviderSlotUseCase.execute(userId, slotId);
+  }
 
   @Get('available-slots/:providerId')
   @Public()
@@ -69,15 +89,15 @@ export class ProviderSchedulesController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Lấy ma trận lịch làm việc thành công.',
+    description: 'Trả về ma trận lịch làm việc thành công.',
   })
-  @ApiResponse({ status: 400, description: 'Khoảng thời gian không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
+  @ApiResponse({ status: 400, description: 'Khoảng thời gian không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Không có quyền truy cập (Yêu cầu role PROVIDER).',
+    description: 'Không có quyền truy cập (Forbidden, yêu cầu role PROVIDER).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async getSchedule(
     @GetCurrentUserId() userId: string,
     @Query() query: GetProviderScheduleQueryDto,
@@ -100,13 +120,13 @@ export class ProviderSchedulesController {
     status: 200,
     description: 'Cập nhật lịch làm việc thành công.',
   })
-  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Không có quyền truy cập (Yêu cầu role PROVIDER).',
+    description: 'Không có quyền truy cập (Forbidden, yêu cầu role PROVIDER).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async updateSchedule(
     @GetCurrentUserId() userId: string,
     @Body() dto: UpdateProviderScheduleDto,
@@ -127,13 +147,13 @@ export class ProviderSchedulesController {
     status: 200,
     description: 'Sao chép lịch thành công.',
   })
-  @ApiResponse({ status: 400, description: 'Ngày tuần nguồn hoặc tuần đích không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực người dùng.' })
+  @ApiResponse({ status: 400, description: 'Ngày tuần nguồn hoặc tuần đích không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 403,
-    description: 'Không có quyền truy cập (Yêu cầu role PROVIDER).',
+    description: 'Không có quyền truy cập (Forbidden, yêu cầu role PROVIDER).',
   })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
   async copyWeek(
     @GetCurrentUserId() userId: string,
     @Body() dto: CopyWeekScheduleDto,

@@ -55,7 +55,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "form-data": "^4.0.6",
-    "handlebar": "^1.0.0",
+    "handlebars": "^4.7.9",
     "nodemailer": "^9.1.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

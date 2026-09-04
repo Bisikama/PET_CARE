@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../../database/prisma.service';
 import { SupabaseStorageService } from '../../../../storage/supabase-storage.service';
 import { NotificationsService } from '../../../../growth/notifications/notifications.service';
 import { message_type } from '@prisma/client';
 import * as crypto from 'crypto';
+import { ChatGateway } from '../../chat.gateway';
 
 @Injectable()
 export class SendMessageUseCase {
@@ -11,6 +12,8 @@ export class SendMessageUseCase {
     private readonly prisma: PrismaService,
     private readonly storageService: SupabaseStorageService,
     private readonly notificationsService: NotificationsService,
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   async execute(userId: string, roomId: string, content?: string, file?: Express.Multer.File) {

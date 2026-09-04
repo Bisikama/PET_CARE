@@ -1,10 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AccessTokenGuard } from '../../../../common/guards/access-token.guard';
 import { SearchMatchingProvidersUseCase } from '../../application/use-cases/search-matching-providers.use-case';
 import { SearchProviderDto } from '../dto/search-provider.dto';
 
 @ApiTags('Booking Matching')
 @ApiBearerAuth()
+@UseGuards(AccessTokenGuard)
 @Controller('booking-matching')
 export class BookingMatchingController {
   constructor(private readonly searchMatchingUseCase: SearchMatchingProvidersUseCase) {}
@@ -22,13 +24,13 @@ export class BookingMatchingController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Dữ liệu đầu vào không hợp lệ.',
+    description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).',
   })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({
     status: 404,
-    description: 'Thú cưng hoặc địa chỉ của khách hàng không tồn tại.',
+    description: 'Thú cưng hoặc địa chỉ của khách hàng không tồn tại (NOT_FOUND).',
   })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized)' })
   async search(@Body() dto: SearchProviderDto) {
     return this.searchMatchingUseCase.execute(dto);
   }

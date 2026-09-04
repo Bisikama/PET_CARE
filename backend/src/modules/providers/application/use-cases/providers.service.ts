@@ -246,7 +246,28 @@ export class ProvidersService {
     if (!profile) {
       throw new NotFoundException('Provider profile not found');
     }
-    return profile;
+      return profile;
+  }
+
+  async updateStatus(userId: string, status: 'APPROVED' | 'PAUSED') {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+    
+    if (!profile) {
+      throw new NotFoundException('Không tìm thấy hồ sơ đối tác');
+    }
+
+    if (profile.kyc_status !== 'APPROVED') {
+      throw new BadRequestException('Chỉ có thể thay đổi trạng thái khi hồ sơ đã được duyệt');
+    }
+
+    const updated = await this.prisma.provider_profiles.update({
+      where: { id: profile.id },
+      data: { status: status as any },
+    });
+    
+    return { success: true, message: `Đã chuyển trạng thái thành ${status}`, data: updated };
   }
 
   async getDocuments(userId: string) {

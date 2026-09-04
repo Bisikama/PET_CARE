@@ -1,125 +1,90 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SubscriptionsService } from './subscriptions.service';
 import { PrismaService } from '../../../database/prisma.service';
-import { subscription_status } from '@prisma/client';
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { SubscriptionTier } from './dto/subscribe.dto';
+import { ConfigService } from '@nestjs/config';
+import { WalletsService } from '../../wallets/application/use-cases/wallets.service';
+import { ConflictException } from '@nestjs/common';
 
-describe('SubscriptionsService', () => {
+describe('SubscriptionsService — BUG #3 Idempotency Fix', () => {
   let service: SubscriptionsService;
-  let prisma: PrismaService;
 
-  const mockPrismaService = {
+  const mockPrisma = {
     subscriptions: {
       findFirst: jest.fn(),
       create: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
+    wallets: { findUnique: jest.fn() },
+    $transaction: jest.fn((fn) => fn(mockPrisma)),
   };
+
+  const mockConfigService = { get: jest.fn().mockReturnValue('DUMMY_VALUE') };
+  const mockWalletsService = { processTransaction: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SubscriptionsService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: WalletsService, useValue: mockWalletsService },
       ],
     }).compile();
 
     service = module.get<SubscriptionsService>(SubscriptionsService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => jest.clearAllMocks());
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+  describe('handleSubscriptionSuccess', () => {
+    const USER_ID = 'user-uuid-1';
+    const TIER = 'SILVER';
 
-  describe('subscribe', () => {
-    it('should create a subscription successfully (Test Case 1)', async () => {
-      // Arrange: Mock no active subscription found
-      mockPrismaService.subscriptions.findFirst.mockResolvedValue(null);
-
-      const mockDate = new Date();
-      const mockResult = {
-        id: 'sub-1',
-        user_id: 'user-1',
-        tier_name: SubscriptionTier.GOLD,
-        start_date: mockDate,
-        end_date: new Date(mockDate.getTime() + 30 * 24 * 60 * 60 * 1000),
-        status: subscription_status.ACTIVE,
-        created_at: mockDate,
-      };
-
-      // Arrange: Mock creation success
-      mockPrismaService.subscriptions.create.mockResolvedValue(mockResult);
-
-      // Act
-      const result = await service.subscribe('user-1', { tierName: SubscriptionTier.GOLD });
-
-      // Assert
-      expect(prisma.subscriptions.findFirst).toHaveBeenCalledWith({
-        where: {
-          user_id: 'user-1',
-          status: subscription_status.ACTIVE,
-          end_date: { gt: expect.any(Date) },
-        },
+    it('🔴 should NOT create duplicate subscription if user already has ACTIVE sub (IPN retry)', async () => {
+      // Giả lập VNPay IPN đến lần 2 — user đã có gói ACTIVE rồi
+      mockPrisma.subscriptions.findFirst.mockResolvedValue({
+        id: 'existing-sub-id',
+        user_id: USER_ID,
+        tier_name: TIER,
+        status: 'ACTIVE',
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ngày nữa
       });
 
-      expect(prisma.subscriptions.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          user_id: 'user-1',
-          tier_name: SubscriptionTier.GOLD,
-          status: subscription_status.ACTIVE,
-        }),
-      });
+      await service.handleSubscriptionSuccess(USER_ID, TIER);
 
-      expect(result).toEqual(mockResult);
+      // Quan trọng: KHÔNG được gọi create
+      expect(mockPrisma.subscriptions.create).not.toHaveBeenCalled();
     });
 
-    it('should throw ConflictException if user already has active subscription', async () => {
-      // Arrange: Mock active subscription exists
-      mockPrismaService.subscriptions.findFirst.mockResolvedValue({ id: 'sub-1' });
+    it('should create subscription when no active sub exists (first IPN call)', async () => {
+      // Lần đầu tiên IPN đến — user chưa có gói
+      mockPrisma.subscriptions.findFirst.mockResolvedValue(null);
+      mockPrisma.subscriptions.create.mockResolvedValue({ id: 'new-sub-id' });
 
-      // Act & Assert
-      await expect(service.subscribe('user-1', { tierName: SubscriptionTier.GOLD })).rejects.toThrow(
-        ConflictException,
+      await service.handleSubscriptionSuccess(USER_ID, TIER);
+
+      expect(mockPrisma.subscriptions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            user_id: USER_ID,
+            tier_name: TIER,
+            status: 'ACTIVE',
+          }),
+        }),
       );
     });
   });
 
-  describe('getMySubscription', () => {
-    it('should return the current active subscription (Test Case 2)', async () => {
-      // Arrange
-      const mockSub = { id: 'sub-1', tier_name: 'GOLD', status: 'ACTIVE' };
-      mockPrismaService.subscriptions.findFirst.mockResolvedValue(mockSub);
+  describe('checkoutWallet', () => {
+    it('should throw ConflictException if user already has an active subscription', async () => {
+      mockPrisma.subscriptions.findFirst.mockResolvedValue({ id: 'sub-1', status: 'ACTIVE' });
 
-      // Act
-      const result = await service.getMySubscription('user-1');
-
-      // Assert
-      expect(prisma.subscriptions.findFirst).toHaveBeenCalledWith({
-        where: {
-          user_id: 'user-1',
-          status: subscription_status.ACTIVE,
-        },
-        orderBy: {
-          end_date: 'desc',
-        },
-      });
-      expect(result).toEqual(mockSub);
-    });
-
-    it('should throw NotFoundException if no active subscription found', async () => {
-      // Arrange
-      mockPrismaService.subscriptions.findFirst.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.getMySubscription('user-1')).rejects.toThrow(NotFoundException);
+      await expect(service.checkoutWallet(USER_ID, { tierName: 'GOLD' } as any))
+        .rejects.toThrow(ConflictException);
     });
   });
 });
+
+// JSDoc: userId constant used in describe block — must hoist
+const USER_ID = 'user-uuid-1';

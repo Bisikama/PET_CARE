@@ -27,6 +27,8 @@ import { ForgotPasswordUseCase } from './application/use-cases/forgot-password.u
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -43,6 +45,7 @@ export class AuthService {
     private readonly authSessionService: AuthSessionService,
     private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -94,6 +97,10 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     return this.resetPasswordUseCase.execute(dto);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    return this.changePasswordUseCase.execute(userId, dto);
   }
 
   async signInGoogleIdToken(

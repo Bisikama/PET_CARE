@@ -10,20 +10,20 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
   constructor(private readonly prisma: PrismaService) {}
 
   async findPetById(petId: string): Promise<any> {
-    return this.prisma.pets.findUnique({
+    return this.prisma.pets.findFirst({
       where: { id: petId },
     });
   }
 
   async findAddressById(addressId: string): Promise<any> {
-    return this.prisma.customer_addresses.findUnique({
-      where: { id: addressId },
+    return this.prisma.customer_addresses.findFirst({
+      where: { id: addressId, deleted_at: null },
     });
   }
 
   async findProviderWorkingSlotById(slotId: string, tx?: any): Promise<any> {
     const client = tx || this.prisma;
-    return await client.provider_working_slots.findUnique({
+    return await client.provider_working_slots.findFirst({
       where: { id: slotId },
       include: {
         provider_working_days: {
@@ -76,6 +76,9 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
         max_weight: { gte: petWeight },
         status: 'APPROVED',
         is_active: true,
+        services: {
+          deleted_at: null,
+        },
       },
       include: {
         services: true,
@@ -214,7 +217,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
 
   async findBookingById(bookingId: string, tx?: any): Promise<any> {
     const client = tx || this.prisma;
-    return await client.bookings.findUnique({
+    return await client.bookings.findFirst({
       where: { id: bookingId },
       include: {
         provider_working_slots: {
@@ -338,7 +341,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
 
   async findChecklistItemById(itemId: string, tx?: any): Promise<any> {
     const client = tx || this.prisma;
-    return await client.booking_checklist_items.findUnique({
+    return await client.booking_checklist_items.findFirst({
       where: { id: itemId },
       include: {
         booking_services: {
