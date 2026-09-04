@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma.module';
 import { CopyWeekScheduleUseCase } from './application/use-cases/copy-week-schedule.use-case';
+import { GetProviderAvailableSlotsUseCase } from './application/use-cases/get-provider-available-slots.use-case';
 import { GetProviderScheduleUseCase } from './application/use-cases/get-provider-schedule.use-case';
 import { GetTimeSlotsUseCase } from './application/use-cases/get-time-slots.use-case';
 import { UpdateProviderScheduleUseCase } from './application/use-cases/update-provider-schedule.use-case';
@@ -16,6 +17,7 @@ import { TimeSlotsController } from './time-slots.controller';
   providers: [
     GetTimeSlotsUseCase,
     GetProviderScheduleUseCase,
+    GetProviderAvailableSlotsUseCase,
     UpdateProviderScheduleUseCase,
     CopyWeekScheduleUseCase,
     BlockProviderSlotUseCase,
@@ -28,6 +30,7 @@ import { TimeSlotsController } from './time-slots.controller';
     PROVIDER_SCHEDULES_REPOSITORY,
     GetTimeSlotsUseCase,
     GetProviderScheduleUseCase,
+    GetProviderAvailableSlotsUseCase,
     UpdateProviderScheduleUseCase,
     CopyWeekScheduleUseCase,
     BlockProviderSlotUseCase,

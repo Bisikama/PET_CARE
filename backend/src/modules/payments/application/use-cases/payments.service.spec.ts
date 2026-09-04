@@ -3,7 +3,10 @@ import { PaymentsService } from './payments.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
+<<<<<<< HEAD
 import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
+=======
+>>>>>>> develop
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
 
@@ -18,8 +21,12 @@ describe('PaymentsService', () => {
     },
     payments: {
       create: jest.fn(),
+<<<<<<< HEAD
       findFirst: jest.fn(),
       update: jest.fn(),
+=======
+      upsert: jest.fn(),
+>>>>>>> develop
     },
     bookings: {
       findUnique: jest.fn(),
@@ -35,11 +42,15 @@ describe('PaymentsService', () => {
     processTransaction: jest.fn(),
   };
 
+<<<<<<< HEAD
   const mockSubscriptionsService = {
     handleSubscriptionSuccess: jest.fn(),
   };
 
   const mockNotificationsService = {
+=======
+  const mockNotifications = {
+>>>>>>> develop
     sendNotification: jest.fn(),
   };
 
@@ -52,6 +63,11 @@ describe('PaymentsService', () => {
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
+<<<<<<< HEAD
+=======
+        { provide: WalletsService, useValue: mockWallets },
+        { provide: NotificationsService, useValue: mockNotifications },
+>>>>>>> develop
         { provide: ConfigService, useValue: mockConfig },
         { provide: WalletsService, useValue: mockWalletsService },
         { provide: SubscriptionsService, useValue: mockSubscriptionsService },
@@ -90,6 +106,8 @@ describe('PaymentsService', () => {
       mockPrisma.bookings.findUnique.mockResolvedValue({
         id: bookingId,
         customer_id: 'cust-1',
+        status: 'PENDING_PAYMENT',
+        payments: null,
       });
 
       const url = await service.createVNPayUrl(bookingId, amount, ipAddress, 'SALE20');
@@ -97,14 +115,38 @@ describe('PaymentsService', () => {
       // 1. Kiểm tra URL gọi VNPay phải chứa giá đã giảm (80,000 VND -> 8,000,000)
       expect(url).toContain('vnp_Amount=8000000');
 
-      // 2. Kiểm tra DB ghi nhận Payment phải là giá đã giảm (80,000 VND)
-      expect(mockPrisma.payments.create).toHaveBeenCalledWith(
+      // 2. Kiểm tra DB ghi nhận Payment phải là giá đã giảm (80,000 VND) qua upsert
+      expect(mockPrisma.payments.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            amount: 80000, 
-          })
+          where: { booking_id: bookingId },
+          update: expect.objectContaining({ amount: 80000 }),
+          create: expect.objectContaining({ amount: 80000, booking_id: bookingId, customer_id: 'cust-1' }),
         })
       );
+    });
+
+    it('should throw BadRequestException if booking is not PENDING_PAYMENT', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({
+        id: bookingId,
+        customer_id: 'cust-1',
+        status: 'ACCEPTED',
+        payments: null,
+      });
+
+      await expect(service.createVNPayUrl(bookingId, amount, ipAddress)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if payment already settled or held in escrow', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({
+        id: bookingId,
+        customer_id: 'cust-1',
+        status: 'PENDING_PAYMENT',
+        payments: {
+          status: 'PAID_HELD_IN_ESCROW',
+        },
+      });
+
+      await expect(service.createVNPayUrl(bookingId, amount, ipAddress)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if promotion is expired', async () => {

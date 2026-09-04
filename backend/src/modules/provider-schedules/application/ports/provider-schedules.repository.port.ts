@@ -3,6 +3,7 @@ import { TimeSlotRecord } from '../types/provider-schedules.types';
 
 export interface ProviderSchedulesRepositoryPort {
   findProviderProfileByUserId(userId: string): Promise<{ id: string } | null>;
+  findProviderProfileById(providerId: string): Promise<{ id: string } | null>;
   findAllTimeSlots(): Promise<TimeSlotRecord[]>;
   findWorkingDaysWithSlots(
     providerId: string,
