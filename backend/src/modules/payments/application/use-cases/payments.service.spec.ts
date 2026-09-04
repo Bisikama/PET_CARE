@@ -3,10 +3,7 @@ import { PaymentsService } from './payments.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
-<<<<<<< HEAD
 import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
-=======
->>>>>>> develop
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
 
@@ -21,12 +18,9 @@ describe('PaymentsService', () => {
     },
     payments: {
       create: jest.fn(),
-<<<<<<< HEAD
       findFirst: jest.fn(),
       update: jest.fn(),
-=======
       upsert: jest.fn(),
->>>>>>> develop
     },
     bookings: {
       findUnique: jest.fn(),
@@ -42,15 +36,11 @@ describe('PaymentsService', () => {
     processTransaction: jest.fn(),
   };
 
-<<<<<<< HEAD
   const mockSubscriptionsService = {
     handleSubscriptionSuccess: jest.fn(),
   };
 
   const mockNotificationsService = {
-=======
-  const mockNotifications = {
->>>>>>> develop
     sendNotification: jest.fn(),
   };
 
@@ -63,11 +53,8 @@ describe('PaymentsService', () => {
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
-<<<<<<< HEAD
-=======
         { provide: WalletsService, useValue: mockWallets },
         { provide: NotificationsService, useValue: mockNotifications },
->>>>>>> develop
         { provide: ConfigService, useValue: mockConfig },
         { provide: WalletsService, useValue: mockWalletsService },
         { provide: SubscriptionsService, useValue: mockSubscriptionsService },
