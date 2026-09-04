@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
-import { CreateReviewDto } from '../../dto/create-review.dto';
+import { SubmitCustomerReviewDto } from '../../dto/create-review.dto';
 import { booking_status } from '@prisma/client';
 
 @Injectable()
@@ -38,7 +38,7 @@ export class ReviewsService {
     };
   }
 
-  async createReview(reviewerId: string, bookingId: string, dto: CreateReviewDto) {
+  async createReview(reviewerId: string, bookingId: string, dto: SubmitCustomerReviewDto) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
     });
@@ -149,7 +149,7 @@ export class ReviewsService {
     });
   }
 
-  async updateReview(reviewerId: string, bookingId: string, dto: CreateReviewDto) {
+  async updateReview(reviewerId: string, bookingId: string, dto: SubmitCustomerReviewDto) {
     const review = await this.prisma.reviews.findFirst({
       where: { booking_id: bookingId, reviewer_id: reviewerId },
     });

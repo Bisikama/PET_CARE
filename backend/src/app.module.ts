@@ -27,6 +27,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { SettlementsModule } from './modules/settlements/settlements.module';
 import { ProviderSchedulesModule } from './modules/provider-schedules/provider-schedules.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { ProviderSchedulesModule } from './modules/provider-schedules/provider-s
     PaymentsModule,
     SettlementsModule,
     ProviderSchedulesModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [

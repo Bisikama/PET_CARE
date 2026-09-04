@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export class CreateReviewDto {
+export class SubmitCustomerReviewDto {
   @ApiProperty({ example: 5, description: 'Rating from 1 to 5' })
   @IsNumber()
   @Min(1)

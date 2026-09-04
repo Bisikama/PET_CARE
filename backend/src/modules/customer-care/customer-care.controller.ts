@@ -7,7 +7,7 @@ import { ReviewsService } from './application/use-cases/reviews.service';
 import { SupportService } from './application/use-cases/support.service';
 import { DisputesService } from './application/use-cases/disputes.service';
 import { IncidentsService } from './application/use-cases/incidents.service';
-import { CreateReviewDto } from './dto/create-review.dto';
+import { SubmitCustomerReviewDto } from './dto/create-review.dto';
 import { CreateTicketDto, ReplyTicketDto } from './dto/support.dto';
 import { OpenDisputeDto } from './dto/dispute.dto';
 import { ReportIncidentDto } from './dto/incident.dto';
@@ -51,7 +51,7 @@ export class CustomerCareController {
   async createReview(
     @GetCurrentUserId() userId: string,
     @Param('bookingId') bookingId: string,
-    @Body() dto: CreateReviewDto,
+    @Body() dto: SubmitCustomerReviewDto,
   ) {
     return this.reviewsService.createReview(userId, bookingId, dto);
   }
@@ -67,7 +67,7 @@ export class CustomerCareController {
   async updateReview(
     @GetCurrentUserId() userId: string,
     @Param('bookingId') bookingId: string,
-    @Body() dto: CreateReviewDto,
+    @Body() dto: SubmitCustomerReviewDto,
   ) {
     return this.reviewsService.updateReview(userId, bookingId, dto);
   }

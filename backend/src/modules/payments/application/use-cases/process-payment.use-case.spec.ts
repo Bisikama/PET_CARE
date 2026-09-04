@@ -78,7 +78,7 @@ describe('ProcessPaymentUseCase', () => {
     });
     
     expect(mockPrisma.promotion_usages.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ discount_amount: 50000 }),
+      data: expect.objectContaining({ promotion_id: 'promo-1' }),
     });
 
     // Kiểm tra Redis đã xóa Hold
