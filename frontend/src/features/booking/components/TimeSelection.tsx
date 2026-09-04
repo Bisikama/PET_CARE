@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Calendar as CalendarIco
 import { useBookingStore } from '../stores/booking.store';
 import { bookingService } from '../services/booking.service';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
-import { scheduleService } from '@/features/schedule/services/schedule.service';
+import { providerScheduleService } from '../services/provider-schedule.service';
 import { ProviderWorkingSlotView } from '@/features/schedule/types';
 
 // Hook to fetch provider's schedule
@@ -14,12 +14,12 @@ function useProviderSchedule(providerId: string | null, date: string) {
   const [slots, setSlots] = React.useState<ProviderWorkingSlotView[]>([]);
 
   React.useEffect(() => {
-    if (!providerId) return;
+    if (!providerId || !date) return;
     let isMounted = true;
     const fetchSchedules = async () => {
       setLoading(true);
       try {
-        const schedules = await scheduleService.getProviderSchedules(date, date, providerId);
+        const schedules = await providerScheduleService.getAvailableSlots(providerId, date, date);
         if (isMounted) {
           const daySchedule = schedules.find((s) => s.workDate === date);
           if (daySchedule) {
@@ -46,10 +46,14 @@ function useProviderSchedule(providerId: string | null, date: string) {
 export function TimeSelection() {
   const { 
     setStep, 
-    selectedProviderId, 
+    selectedProviderId,
     selectedServiceId, 
-    selectedPetId, 
+    selectedPetId,
     selectedAddressId,
+    selectedSlotId,
+    setSelectedSlotId,
+    createdBookingId,
+    setCreatedBookingId,
     notes
   } = useBookingStore();
 
@@ -61,12 +65,11 @@ export function TimeSelection() {
 
   const provider = providers.find((p) => p.id === selectedProviderId);
 
-  // Today formatted as YYYY-MM-DD
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = React.useState<string>(todayStr);
-  const [selectedSlotId, setSelectedSlotId] = React.useState<string | null>(null);
   const [holdTimer, setHoldTimer] = React.useState<number | null>(null);
   const [isHolding, setIsHolding] = React.useState(false);
+  const [isCreatingBooking, setIsCreatingBooking] = React.useState(false);
 
   const { slots, loading } = useProviderSchedule(selectedProviderId || null, selectedDate);
 
@@ -91,30 +94,47 @@ export function TimeSelection() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleHoldSlot = async (slotId: string) => {
-    if (isHolding) return;
+  const handleSelectSlot = (slotId: string) => {
+    // If a booking is already created, don't allow changing slot here
+    // They would need to cancel or go back from scratch.
+    if (createdBookingId) return;
     
-    setIsHolding(true);
+    setSelectedSlotId(slotId);
+    setCreatedBookingId(null); // Reset if they change slot
+  };
+
+  const handleCreateBooking = async () => {
+    if (!selectedPetId || !selectedAddressId || !selectedServiceId || !selectedSlotId) {
+      alert('Thiếu thông tin đặt lịch.');
+      return;
+    }
+    
+    // If already created, just navigate to next step
+    if (createdBookingId) {
+      setStep(8);
+      return;
+    }
+
+    setIsCreatingBooking(true);
     try {
-      if (!selectedPetId || !selectedAddressId || !selectedServiceId) {
-        throw new Error('Thiếu thông tin đặt lịch.');
-      }
-      // Assuming bookingService.createBooking is available and properly configured
-      await bookingService.createBooking({
+      const createdBooking = await bookingService.createBooking({
         petId: selectedPetId,
-        providerWorkingSlotId: slotId,
+        providerWorkingSlotId: selectedSlotId,
         addressId: selectedAddressId,
         serviceId: selectedServiceId,
         customerNote: notes || '',
       });
-      
-      setSelectedSlotId(slotId);
-      setHoldTimer(10 * 60); // 10 minutes
+
+      const actualBookingId = createdBooking?.data?.booking?.id || createdBooking?.data?.id || createdBooking?.booking?.id || createdBooking?.id;
+      if (actualBookingId) {
+        setCreatedBookingId(actualBookingId);
+        setHoldTimer(10 * 60); // 10 minutes countdown for UI
+      }
     } catch (error: any) {
-      console.error('Failed to hold slot:', error);
-      alert(error?.response?.data?.message || 'Không thể giữ chỗ. Vui lòng thử lại.');
+      console.error('Failed to create booking:', error);
+      alert(error?.response?.data?.message || 'Không thể tạo đơn đặt lịch. Khung giờ có thể đã bị người khác đặt.');
     } finally {
-      setIsHolding(false);
+      setIsCreatingBooking(false);
     }
   };
 
@@ -180,8 +200,8 @@ export function TimeSelection() {
                 return (
                   <button
                     key={slot.slotId}
-                    onClick={() => slot.providerWorkingSlotId && handleHoldSlot(slot.providerWorkingSlotId)}
-                    disabled={!isAvailable || (selectedSlotId !== null && selectedSlotId !== slot.providerWorkingSlotId) || isHolding}
+                    onClick={() => slot.providerWorkingSlotId && handleSelectSlot(slot.providerWorkingSlotId)}
+                    disabled={!isAvailable || !!createdBookingId}
                     className={`flex items-center justify-between p-4 rounded-[20px] border-2 transition-all ${
                       isSelected
                         ? 'border-[#f0c05a] bg-amber-50/10'
@@ -209,8 +229,8 @@ export function TimeSelection() {
             </div>
           )}
 
-          {/* Active Hold Status Box */}
-          {selectedSlotId && holdTimer !== null && (
+          {/* Active Hold Status Box - Only show when booking is successfully created */}
+          {createdBookingId && holdTimer !== null && (
             <div className="mt-6 bg-[#ebf3ff] border border-blue-200 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-bottom-4 duration-300">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-500 shadow-sm border border-blue-100">
@@ -241,12 +261,26 @@ export function TimeSelection() {
           Quay lại
         </button>
         <button
-          onClick={() => setStep(7)}
-          disabled={!selectedSlotId}
+          onClick={handleCreateBooking}
+          disabled={!selectedSlotId || isCreatingBooking}
           className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all"
         >
-          Xem hóa đơn ký quỹ
-          <ChevronRight className="w-4 h-4" />
+          {isCreatingBooking ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Đang tạo đơn...
+            </>
+          ) : createdBookingId ? (
+            <>
+              Xem chi tiết đơn & thanh toán
+              <ChevronRight className="w-4 h-4" />
+            </>
+          ) : (
+            <>
+              Đặt lịch
+              <ChevronRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
     </div>

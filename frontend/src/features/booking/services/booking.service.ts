@@ -6,6 +6,11 @@ export const bookingService = {
     return response.data;
   },
 
+  getBooking: async (id: string): Promise<any> => {
+    const response = await axiosInstance.get(`/bookings/${id}`);
+    return response.data;
+  },
+
   getPricingRules: async (serviceId: string): Promise<any[]> => {
     const response = await axiosInstance.get(`/services/${serviceId}/pricing-rules`);
     return response.data;

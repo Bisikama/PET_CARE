@@ -5,6 +5,8 @@ export * from './components/DetailService';
 export * from './components/ProviderSelection';
 export * from './components/ProviderDetail';
 export * from './components/TimeSelection';
+export * from './components/BookingInvoice';
+export * from './components/PaymentGateway';
 export * from './components/ConditionSelection';
 export * from './stores/booking.store';
 export * from './types';

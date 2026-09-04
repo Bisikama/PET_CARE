@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { PetSelection, ServiceSelection, DetailService, ProviderSelection, ProviderDetail, TimeSelection, ConditionSelection, useBookingStore } from '@/features/booking';
+import { PetSelection, ServiceSelection, DetailService, ProviderSelection, ProviderDetail, TimeSelection, ConditionSelection, BookingInvoice, PaymentGateway, useBookingStore } from '@/features/booking';
 
 export default function BookingsPage() {
   const { currentStep } = useBookingStore();
@@ -15,6 +15,8 @@ export default function BookingsPage() {
       {currentStep === 5 && <ProviderDetail />}
       {currentStep === 6 && <TimeSelection />}
       {currentStep === 7 && <ConditionSelection />}
+      {currentStep === 8 && <BookingInvoice />}
+      {currentStep === 9 && <PaymentGateway />}
     </div>
   );
 }
