@@ -14,6 +14,7 @@ import { ServiceDetailModal } from '@/features/services';
 import { ScheduleManager } from '@/features/schedule';
 import { EscrowManagement } from '@/features/settlement';
 import { AreaManager } from '@/features/areas';
+import { WalletOverview, TransactionHistory, BankAccountsManager } from '@/features/wallets';
 import { Globe, Trash2, PlusCircle, FileText, Eye } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -124,6 +125,14 @@ export default function DashboardPage() {
           {providerTab === 'active-cases' && (
             <div className="space-y-6">
                <BookingActionDetail bookingId={activeBookingId} />
+            </div>
+          )}
+
+          {providerTab === 'wallet' && (
+            <div className="space-y-6">
+               <WalletOverview />
+               <TransactionHistory />
+               <BankAccountsManager />
             </div>
           )}
 
@@ -368,6 +377,15 @@ export default function DashboardPage() {
     );
   }
 
+  if (searchParams.get('tab') === 'wallet') {
+    return (
+      <div className="space-y-6 animate-fade-in">
+         <WalletOverview />
+         <TransactionHistory />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
@@ -425,7 +443,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left column: Actions and My Pets List */}
         <div className="lg:col-span-2 space-y-8">
-          {activeBookingId && <CustomerBookingAction bookingId={activeBookingId} />}
+          {/* TẠM THỜI HARDCODE ID Ở ĐÂY ĐỂ BẠN TEST */}
+          <CustomerBookingAction bookingId="a7ed2144-16f2-499a-83a3-6c99d71374ea" />
           <PetList />
         </div>
 

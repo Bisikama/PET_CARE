@@ -20,6 +20,11 @@ export const paymentService = {
     return response.data;
   },
 
+  checkoutMomo: async (data: CheckoutRequest): Promise<CheckoutResponse> => {
+    const response = await axiosInstance.post('/payments/checkout-momo', data);
+    return response.data;
+  },
+
   verifyVNPay: async (queryString: string): Promise<any> => {
     const response = await axiosInstance.get(`/payments/vnpay-return${queryString}`);
     return response.data;

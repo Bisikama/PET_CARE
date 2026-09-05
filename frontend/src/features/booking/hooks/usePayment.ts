@@ -25,6 +25,25 @@ export function usePayment() {
     }
   };
 
+  const createMomoCheckoutUrl = async (data: CheckoutRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await paymentService.checkoutMomo(data);
+      const url = response?.paymentUrl || (response as any)?.data?.paymentUrl;
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('Không lấy được URL thanh toán từ hệ thống (MoMo)');
+      }
+    } catch (err: any) {
+      console.error('MoMo checkout error:', err);
+      setError(err?.response?.data?.message || err.message || 'Không thể tạo phiên thanh toán MoMo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const checkoutWithWallet = async (data: CheckoutRequest) => {
     setLoading(true);
     setError(null);
@@ -66,6 +85,7 @@ export function usePayment() {
     loading,
     error,
     createCheckoutUrl,
+    createMomoCheckoutUrl,
     checkoutWithWallet,
     verifyVNPayPayment
   };

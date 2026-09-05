@@ -58,6 +58,7 @@ export const AppSidebar = () => {
         { name: 'Dịch vụ thú cưng', href: ROUTES.SERVICES, icon: HeartHandshake },
         { name: 'Đặt người chăm sóc', href: ROUTES.BOOKINGS, icon: UserCheck },
         { name: 'Kho Ưu Đãi & Voucher', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
+        { name: 'Ví Điện Tử', href: `${ROUTES.DASHBOARD}?tab=wallet`, icon: ShieldCheck },
       ];
 
   const handleLogout = () => {

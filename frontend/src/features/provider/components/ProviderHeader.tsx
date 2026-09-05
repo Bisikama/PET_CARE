@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Star, Lock, Activity, ShieldAlert, Calendar } from 'lucide-react';
+import { Star, Lock, Activity, ShieldAlert, Calendar, Wallet } from 'lucide-react';
 import { useProvider } from '../hooks/use-provider';
 
 interface ProviderHeaderProps {
@@ -57,6 +57,11 @@ export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) 
       id: 'schedule',
       label: 'Lịch & Năng Lực Dịch Vụ',
       icon: Calendar,
+    },
+    {
+      id: 'wallet',
+      label: 'Ví thu nhập',
+      icon: Wallet,
     },
   ];
 
