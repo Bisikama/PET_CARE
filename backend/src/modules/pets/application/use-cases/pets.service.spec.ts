@@ -19,6 +19,7 @@ describe('PetsService', () => {
   const mockSupabaseStorageService = {
     uploadFile: jest.fn(),
     deleteFile: jest.fn(),
+    extractPathFromUrl: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -126,6 +127,61 @@ describe('PetsService', () => {
       expect(result).toEqual(updatedPet);
       expect(mockSupabaseStorageService.uploadFile).toHaveBeenCalled();
       expect(mockPetsRepository.update).toHaveBeenCalledWith('pet-1', { ...updateInput, avatarUrl: 'http://supabase.com/avatar.jpg' });
+    });
+
+    it('should handle Supabase delete error gracefully when updating pet with new file', async () => {
+      const pet = { id: 'pet-1', customerId: 'user-1', name: 'OldName', avatarUrl: 'http://supabase.com/old-avatar.jpg' };
+      const updateInput = { name: 'NewName' };
+      const mockFile = { originalname: 'avatar.jpg', buffer: Buffer.from('test') } as any;
+      const updatedPet = { ...pet, ...updateInput, avatarUrl: 'http://supabase.com/avatar.jpg' };
+
+      mockPetsRepository.findById.mockResolvedValue(pet);
+      mockSupabaseStorageService.uploadFile.mockResolvedValue('http://supabase.com/avatar.jpg');
+      mockSupabaseStorageService.extractPathFromUrl.mockReturnValue('old-avatar.jpg');
+      mockSupabaseStorageService.deleteFile.mockRejectedValue(new Error('Supabase error'));
+      mockPetsRepository.update.mockResolvedValue(updatedPet);
+
+      const result = await service.update('pet-1', 'user-1', updateInput, mockFile);
+      expect(result).toEqual(updatedPet);
+      expect(mockSupabaseStorageService.uploadFile).toHaveBeenCalled();
+      expect(mockSupabaseStorageService.extractPathFromUrl).toHaveBeenCalledWith('http://supabase.com/old-avatar.jpg', 'pets');
+      expect(mockSupabaseStorageService.deleteFile).toHaveBeenCalledWith('pets', 'old-avatar.jpg');
+      expect(mockPetsRepository.update).toHaveBeenCalledWith('pet-1', { ...updateInput, avatarUrl: 'http://supabase.com/avatar.jpg' });
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete pet and successfully delete avatar from Supabase', async () => {
+      const pet = { id: 'pet-1', customerId: 'user-1', avatarUrl: 'http://supabase.com/avatar.jpg' };
+      
+      mockPetsRepository.findById.mockResolvedValue(pet);
+      mockSupabaseStorageService.extractPathFromUrl.mockReturnValue('avatar.jpg');
+      mockSupabaseStorageService.deleteFile.mockResolvedValue(undefined);
+      mockPetsRepository.delete.mockResolvedValue(undefined);
+
+      await service.delete('pet-1', 'user-1');
+      
+      expect(mockPetsRepository.findById).toHaveBeenCalledWith('pet-1');
+      expect(mockSupabaseStorageService.extractPathFromUrl).toHaveBeenCalledWith('http://supabase.com/avatar.jpg', 'pets');
+      expect(mockSupabaseStorageService.deleteFile).toHaveBeenCalledWith('pets', 'avatar.jpg');
+      expect(mockPetsRepository.delete).toHaveBeenCalledWith('pet-1');
+    });
+
+    it('should handle Supabase delete error gracefully when deleting pet', async () => {
+      const pet = { id: 'pet-1', customerId: 'user-1', avatarUrl: 'http://supabase.com/avatar.jpg' };
+      
+      mockPetsRepository.findById.mockResolvedValue(pet);
+      mockSupabaseStorageService.extractPathFromUrl.mockReturnValue('avatar.jpg');
+      mockSupabaseStorageService.deleteFile.mockRejectedValue(new Error('Supabase error'));
+      mockPetsRepository.delete.mockResolvedValue(undefined);
+
+      await service.delete('pet-1', 'user-1');
+      
+      expect(mockPetsRepository.findById).toHaveBeenCalledWith('pet-1');
+      expect(mockSupabaseStorageService.extractPathFromUrl).toHaveBeenCalledWith('http://supabase.com/avatar.jpg', 'pets');
+      expect(mockSupabaseStorageService.deleteFile).toHaveBeenCalledWith('pets', 'avatar.jpg');
+      // Verify DB delete is still called despite storage error
+      expect(mockPetsRepository.delete).toHaveBeenCalledWith('pet-1');
     });
   });
 });

@@ -7,7 +7,7 @@ import { ReviewsService } from './application/use-cases/reviews.service';
 import { SupportService } from './application/use-cases/support.service';
 import { DisputesService } from './application/use-cases/disputes.service';
 import { IncidentsService } from './application/use-cases/incidents.service';
-import { CreateReviewDto } from './dto/create-review.dto';
+import { SubmitCustomerReviewDto } from './dto/create-review.dto';
 import { CreateTicketDto, ReplyTicketDto } from './dto/support.dto';
 import { OpenDisputeDto } from './dto/dispute.dto';
 import { ReportIncidentDto } from './dto/incident.dto';
@@ -51,9 +51,25 @@ export class CustomerCareController {
   async createReview(
     @GetCurrentUserId() userId: string,
     @Param('bookingId') bookingId: string,
-    @Body() dto: CreateReviewDto,
+    @Body() dto: SubmitCustomerReviewDto,
   ) {
     return this.reviewsService.createReview(userId, bookingId, dto);
+  }
+
+  @Put('bookings/:bookingId/reviews')
+  @ApiOperation({ summary: 'Sửa đánh giá trong 7 ngày' })
+  @ApiParam({ name: 'bookingId', description: 'ID của lịch đặt', type: String })
+  @ApiResponse({ status: 200, description: 'Sửa đánh giá thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập hoặc quá 7 ngày.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đánh giá (REVIEW_NOT_FOUND).' })
+  async updateReview(
+    @GetCurrentUserId() userId: string,
+    @Param('bookingId') bookingId: string,
+    @Body() dto: SubmitCustomerReviewDto,
+  ) {
+    return this.reviewsService.updateReview(userId, bookingId, dto);
   }
 
   // --- SUPPORT TICKETS ---

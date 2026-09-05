@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PetsController } from './pets.controller';
 import { PetsService } from './application/use-cases/pets.service';
+import { MedicalRecordsService } from './application/use-cases/medical-records.service';
 import { PrismaPetsRepository } from './infrastructure/persistence/prisma-pets.repository';
 import { PETS_REPOSITORY } from './pets.tokens';
 import { PrismaModule } from '../../database/prisma.module';
@@ -11,11 +12,12 @@ import { StorageModule } from '../storage/storage.module';
   controllers: [PetsController],
   providers: [
     PetsService,
+    MedicalRecordsService,
     {
       provide: PETS_REPOSITORY,
       useClass: PrismaPetsRepository,
     },
   ],
-  exports: [PetsService],
+  exports: [PetsService, MedicalRecordsService],
 })
 export class PetsModule {}

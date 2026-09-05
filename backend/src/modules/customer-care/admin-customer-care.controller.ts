@@ -9,6 +9,7 @@ import { ReviewsService } from './application/use-cases/reviews.service';
 import { SupportService } from './application/use-cases/support.service';
 import { DisputesService } from './application/use-cases/disputes.service';
 import { IncidentsService } from './application/use-cases/incidents.service';
+import { AdminResolveDisputeUseCase } from '../admin-core/application/use-cases/admin-resolve-dispute.use-case';
 import { ReplyTicketDto } from './dto/support.dto';
 import { ResolveDisputeDto } from './dto/dispute.dto';
 import { ResolveIncidentDto } from './dto/incident.dto';
@@ -25,6 +26,7 @@ export class AdminCustomerCareController {
     private readonly supportService: SupportService,
     private readonly disputesService: DisputesService,
     private readonly incidentsService: IncidentsService,
+    private readonly adminResolveDisputeUseCase: AdminResolveDisputeUseCase,
   ) {}
 
   // --- REVIEWS ---
@@ -120,12 +122,25 @@ export class AdminCustomerCareController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy tranh chấp (DISPUTE_NOT_FOUND).' })
+  @ApiResponse({ status: 409, description: 'Tranh chấp đã được giải quyết trước hoặc trạng thái không hợp lệ (Conflict).' })
   async resolveDispute(
     @GetCurrentUserId() adminId: string,
     @Param('disputeId') disputeId: string,
     @Body() dto: ResolveDisputeDto,
   ) {
-    return this.disputesService.resolveDispute(adminId, disputeId, dto);
+    let refundPercentage = 0;
+    if (dto.decision === 'FULL_REFUND') {
+      refundPercentage = 100;
+    } else if (dto.decision === 'PARTIAL_REFUND') {
+      refundPercentage = dto.refundPercentage || 50; // default 50% if not provided
+    }
+
+    return this.adminResolveDisputeUseCase.execute({
+      adminId,
+      complaintId: disputeId,
+      customerRefundPercentage: refundPercentage,
+      resolutionNote: dto.resolutionNote,
+    });
   }
 
   // --- INCIDENTS ---

@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } f
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { WalletsService } from './application/use-cases/wallets.service';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
-import { PrismaService } from '../../database/prisma.service';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { CustomerPayoutRequestDto } from './dto/customer-payout-request.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -16,7 +15,6 @@ import { Role } from '@prisma/client';
 export class WalletsController {
   constructor(
     private readonly walletsService: WalletsService,
-    private readonly prisma: PrismaService,
   ) {}
 
   @Get('me')
@@ -25,18 +23,7 @@ export class WalletsController {
   @ApiResponse({ status: 200, description: 'Trả về số dư ví.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   async getMyWallet(@GetCurrentUserId() userId: string) {
-    const wallet = await this.prisma.wallets.findUnique({
-      where: { user_id: userId },
-    });
-    
-    if (!wallet) {
-      return { balance: 0, pendingBalance: 0 };
-    }
-    
-    return {
-      balance: Number(wallet.balance),
-      pendingBalance: Number(wallet.pending_balance),
-    };
+    return this.walletsService.getMyWalletData(userId);
   }
 
   @Get('me/transactions')
@@ -51,34 +38,7 @@ export class WalletsController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
   ) {
-    const wallet = await this.prisma.wallets.findUnique({
-      where: { user_id: userId },
-    });
-    
-    if (!wallet) {
-      return { data: [], total: 0 };
-    }
-
-    const skip = (page - 1) * limit;
-    
-    const [transactions, total] = await Promise.all([
-      this.prisma.wallet_transactions.findMany({
-        where: { wallet_id: wallet.id },
-        orderBy: { created_at: 'desc' },
-        skip,
-        take: Number(limit),
-      }),
-      this.prisma.wallet_transactions.count({
-        where: { wallet_id: wallet.id },
-      })
-    ]);
-
-    return {
-      data: transactions,
-      total,
-      page: Number(page),
-      limit: Number(limit),
-    };
+    return this.walletsService.getWalletTransactions(userId, page, limit);
   }
 
   @Post('me/payout-requests')
