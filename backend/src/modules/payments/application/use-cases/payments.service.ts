@@ -619,7 +619,7 @@ export class PaymentsService {
     const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
     
     const requestType = 'captureWallet';
-    const orderInfo = `Thanh toán qua MoMo cho Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
+    const orderInfo = `PetCare Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
     const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
     const returnUrl = `${backendUrl}/api/payments/momo-return`;
     const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
@@ -682,11 +682,15 @@ export class PaymentsService {
       
       if (data.resultCode !== 0) {
         this.logger.error(`Momo URL creation failed: ${data.message}`, data);
-        throw new BadRequestException('Không thể tạo giao dịch MoMo');
+        throw new BadRequestException(`Không thể tạo giao dịch MoMo: ${data.message}`);
       }
       
       return data.payUrl;
     } catch (error) {
+      // Re-throw HttpException (BadRequestException, etc.) trực tiếp, không wrap lại
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error('Error calling MoMo API', error);
       throw new BadRequestException('Lỗi kết nối đến cổng thanh toán MoMo');
     }
