@@ -1,4 +1,5 @@
 import axiosInstance from '@/lib/axios';
+import { Booking, CancelBookingPayload } from '../types';
 
 export const bookingService = {
   createBooking: async (bookingData: any): Promise<any> => {
@@ -9,6 +10,22 @@ export const bookingService = {
   getBooking: async (id: string): Promise<any> => {
     const response = await axiosInstance.get(`/bookings/${id}`);
     return response.data;
+  },
+
+  /**
+   * Lấy danh sách booking của customer hiện tại
+   */
+  getMyBookings: async (): Promise<Booking[]> => {
+    const response = await axiosInstance.get('/bookings/my-bookings');
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Customer hủy booking → backend tự động hoàn tiền vào ví
+   */
+  cancelBooking: async (bookingId: string, payload: CancelBookingPayload): Promise<Booking> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/cancel`, payload);
+    return response.data.data || response.data;
   },
 
   getPricingRules: async (serviceId: string): Promise<any[]> => {
@@ -35,4 +52,3 @@ export const bookingService = {
     return response.data;
   },
 };
-
