@@ -99,6 +99,13 @@ export class ProcessPaymentUseCase {
             amount: amount, 
           },
         });
+
+        await tx.bookings.update({
+          where: { id: bookingId },
+          data: {
+            status: 'PENDING_PROVIDER_ACCEPTANCE',
+          },
+        });
       }
 
       return {
