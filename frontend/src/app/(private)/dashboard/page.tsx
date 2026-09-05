@@ -5,8 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { Heart, Mail, Plus, Shield, Sparkles, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity } from 'lucide-react';
 import { PetList, usePetStore } from '@/features/pet';
-import { useMeStore } from '@/features/me';
-import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal } from '@/features/provider';
+import { useMeStore, CustomerBookingAction } from '@/features/me';
+import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal, BookingActionDetail, useProviderBookingStore } from '@/features/provider';
 import { providerService } from '@/features/provider/services/provider.service';
 import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager } from '@/features/admin';
 import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
@@ -24,6 +24,8 @@ export default function DashboardPage() {
   const { openModal: openProviderModal } = useProvider();
   const [providerTab, setProviderTab] = React.useState('active-cases');
   const adminTab = searchParams.get('tab') || 'verify-partners';
+  
+  const { activeBookingId } = useProviderBookingStore();
 
   const [profileData, setProfileData] = React.useState<any>(null);
   const [documentsList, setDocumentsList] = React.useState<any[]>([]);
@@ -120,49 +122,8 @@ export default function DashboardPage() {
           
           {/* Tab Contents */}
           {providerTab === 'active-cases' && (
-            <div className="bg-white p-6 md:p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-5">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wide">
-                    Danh sách ca chăm sóc thực tế
-                  </h3>
-                  <p className="text-slate-400 text-xs font-medium">
-                    Lịch làm việc và các ca chăm sóc thú cưng được phân bổ hôm nay.
-                  </p>
-                </div>
-              </div>
-              {/* Mock active case */}
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-slate-50 hover:bg-slate-100/80 border border-slate-100 rounded-3xl transition-all duration-200">
-                  <div className="flex gap-4">
-                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-sm">
-                      <img 
-                        src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100&h=100&fit=crop&q=80" 
-                        alt="Bé Lu" 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800 text-base truncate">Bé Lu</span>
-                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-md text-[10px] font-bold shrink-0">
-                          Poodle
-                        </span>
-                      </div>
-                      <p className="text-slate-500 text-xs md:text-sm font-medium">
-                        Chăm sóc tại nhà • 14:00 - 18:00
-                      </p>
-                      <p className="text-slate-400 text-[11px]">Chủ nuôi: Trần Quốc Bảo</p>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right space-y-1 self-start sm:self-center">
-                    <p className="font-extrabold text-slate-800 text-base">120.000 đ</p>
-                    <span className="inline-flex px-2.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold">
-                      Đang diễn ra
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-6">
+               <BookingActionDetail bookingId={activeBookingId} />
             </div>
           )}
 
@@ -462,8 +423,9 @@ export default function DashboardPage() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left column: My Pets List */}
-        <div className="lg:col-span-2">
+        {/* Left column: Actions and My Pets List */}
+        <div className="lg:col-span-2 space-y-8">
+          {activeBookingId && <CustomerBookingAction bookingId={activeBookingId} />}
           <PetList />
         </div>
 
