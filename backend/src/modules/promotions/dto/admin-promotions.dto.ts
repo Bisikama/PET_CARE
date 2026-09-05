@@ -65,3 +65,14 @@ export class UpdatePromotionLimitsDto {
   @Min(1)
   maxUsagePerUser: number;
 }
+
+export class UpdatePromotionDto {
+  @ApiPropertyOptional({ example: '2026-12-31T23:59:59Z', description: 'Ngày kết thúc mới' })
+  @IsOptional()
+  @IsDateString()
+  end_date?: string;
+
+  @ApiPropertyOptional({ example: false, description: 'Trạng thái hoạt động' })
+  @IsOptional()
+  is_active?: boolean;
+}
