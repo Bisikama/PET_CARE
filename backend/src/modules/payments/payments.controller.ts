@@ -154,9 +154,16 @@ export class PaymentsController {
   @ApiResponse({ status: 302, description: 'Redirect về Frontend với trạng thái thanh toán.' })
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5000');
-    const status = query.vnp_ResponseCode === '00' ? 'success' : 'failed';
     const orderId = query.vnp_TxnRef || '';
     
+    // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
+    try {
+      await this.paymentsService.processPaymentCallback({ ...query });
+    } catch (err: any) {
+      // Ghi log lỗi xử lý nhưng vẫn cho phép redirect về frontend với status tương ứng
+    }
+
+    const status = query.vnp_ResponseCode === '00' ? 'success' : 'failed';
     return res.redirect(`${frontendUrl}/payment/result?status=${status}&orderId=${orderId}&method=VNPAY`);
   }
 
@@ -168,10 +175,17 @@ export class PaymentsController {
   @ApiResponse({ status: 302, description: 'Redirect về Frontend với trạng thái thanh toán.' })
   async momoReturn(@Query() query: any, @Res() res: Response) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5000');
-    // MoMo's success resultCode is 0
-    const status = String(query.resultCode) === '0' ? 'success' : 'failed';
     const orderId = query.orderId || '';
     
+    // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
+    try {
+      await this.paymentsService.processMomoIPN({ ...query });
+    } catch (err: any) {
+      // Ghi log lỗi xử lý nhưng vẫn cho phép redirect về frontend với status tương ứng
+    }
+
+    // MoMo's success resultCode is 0
+    const status = String(query.resultCode) === '0' ? 'success' : 'failed';
     return res.redirect(`${frontendUrl}/payment/result?status=${status}&orderId=${orderId}&method=MOMO`);
   }
 }

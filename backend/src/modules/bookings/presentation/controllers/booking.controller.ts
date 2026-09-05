@@ -1,5 +1,29 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { GetCurrentUserId } from '../../../../common/decorators/get-current-user-id.decorator';
 import { AccessTokenGuard } from '../../../../common/guards/access-token.guard';
 import { CreateBookingRequestUseCase } from '../../application/use-cases/create-booking-request.use-case';
@@ -10,6 +34,7 @@ import { GetBookingChecklistUseCase } from '../../application/use-cases/get-book
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
 import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
+import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import { CreateBookingDto } from '../dto/create-booking.dto';
@@ -36,6 +61,7 @@ export class BookingsController {
     private readonly startBookingServiceUseCase: StartBookingServiceUseCase,
     private readonly updateBookingChecklistItemUseCase: UpdateBookingChecklistItemUseCase,
     private readonly completeBookingUseCase: CompleteBookingUseCase,
+    private readonly uploadBookingEvidenceUseCase: UploadBookingEvidenceUseCase,
     private readonly customerConfirmBookingUseCase: CustomerConfirmBookingUseCase,
     private readonly cancelBookingUseCase: CustomerCancelBookingUseCase,
     private readonly createReviewUseCase: CreateReviewUseCase,
@@ -160,6 +186,47 @@ export class BookingsController {
     @Body() dto: UpdateSingleChecklistItemDto,
   ) {
     return this.updateBookingChecklistItemUseCase.execute(userId, bookingId, itemId, dto);
+  }
+
+  @Post(':id/evidence-upload')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Tải lên ảnh minh chứng (evidence) cho đơn đặt lịch trước khi hoàn tất' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File ảnh chụp nghiệm thu/minh chứng (jpg, jpeg, png, webp)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Tải ảnh lên thành công, trả về đường link mediaUrl.' })
+  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá dung lượng (Max 10MB).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền thao tác trên đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadEvidence(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.uploadBookingEvidenceUseCase.execute(userId, bookingId, file);
   }
 
   @Post(':id/complete')
