@@ -49,6 +49,7 @@ export class WalletsController {
       type: 'object',
       properties: {
         amount: { type: 'number', description: 'Số tiền muốn rút (VNĐ)' },
+        bank_account_id: { type: 'string', description: 'ID thẻ ngân hàng' },
       },
     },
   })
@@ -59,8 +60,9 @@ export class WalletsController {
   async requestPayout(
     @GetCurrentUserId() userId: string,
     @Body('amount') amount: number,
+    @Body('bank_account_id') bankAccountId: string,
   ) {
-    return this.walletsService.createPayoutRequest(userId, amount);
+    return this.walletsService.createPayoutRequest(userId, amount, bankAccountId);
   }
 
   @Post('me/customer-payout-requests')

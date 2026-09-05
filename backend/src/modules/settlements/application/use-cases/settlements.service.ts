@@ -40,7 +40,16 @@ export class SettlementsService {
       }
 
       // 2. Lấy thông tin ví
-      const userIdToQuery = payoutRequest.provider_id || payoutRequest.customer_id;
+      let userIdToQuery = payoutRequest.customer_id;
+      
+      if (payoutRequest.provider_id) {
+        const providerProfile = await tx.provider_profiles.findUnique({
+          where: { id: payoutRequest.provider_id }
+        });
+        if (!providerProfile) throw new BadRequestException('Không tìm thấy thông tin Provider');
+        userIdToQuery = providerProfile.user_id;
+      }
+
       if (!userIdToQuery) throw new BadRequestException('Không xác định được chủ sở hữu yêu cầu rút tiền');
 
       const wallet = await tx.wallets.findUnique({
@@ -48,7 +57,7 @@ export class SettlementsService {
       });
 
       if (!wallet) {
-        throw new BadRequestException('Không tìm thấy ví của Provider');
+        throw new BadRequestException('Không tìm thấy ví');
       }
 
       // 3. Đổi trạng thái Payout Request
@@ -100,7 +109,16 @@ export class SettlementsService {
       }
 
       // 2. Lấy thông tin ví
-      const userIdToQuery = payoutRequest.provider_id || payoutRequest.customer_id;
+      let userIdToQuery = payoutRequest.customer_id;
+      
+      if (payoutRequest.provider_id) {
+        const providerProfile = await tx.provider_profiles.findUnique({
+          where: { id: payoutRequest.provider_id }
+        });
+        if (!providerProfile) throw new BadRequestException('Không tìm thấy thông tin Provider');
+        userIdToQuery = providerProfile.user_id;
+      }
+
       if (!userIdToQuery) throw new BadRequestException('Không xác định được chủ sở hữu yêu cầu rút tiền');
 
       const wallet = await tx.wallets.findUnique({
@@ -108,7 +126,7 @@ export class SettlementsService {
       });
 
       if (!wallet) {
-        throw new BadRequestException('Không tìm thấy ví của Provider');
+        throw new BadRequestException('Không tìm thấy ví');
       }
 
       // 3. Trả lại tiền (CREDIT) do lúc yêu cầu đã bị trừ
@@ -177,8 +195,16 @@ export class SettlementsService {
     }
 
     // 3. Lấy ví của Provider
+    const providerProfile = await tx.provider_profiles.findUnique({
+      where: { id: booking.provider_id },
+    });
+
+    if (!providerProfile) {
+      throw new BadRequestException('Không tìm thấy thông tin Provider');
+    }
+
     const providerWallet = await tx.wallets.findUnique({
-      where: { user_id: booking.provider_id },
+      where: { user_id: providerProfile.user_id },
     });
 
     if (!providerWallet) {
@@ -297,26 +323,29 @@ export class SettlementsService {
 
     // 1. Revert Provider Escrow -> Balance -> Debit
     if (booking.provider_id) {
-      const providerWallet = await tx.wallets.findUnique({ where: { user_id: booking.provider_id } });
-      if (providerWallet) {
-        // Giải phóng ký quỹ ảo
-        await this.walletsService.processTransaction(
-          providerWallet.id,
-          Number(booking.total_price),
-          'ESCROW_RELEASE',
-          bookingId,
-          `Hoàn tiền (Hủy ký quỹ) Booking ${bookingId}`,
-          tx,
-        );
-        // Trừ lại số dư
-        await this.walletsService.processTransaction(
-          providerWallet.id,
-          Number(booking.total_price),
-          'DEBIT',
-          bookingId,
-          `Hoàn tiền (Trừ số dư) Booking ${bookingId}`,
-          tx,
-        );
+      const providerProfile = await tx.provider_profiles.findUnique({ where: { id: booking.provider_id } });
+      if (providerProfile) {
+        const providerWallet = await tx.wallets.findUnique({ where: { user_id: providerProfile.user_id } });
+        if (providerWallet) {
+          // Giải phóng ký quỹ ảo
+          await this.walletsService.processTransaction(
+            providerWallet.id,
+            Number(booking.total_price),
+            'ESCROW_RELEASE',
+            bookingId,
+            `Hoàn tiền (Hủy ký quỹ) Booking ${bookingId}`,
+            tx,
+          );
+          // Trừ lại số dư
+          await this.walletsService.processTransaction(
+            providerWallet.id,
+            Number(booking.total_price),
+            'DEBIT',
+            bookingId,
+            `Hoàn tiền (Trừ số dư) Booking ${bookingId}`,
+            tx,
+          );
+        }
       }
     }
 
@@ -381,27 +410,30 @@ export class SettlementsService {
 
     // 1. Release Toàn bộ Escrow cho Provider trước (chuyển từ pending -> balance)
     if (booking.provider_id) {
-      const providerWallet = await tx.wallets.findUnique({ where: { user_id: booking.provider_id } });
-      if (providerWallet) {
-        await this.walletsService.processTransaction(
-          providerWallet.id,
-          totalAmount,
-          'ESCROW_RELEASE',
-          bookingId,
-          `Giải phóng toàn bộ ký quỹ Booking ${bookingId} để phân xử tranh chấp`,
-          tx,
-        );
-
-        // 2. Trừ phần tiền phạt (Customer Refund) khỏi ví Provider (DEBIT)
-        if (customerRefundAmount > 0) {
+      const providerProfile = await tx.provider_profiles.findUnique({ where: { id: booking.provider_id } });
+      if (providerProfile) {
+        const providerWallet = await tx.wallets.findUnique({ where: { user_id: providerProfile.user_id } });
+        if (providerWallet) {
           await this.walletsService.processTransaction(
             providerWallet.id,
-            customerRefundAmount,
-            'DEBIT',
+            totalAmount,
+            'ESCROW_RELEASE',
             bookingId,
-            `Khấu trừ ${customerRefundPercentage}% tiền hoàn cho khách. Lý do: ${reason}`,
+            `Giải phóng toàn bộ ký quỹ Booking ${bookingId} để phân xử tranh chấp`,
             tx,
           );
+
+          // 2. Trừ phần tiền phạt (Customer Refund) khỏi ví Provider (DEBIT)
+          if (customerRefundAmount > 0) {
+            await this.walletsService.processTransaction(
+              providerWallet.id,
+              customerRefundAmount,
+              'DEBIT',
+              bookingId,
+              `Khấu trừ ${customerRefundPercentage}% tiền hoàn cho khách. Lý do: ${reason}`,
+              tx,
+            );
+          }
         }
       }
     }
