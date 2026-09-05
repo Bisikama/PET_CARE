@@ -153,7 +153,7 @@ export class PaymentsController {
   @ApiQuery({ name: 'vnp_TxnRef', required: false, description: 'Mã giao dịch (chính là bookingId)' })
   @ApiResponse({ status: 302, description: 'Redirect về Frontend với trạng thái thanh toán.' })
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5000');
     const status = query.vnp_ResponseCode === '00' ? 'success' : 'failed';
     const orderId = query.vnp_TxnRef || '';
     
@@ -167,7 +167,7 @@ export class PaymentsController {
   @ApiQuery({ name: 'orderId', required: false, description: 'Mã giao dịch (chính là bookingId)' })
   @ApiResponse({ status: 302, description: 'Redirect về Frontend với trạng thái thanh toán.' })
   async momoReturn(@Query() query: any, @Res() res: Response) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5000');
     // MoMo's success resultCode is 0
     const status = String(query.resultCode) === '0' ? 'success' : 'failed';
     const orderId = query.orderId || '';

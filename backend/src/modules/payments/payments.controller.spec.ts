@@ -15,7 +15,7 @@ describe('PaymentsController', () => {
 
     mockConfigService = {
       get: jest.fn().mockImplementation((key, defaultValue) => {
-        if (key === 'FRONTEND_URL') return 'http://localhost:5173';
+        if (key === 'FRONTEND_URL') return 'http://localhost:5000';
         return defaultValue;
       }),
     };
@@ -42,7 +42,7 @@ describe('PaymentsController', () => {
 
       expect(mockConfigService.get).toHaveBeenCalledWith('FRONTEND_URL', expect.any(String));
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5173/payment/result?status=success&orderId=BOOKING_123&method=VNPAY'
+        'http://localhost:5000/payment/result?status=success&orderId=BOOKING_123&method=VNPAY'
       );
     });
 
@@ -55,7 +55,7 @@ describe('PaymentsController', () => {
       await controller.vnpayReturn(query, mockRes);
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5173/payment/result?status=failed&orderId=BOOKING_456&method=VNPAY'
+        'http://localhost:5000/payment/result?status=failed&orderId=BOOKING_456&method=VNPAY'
       );
     });
   });
@@ -70,7 +70,7 @@ describe('PaymentsController', () => {
       await controller.momoReturn(query, mockRes);
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5173/payment/result?status=success&orderId=BOOKING_789&method=MOMO'
+        'http://localhost:5000/payment/result?status=success&orderId=BOOKING_789&method=MOMO'
       );
     });
 
@@ -83,7 +83,7 @@ describe('PaymentsController', () => {
       await controller.momoReturn(query, mockRes);
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5173/payment/result?status=failed&orderId=BOOKING_999&method=MOMO'
+        'http://localhost:5000/payment/result?status=failed&orderId=BOOKING_999&method=MOMO'
       );
     });
   });
