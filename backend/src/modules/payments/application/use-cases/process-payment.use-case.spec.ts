@@ -13,6 +13,7 @@ describe('ProcessPaymentUseCase', () => {
     promotions: { update: jest.fn() },
     promotion_usages: { create: jest.fn() },
     payments: { findFirst: jest.fn(), update: jest.fn() },
+    bookings: { update: jest.fn() },
   };
 
   const mockCacheManager = {

@@ -9,6 +9,7 @@ import { GetBookingChecklistUseCase } from '../../application/use-cases/get-book
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
 import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
+import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
@@ -33,6 +34,7 @@ describe('BookingsController', () => {
         { provide: StartBookingServiceUseCase, useValue: mockUseCase },
         { provide: UpdateBookingChecklistItemUseCase, useValue: mockUseCase },
         { provide: CompleteBookingUseCase, useValue: mockUseCase },
+        { provide: UploadBookingEvidenceUseCase, useValue: mockUseCase },
         { provide: RequestBookingExtensionUseCase, useValue: mockUseCase },
         { provide: CustomerConfirmBookingUseCase, useValue: mockUseCase },
         { provide: CustomerCancelBookingUseCase, useValue: mockUseCase },
