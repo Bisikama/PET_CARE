@@ -30,7 +30,6 @@ export function usePayment() {
     setError(null);
     try {
       await paymentService.checkoutWallet(data);
-      // Since it's direct payment, we return true on success
       return true;
     } catch (err: any) {
       console.error('Wallet checkout error:', err);
@@ -41,10 +40,34 @@ export function usePayment() {
     }
   };
 
+  const verifyVNPayPayment = async (queryString: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Gọi thử IPN trực tiếp từ Frontend (hack cho môi trường dev local vì VNPAY không tự gọi về localhost được)
+      try {
+        await paymentService.triggerVnpayIpn(queryString);
+      } catch (e) {
+        // Bỏ qua lỗi IPN nếu có
+      }
+      
+      const response = await paymentService.verifyVNPay(queryString);
+      return response;
+    } catch (err: any) {
+      console.error('Verify VNPay error:', err);
+      setError(err?.response?.data?.message || err.message || 'Xác thực thanh toán thất bại');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     error,
     createCheckoutUrl,
-    checkoutWithWallet
+    checkoutWithWallet,
+    verifyVNPayPayment
   };
 }
+

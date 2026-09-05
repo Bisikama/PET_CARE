@@ -19,4 +19,14 @@ export const paymentService = {
     const response = await axiosInstance.post('/payments/checkout-wallet', data);
     return response.data;
   },
+
+  verifyVNPay: async (queryString: string): Promise<any> => {
+    const response = await axiosInstance.get(`/payments/vnpay-return${queryString}`);
+    return response.data;
+  },
+
+  triggerVnpayIpn: async (queryString: string): Promise<any> => {
+    const response = await axiosInstance.get(`/payments/vnpay-ipn${queryString}`);
+    return response.data;
+  },
 };

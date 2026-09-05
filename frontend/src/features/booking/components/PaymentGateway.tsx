@@ -94,22 +94,6 @@ export function PaymentGateway() {
               <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
             )}
           </button>
-
-          <button 
-            onClick={handleVNPayCheckout}
-            disabled={loading || !createdBookingId}
-            className="w-full flex justify-between items-center bg-[#00a86b] text-white p-5 rounded-2xl hover:bg-[#00915c] disabled:opacity-70 transition-all active:scale-[0.98] group shadow-lg shadow-teal-500/20"
-          >
-            <div className="flex items-center gap-3">
-              <QrCode className="w-5 h-5" />
-              <span className="font-bold">Quét mã QR MoMo / VNPAY-QR</span>
-            </div>
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            ) : (
-              <ChevronRight className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
-            )}
-          </button>
         </div>
       </div>
       
