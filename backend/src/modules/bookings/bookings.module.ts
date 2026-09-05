@@ -20,11 +20,16 @@ import { PrismaUnitOfWork } from './infrastructure/persistence/prisma-unit-of-wo
 import { PaymentsModule } from '../payments/payments.module';
 import { SettlementsModule } from '../settlements/settlements.module';
 import { GrowthModule } from '../growth/growth.module';
+import { StorageModule } from '../storage/storage.module';
 import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
 import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id.use-case';
+import { CreateReviewUseCase } from './application/use-cases/create-review.use-case';
+import { OpenDisputeUseCase } from './application/use-cases/open-dispute.use-case';
+import { RequestBookingExtensionUseCase } from './application/use-cases/request-booking-extension.use-case';
+import { UploadBookingEvidenceUseCase } from './application/use-cases/upload-booking-evidence.use-case';
 
 @Module({
-  imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule],
+  imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule, StorageModule],
   controllers: [BookingsController, BookingMatchingController],
   providers: [
     CreateBookingRequestUseCase,
@@ -38,6 +43,10 @@ import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id
     CompleteBookingUseCase,
     CustomerConfirmBookingUseCase,
     CustomerCancelBookingUseCase,
+    CreateReviewUseCase,
+    OpenDisputeUseCase,
+    RequestBookingExtensionUseCase,
+    UploadBookingEvidenceUseCase,
     BookingStateMachineService,
     AutoReleaseEscrowCron,
     {
@@ -55,6 +64,7 @@ import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,
     CompleteBookingUseCase,
+    UploadBookingEvidenceUseCase,
   ],
 })
 export class BookingsModule {}

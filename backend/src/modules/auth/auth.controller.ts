@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import * as express from 'express';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
@@ -39,7 +39,7 @@ type RequestWithCookies = Omit<express.Request, 'cookies'> & {
 };
 
 @ApiTags('Auth')
-@UseGuards(ThrottlerGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

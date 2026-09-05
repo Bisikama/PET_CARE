@@ -30,7 +30,14 @@ export class UsersService {
   ) { }
 
   async create(data: Prisma.UserCreateInput) {
-    return this.prisma.user.create({ data });
+    return this.prisma.user.create({
+      data: {
+        ...data,
+        wallets: {
+          create: {},
+        },
+      },
+    });
   }
 
   async findByEmail(email: string) {
@@ -79,6 +86,8 @@ export class UsersService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      let finalUser;
+
       // Kiểm tra user theo Supabase ID
       const userBySupabaseId = await tx.user.findUnique({
         where: { supabaseId },
@@ -92,54 +101,63 @@ export class UsersService {
 
         // Nếu user đang pending hoặc chưa có emailVerifiedAt, cập nhật thành ACTIVE
         if (userBySupabaseId.status === 'PENDING_VERIFICATION' || !userBySupabaseId.emailVerifiedAt) {
-          return tx.user.update({
+          finalUser = await tx.user.update({
             where: { id: userBySupabaseId.id },
             data: {
               status: 'ACTIVE',
               emailVerifiedAt: new Date(),
             },
           });
+        } else {
+          // Không đổi role, isActive
+          finalUser = userBySupabaseId;
         }
-
-        // Không đổi role, isActive
-        return userBySupabaseId;
-      }
-
-      // 2. Kiểm tra user theo email
-      const userByEmail = await tx.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-
-      if (userByEmail) {
-        // CASE 2: Có user theo email
-        if (userByEmail.supabaseId && userByEmail.supabaseId !== supabaseId) {
-          throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
-        }
-
-        // Tự động liên kết supabaseId và kích hoạt tài khoản
-        return tx.user.update({
-          where: { id: userByEmail.id },
-          data: {
-            supabaseId,
-            status: 'ACTIVE',
-            emailVerifiedAt: userByEmail.emailVerifiedAt ?? new Date(),
-            fullName: userByEmail.fullName || safeFullName,
-          },
+      } else {
+        // 2. Kiểm tra user theo email
+        const userByEmail = await tx.user.findUnique({
+          where: { email: normalizedEmail },
         });
+
+        if (userByEmail) {
+          // CASE 2: Có user theo email
+          if (userByEmail.supabaseId && userByEmail.supabaseId !== supabaseId) {
+            throw new ConflictException(AUTH_ERRORS.ACCOUNT_IDENTITY_CONFLICT);
+          }
+
+          // Tự động liên kết supabaseId và kích hoạt tài khoản
+          finalUser = await tx.user.update({
+            where: { id: userByEmail.id },
+            data: {
+              supabaseId,
+              status: 'ACTIVE',
+              emailVerifiedAt: userByEmail.emailVerifiedAt ?? new Date(),
+              fullName: userByEmail.fullName || safeFullName,
+            },
+          });
+        } else {
+          // CASE 3: Không có cả supabaseId lẫn email -> Tạo local User mới
+          finalUser = await tx.user.create({
+            data: {
+              supabaseId,
+              email: normalizedEmail,
+              fullName: safeFullName,
+              role: 'CUSTOMER',
+              status: 'ACTIVE',
+              isActive: true,
+              emailVerifiedAt: new Date(),
+            },
+          });
+        }
       }
 
-      // CASE 3: Không có cả supabaseId lẫn email -> Tạo local User mới
-      return tx.user.create({
-        data: {
-          supabaseId,
-          email: normalizedEmail,
-          fullName: safeFullName,
-          role: 'CUSTOMER',
-          status: 'ACTIVE',
-          isActive: true,
-          emailVerifiedAt: new Date(),
-        },
+      // ĐẢM BẢO TÍNH ĐỒNG BỘ: Chắc chắn user phải có ví, nếu chưa có (user cũ) thì tạo ví mới 0đ
+      await tx.wallets.upsert({
+        where: { user_id: finalUser.id },
+        update: {},
+        create: { user_id: finalUser.id },
       });
+
+      return finalUser;
     });
   }
 

@@ -53,8 +53,7 @@ describe('PaymentsService', () => {
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: WalletsService, useValue: mockWallets },
-        { provide: NotificationsService, useValue: mockNotifications },
+        { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: ConfigService, useValue: mockConfig },
         { provide: WalletsService, useValue: mockWalletsService },
         { provide: SubscriptionsService, useValue: mockSubscriptionsService },
@@ -168,7 +167,7 @@ describe('PaymentsService', () => {
       const crypto = require('crypto');
       const qs = require('qs');
       const payload = { ...mockVnpPayload, vnp_OrderInfo: 'SUB_user1_PREMIUM' };
-      delete payload.vnp_SecureHash;
+      delete (payload as any).vnp_SecureHash;
       const sorted = (service as any).sortObject(payload);
       const signData = qs.stringify(sorted, { encode: false });
       const validHash = crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');
@@ -188,7 +187,7 @@ describe('PaymentsService', () => {
       const crypto = require('crypto');
       const qs = require('qs');
       const payload = { ...mockVnpPayload };
-      delete payload.vnp_SecureHash;
+      delete (payload as any).vnp_SecureHash;
       const sorted = (service as any).sortObject(payload);
       const signData = qs.stringify(sorted, { encode: false });
       const validHash = crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');

@@ -32,4 +32,8 @@ export class ResolveDisputeDto {
   @IsString()
   @IsNotEmpty()
   resolutionNote: string;
+
+  @ApiPropertyOptional({ description: 'Phần trăm hoàn tiền (nếu PARTIAL_REFUND)', example: 50 })
+  @IsOptional()
+  refundPercentage?: number;
 }

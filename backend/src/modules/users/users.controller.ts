@@ -26,7 +26,9 @@ import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.de
 import { UsersService } from './application/use-cases/users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
+import { DeactivateAccountUseCase } from './application/use-cases/deactivate-account.use-case';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
+import { DeactivateAccountDto } from './dto/deactivate-account.dto';
 
 @ApiTags('Users Profile')
 @Controller('users')
@@ -36,6 +38,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
+    private readonly deactivateAccountUseCase: DeactivateAccountUseCase,
   ) {}
 
   @Get('me')
@@ -117,5 +120,17 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng.' })
   async deleteAccount(@GetCurrentUserId() userId: string) {
     return this.deleteAccountUseCase.execute(userId);
+  }
+
+  @Patch('me/deactivate')
+  @ApiOperation({ summary: 'Yêu cầu hủy tài khoản (Chờ duyệt)' })
+  @ApiResponse({ status: 201, description: 'Yêu cầu hủy tài khoản đã được gửi.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 409, description: 'Đã có yêu cầu đang chờ duyệt (Conflict).' })
+  async deactivateAccount(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: DeactivateAccountDto,
+  ) {
+    return this.deactivateAccountUseCase.execute(userId, dto);
   }
 }

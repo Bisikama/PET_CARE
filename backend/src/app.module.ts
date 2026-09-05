@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
 import { PrismaModule } from './database/prisma.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -26,6 +27,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { SettlementsModule } from './modules/settlements/settlements.module';
 import { ProviderSchedulesModule } from './modules/provider-schedules/provider-schedules.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -37,9 +39,13 @@ import { ProviderSchedulesModule } from './modules/provider-schedules/provider-s
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: process.env.NODE_ENV === 'test' ? 1000 : 10,
+        limit: process.env.NODE_ENV === 'test' ? 1000 : 100, // relaxed limit for global API usage
       },
     ]),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60000, // 60 seconds default TTL
+    }),
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -58,9 +64,14 @@ import { ProviderSchedulesModule } from './modules/provider-schedules/provider-s
     PaymentsModule,
     SettlementsModule,
     ProviderSchedulesModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: AccessTokenGuard,

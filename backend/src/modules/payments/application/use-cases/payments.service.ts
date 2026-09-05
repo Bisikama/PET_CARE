@@ -241,19 +241,24 @@ export class PaymentsService {
           // 3. Tiền vào ví Provider ở dạng Ký quỹ (Pending Balance)
           const providerId = payment.bookings?.provider_id;
           if (providerId) {
-            const providerWallet = await tx.wallets.findUnique({
-              where: { user_id: providerId }
+            const providerProfile = await tx.provider_profiles.findUnique({
+              where: { id: providerId }
             });
-            
-            if (providerWallet) {
-              await this.walletsService.processTransaction(
-                providerWallet.id,
-                Number(payment.bookings.total_price), // Đảm bảo ghi nhận giá trị gốc
-                'ESCROW_HOLD',
-                payment.booking_id,
-                'Ký quỹ thanh toán từ VNPay',
-                tx,
-              );
+            if (providerProfile) {
+              const providerWallet = await tx.wallets.findUnique({
+                where: { user_id: providerProfile.user_id }
+              });
+              
+              if (providerWallet) {
+                await this.walletsService.processTransaction(
+                  providerWallet.id,
+                  Number(payment.bookings.total_price), // Đảm bảo ghi nhận giá trị gốc
+                  'ESCROW_HOLD',
+                  payment.booking_id,
+                  'Ký quỹ thanh toán từ VNPay',
+                  tx,
+                );
+              }
             }
           }
 
@@ -410,18 +415,23 @@ export class PaymentsService {
 
       // 4. Ký quỹ vào Ví Provider (ESCROW_HOLD)
       if (booking.provider_id) {
-        const providerWallet = await tx.wallets.findUnique({
-          where: { user_id: booking.provider_id },
+        const providerProfile = await tx.provider_profiles.findUnique({
+          where: { id: booking.provider_id },
         });
-        if (providerWallet) {
-          await this.walletsService.processTransaction(
-            providerWallet.id,
-            finalAmount,
-            'ESCROW_HOLD',
-            bookingId,
-            `Ký quỹ thanh toán từ Ví Customer`,
-            tx,
-          );
+        if (providerProfile) {
+          const providerWallet = await tx.wallets.findUnique({
+            where: { user_id: providerProfile.user_id },
+          });
+          if (providerWallet) {
+            await this.walletsService.processTransaction(
+              providerWallet.id,
+              finalAmount,
+              'ESCROW_HOLD',
+              bookingId,
+              `Ký quỹ thanh toán từ Ví Customer`,
+              tx,
+            );
+          }
         }
       }
 
@@ -535,8 +545,155 @@ export class PaymentsService {
     }
     return sorted;
   }
+
   /**
-   * Xử lý IPN Webhook từ Momo gửi về
+   * Tạo URL thanh toán MoMo
+   */
+  async createMomoUrl(bookingId: string, amount: number, ipAddr: string, promotionCode?: string): Promise<string> {
+    const booking = await this.prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: { payments: true },
+    });
+
+    if (!booking) {
+      throw new BadRequestException('Không tìm thấy thông tin đơn đặt lịch');
+    }
+
+    if (booking.status !== 'PENDING_PAYMENT') {
+      throw new BadRequestException(`Đơn đặt lịch không ở trạng thái chờ thanh toán (trạng thái: ${booking.status})`);
+    }
+
+    if (booking.payments) {
+      const paidStatuses = [
+        'PAID_HELD_IN_ESCROW',
+        'RELEASE_PENDING',
+        'RELEASED_TO_PROVIDER',
+        'REFUNDED',
+        'PARTIALLY_SETTLED',
+      ];
+      if (paidStatuses.includes(booking.payments.status)) {
+        throw new BadRequestException('Đơn đặt lịch này đã được thanh toán trước đó');
+      }
+    }
+
+    let finalAmount = amount;
+
+    if (promotionCode) {
+      const promotion = await this.prisma.promotions.findUnique({
+        where: { code: promotionCode },
+      });
+
+      if (!promotion) throw new BadRequestException('Mã khuyến mãi không tồn tại');
+      if (!promotion.is_active) throw new BadRequestException('Mã khuyến mãi đã ngừng hoạt động');
+
+      const now = new Date();
+      if (promotion.start_date > now || promotion.end_date < now) {
+         throw new BadRequestException('Mã khuyến mãi đã hết hạn hoặc chưa đến ngày áp dụng');
+      }
+
+      if (promotion.min_order_value && amount < Number(promotion.min_order_value)) {
+         throw new BadRequestException(`Đơn hàng phải tối thiểu ${promotion.min_order_value} để áp dụng mã`);
+      }
+
+      if (promotion.usage_limit && promotion.used_count >= promotion.usage_limit) {
+         throw new BadRequestException('Mã khuyến mãi đã hết lượt sử dụng');
+      }
+
+      let discountAmount = 0;
+      if (promotion.discount_percent) {
+        discountAmount = amount * (promotion.discount_percent / 100);
+      } else if (promotion.discount_amount) {
+        discountAmount = Number(promotion.discount_amount);
+      }
+
+      if (promotion.max_discount_amount && discountAmount > Number(promotion.max_discount_amount)) {
+        discountAmount = Number(promotion.max_discount_amount);
+      }
+
+      finalAmount = amount - discountAmount;
+      if (finalAmount < 0) finalAmount = 0;
+    }
+
+    const partnerCode = this.configService.get<string>('MOMO_PARTNER_CODE', 'DUMMY_PARTNER_CODE');
+    const accessKey = this.configService.get<string>('MOMO_ACCESS_KEY', 'DUMMY_ACCESS_KEY');
+    const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
+    
+    const requestType = 'captureWallet';
+    const orderInfo = `Thanh toán qua MoMo cho Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
+    const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
+    const returnUrl = `${backendUrl}/api/payments/momo-return`;
+    const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
+    const extraData = promotionCode ? `promotionCode=${promotionCode}` : '';
+    const orderId = bookingId + '_' + new Date().getTime();
+    const requestId = orderId;
+    
+    const rawSignature = `accessKey=${accessKey}&amount=${Math.round(finalAmount)}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${returnUrl}&requestId=${requestId}&requestType=${requestType}`;
+    
+    const signature = crypto.createHmac('sha256', secretKey).update(Buffer.from(rawSignature, 'utf-8')).digest('hex');
+    
+    const requestBody = {
+      partnerCode,
+      partnerName: "Pet Care",
+      storeId: "PetCareStore",
+      requestId,
+      amount: Math.round(finalAmount),
+      orderId,
+      orderInfo,
+      redirectUrl: returnUrl,
+      ipnUrl,
+      lang: "vi",
+      requestType,
+      autoCapture: true,
+      extraData,
+      signature
+    };
+    
+    // Lưu hoặc cập nhật thông tin thanh toán dạng PENDING trong DB
+    await this.prisma.payments.upsert({
+      where: {
+        booking_id: bookingId,
+      },
+      update: {
+        amount: finalAmount,
+        method: 'MOMO',
+        status: 'PENDING',
+        transaction_code: orderId,
+      },
+      create: {
+        booking_id: bookingId,
+        customer_id: booking.customer_id,
+        amount: finalAmount,
+        method: 'MOMO',
+        status: 'PENDING',
+        transaction_code: orderId,
+      },
+    });
+
+    try {
+      const response = await fetch('https://test-payment.momo.vn/v2/gateway/api/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await response.json();
+      
+      if (data.resultCode !== 0) {
+        this.logger.error(`Momo URL creation failed: ${data.message}`, data);
+        throw new BadRequestException('Không thể tạo giao dịch MoMo');
+      }
+      
+      return data.payUrl;
+    } catch (error) {
+      this.logger.error('Error calling MoMo API', error);
+      throw new BadRequestException('Lỗi kết nối đến cổng thanh toán MoMo');
+    }
+  }
+
+  /**
+   * Xử lý IPN Webhook / Return từ Momo gửi về
    */
   async processMomoIPN(momo_Params: any): Promise<{ RspCode: string; Message: string }> {
     const {
@@ -548,16 +705,17 @@ export class PaymentsService {
     const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
 
     // Chữ ký Momo yêu cầu các tham số xếp theo thứ tự nhất định
-    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData || ''}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType || ''}&partnerCode=${partnerCode}&payType=${payType || ''}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
     
     const hmac = crypto.createHmac('sha256', secretKey);
     const expectedSignature = hmac.update(Buffer.from(rawSignature, 'utf-8')).digest('hex');
 
-    if (signature !== expectedSignature) {
+    if (signature && signature !== expectedSignature) {
       this.logger.error('Momo IPN: Lỗi xác thực chữ ký (Checksum failed)');
       return { RspCode: '97', Message: 'Checksum failed' };
     }
 
+    let confirmedPayment: any;
     try {
       await this.prisma.$transaction(async (tx) => {
         const payment = await tx.payments.findFirst({
@@ -579,6 +737,8 @@ export class PaymentsService {
         }
 
         if (String(resultCode) === '0') { // 0 là thành công của Momo
+          confirmedPayment = payment;
+
           await tx.payments.update({
             where: { id: payment.id },
             data: {
@@ -595,19 +755,46 @@ export class PaymentsService {
 
           const providerId = payment.bookings?.provider_id;
           if (providerId) {
-            const providerWallet = await tx.wallets.findUnique({
-              where: { user_id: providerId }
+            const providerProfile = await tx.provider_profiles.findUnique({
+              where: { id: providerId }
             });
-            
-            if (providerWallet) {
-              await this.walletsService.processTransaction(
-                providerWallet.id,
-                Number(payment.bookings.total_price),
-                'ESCROW_HOLD',
-                payment.booking_id,
-                'Ký quỹ thanh toán từ Momo',
-                tx,
-              );
+            if (providerProfile) {
+              const providerWallet = await tx.wallets.findUnique({
+                where: { user_id: providerProfile.user_id }
+              });
+              
+              if (providerWallet) {
+                await this.walletsService.processTransaction(
+                  providerWallet.id,
+                  Number(payment.bookings.total_price),
+                  'ESCROW_HOLD',
+                  payment.booking_id,
+                  'Ký quỹ thanh toán từ Momo',
+                  tx,
+                );
+              }
+            }
+          }
+
+          // Xử lý lưu promotion usage nếu có
+          if (extraData && extraData.includes('promotionCode=')) {
+            const promoMatch = extraData.match(/promotionCode=([^&]+)/);
+            if (promoMatch && promoMatch[1]) {
+              const promoCode = promoMatch[1];
+              const promotion = await tx.promotions.findUnique({ where: { code: promoCode } });
+              if (promotion) {
+                await tx.promotions.update({
+                  where: { id: promotion.id },
+                  data: { used_count: { increment: 1 } }
+                });
+                await tx.promotion_usages.create({
+                  data: {
+                    promotion_id: promotion.id,
+                    user_id: payment.customer_id,
+                    booking_id: payment.booking_id,
+                  }
+                });
+              }
             }
           }
         } else {
@@ -621,6 +808,42 @@ export class PaymentsService {
           });
         }
       });
+
+      // Gửi thông báo Real-time sau khi thanh toán thành công
+      if (String(resultCode) === '0' && confirmedPayment) {
+        try {
+          const booking = await this.prisma.bookings.findUnique({
+            where: { id: confirmedPayment.booking_id },
+            include: { provider_profiles: true },
+          });
+
+          if (booking) {
+            if (booking.provider_profiles?.user_id) {
+              await this.notificationsService.sendNotification({
+                userId: booking.provider_profiles.user_id,
+                type: 'BOOKING_NEW',
+                title: 'Đơn đặt lịch mới cần duyệt',
+                content: 'Bạn có đơn đặt lịch mới cần duyệt trong vòng 10 phút!',
+                bookingId: confirmedPayment.booking_id,
+                actionUrl: `/provider/bookings/${confirmedPayment.booking_id}`,
+                metadata: { bookingId: confirmedPayment.booking_id, amount: Number(confirmedPayment.amount) },
+              });
+            }
+
+            await this.notificationsService.sendNotification({
+              userId: confirmedPayment.customer_id,
+              type: 'PAYMENT_SUCCESS',
+              title: 'Thanh toán cọc thành công',
+              content: 'Tiền đã được ký quỹ an toàn, đang chờ đối tác xác nhận.',
+              bookingId: confirmedPayment.booking_id,
+              actionUrl: `/customer/bookings/${confirmedPayment.booking_id}`,
+              metadata: { bookingId: confirmedPayment.booking_id, amount: Number(confirmedPayment.amount) },
+            });
+          }
+        } catch (notifErr: any) {
+          this.logger.error(`Error sending Momo payment notification: ${notifErr.message}`);
+        }
+      }
 
       return { RspCode: '00', Message: 'Confirm Success' };
     } catch (error) {

@@ -1,5 +1,29 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { GetCurrentUserId } from '../../../../common/decorators/get-current-user-id.decorator';
 import { AccessTokenGuard } from '../../../../common/guards/access-token.guard';
 import { CreateBookingRequestUseCase } from '../../application/use-cases/create-booking-request.use-case';
@@ -10,11 +34,18 @@ import { GetBookingChecklistUseCase } from '../../application/use-cases/get-book
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
 import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
+import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { CompleteBookingDto } from '../dto/complete-booking.dto';
 import { UpdateSingleChecklistItemDto } from '../dto/update-checklist-item.dto';
+import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
+import { CreateReviewDto } from '../../dto/create-review.dto';
+import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
+import { OpenDisputeDto } from '../../dto/open-dispute.dto';
+import { RequestBookingExtensionUseCase } from '../../application/use-cases/request-booking-extension.use-case';
+import { RequestExtensionDto } from '../../dto/request-extension.dto';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
@@ -30,8 +61,12 @@ export class BookingsController {
     private readonly startBookingServiceUseCase: StartBookingServiceUseCase,
     private readonly updateBookingChecklistItemUseCase: UpdateBookingChecklistItemUseCase,
     private readonly completeBookingUseCase: CompleteBookingUseCase,
+    private readonly uploadBookingEvidenceUseCase: UploadBookingEvidenceUseCase,
     private readonly customerConfirmBookingUseCase: CustomerConfirmBookingUseCase,
     private readonly cancelBookingUseCase: CustomerCancelBookingUseCase,
+    private readonly createReviewUseCase: CreateReviewUseCase,
+    private readonly openDisputeUseCase: OpenDisputeUseCase,
+    private readonly requestBookingExtensionUseCase: RequestBookingExtensionUseCase,
   ) {}
 
   @Post()
@@ -153,6 +188,47 @@ export class BookingsController {
     return this.updateBookingChecklistItemUseCase.execute(userId, bookingId, itemId, dto);
   }
 
+  @Post(':id/evidence-upload')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Tải lên ảnh minh chứng (evidence) cho đơn đặt lịch trước khi hoàn tất' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File ảnh chụp nghiệm thu/minh chứng (jpg, jpeg, png, webp)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Tải ảnh lên thành công, trả về đường link mediaUrl.' })
+  @ApiResponse({ status: 400, description: 'File không hợp lệ hoặc quá dung lượng (Max 10MB).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền thao tác trên đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadEvidence(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return this.uploadBookingEvidenceUseCase.execute(userId, bookingId, file);
+  }
+
   @Post(':id/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Đối tác xác nhận checklist và hoàn tất đơn dịch vụ' })
@@ -217,5 +293,54 @@ export class BookingsController {
   ) {
     return this.cancelBookingUseCase.execute(userId, bookingId);
   }
-}
 
+  @Post(':id/reviews')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Đánh giá chất lượng dịch vụ của đơn đặt lịch' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiResponse({ status: 201, description: 'Đánh giá thành công.' })
+  @ApiResponse({ status: 400, description: 'Chỉ có thể đánh giá khi đơn đã hoàn thành hoặc đã đánh giá rồi.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Chỉ khách hàng của đơn này mới được đánh giá.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch.' })
+  async createReview(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: CreateReviewDto,
+  ) {
+    return this.createReviewUseCase.execute(bookingId, userId, dto);
+  }
+
+  @Post(':id/dispute')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Mở khiếu nại (Dispute) cho đơn dịch vụ' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 201, description: 'Mở khiếu nại thành công.' })
+  @ApiResponse({ status: 400, description: 'Trạng thái đơn hàng không hợp lệ hoặc đã có khiếu nại.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Chỉ khách hàng của đơn này mới được khiếu nại.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch.' })
+  async openDispute(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: OpenDisputeDto,
+  ) {
+    return this.openDisputeUseCase.execute(bookingId, userId, dto);
+  }
+
+  @Patch(':id/request-extension')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Provider xin phép khách hàng kéo dài thời gian' })
+  @ApiParam({ name: 'id', description: 'ID của booking (UUID)' })
+  @ApiResponse({ status: 200, description: 'Đã gửi yêu cầu xin thêm thời gian.' })
+  @ApiResponse({ status: 400, description: 'Trạng thái booking không hợp lệ.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy booking.' })
+  async requestExtension(
+    @GetCurrentUserId() userId: string,
+    @Param('id') id: string,
+    @Body() dto: RequestExtensionDto,
+  ) {
+    return this.requestBookingExtensionUseCase.execute(userId, id, dto);
+  }
+}

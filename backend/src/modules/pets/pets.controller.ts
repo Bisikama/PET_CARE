@@ -4,15 +4,20 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
 import { PetsService } from './application/use-cases/pets.service';
+import { MedicalRecordsService } from './application/use-cases/medical-records.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
 
 @ApiTags('Pets')
 @Controller('pets')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
 export class PetsController {
-  constructor(private readonly petsService: PetsService) {}
+  constructor(
+    private readonly petsService: PetsService,
+    private readonly medicalRecordsService: MedicalRecordsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Tạo mới hồ sơ thú cưng' })
@@ -94,5 +99,63 @@ export class PetsController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng (PET_NOT_FOUND).' })
   async remove(@GetCurrentUserId() userId: string, @Param('id') id: string) {
     return this.petsService.delete(id, userId);
+  }
+
+  @Post(':id/medical-records')
+  @ApiOperation({ summary: 'Thêm sổ y tế cho thú cưng' })
+  @ApiParam({ name: 'id', description: 'ID của thú cưng', type: String })
+  @ApiResponse({ status: 201, description: 'Thêm sổ y tế thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng (PET_NOT_FOUND).' })
+  async createMedicalRecord(
+    @GetCurrentUserId() userId: string,
+    @Param('id') petId: string,
+    @Body() dto: CreateMedicalRecordDto,
+  ) {
+    return this.medicalRecordsService.create(userId, petId, dto);
+  }
+
+  @Get(':id/medical-records')
+  @ApiOperation({ summary: 'Lấy danh sách sổ y tế của thú cưng' })
+  @ApiParam({ name: 'id', description: 'ID của thú cưng', type: String })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách sổ y tế.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng (PET_NOT_FOUND).' })
+  async getMedicalRecords(
+    @GetCurrentUserId() userId: string,
+    @Param('id') petId: string,
+  ) {
+    return this.medicalRecordsService.findAllByPet(userId, petId);
+  }
+
+  @Delete('medical-records/:recordId')
+  @ApiOperation({ summary: 'Xóa sổ y tế' })
+  @ApiParam({ name: 'recordId', description: 'ID của sổ y tế', type: String })
+  @ApiResponse({ status: 200, description: 'Xóa sổ y tế thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy sổ y tế.' })
+  async deleteMedicalRecord(
+    @GetCurrentUserId() userId: string,
+    @Param('recordId') recordId: string,
+  ) {
+    return this.medicalRecordsService.delete(userId, recordId);
+  }
+
+  @Put('medical-records/:recordId')
+  @ApiOperation({ summary: 'Cập nhật sổ y tế (PUT /pets/medical-records/:recordId)' })
+  @ApiParam({ name: 'recordId', description: 'ID của sổ y tế', type: String })
+  @ApiResponse({ status: 200, description: 'Cập nhật sổ y tế thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy sổ y tế.' })
+  async updateMedicalRecord(
+    @GetCurrentUserId() userId: string,
+    @Param('recordId') recordId: string,
+    @Body() dto: CreateMedicalRecordDto,
+  ) {
+    return this.medicalRecordsService.update(userId, recordId, dto);
   }
 }

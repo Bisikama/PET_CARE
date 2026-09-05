@@ -12,6 +12,52 @@ import { PrismaService } from '../../../../database/prisma.service';
 export class WalletsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getMyWalletData(userId: string) {
+    const wallet = await this.prisma.wallets.findUnique({
+      where: { user_id: userId },
+    });
+    
+    if (!wallet) {
+      return { balance: 0, pendingBalance: 0 };
+    }
+    
+    return {
+      balance: Number(wallet.balance),
+      pendingBalance: Number(wallet.pending_balance),
+    };
+  }
+
+  async getWalletTransactions(userId: string, page: number, limit: number) {
+    const wallet = await this.prisma.wallets.findUnique({
+      where: { user_id: userId },
+    });
+    
+    if (!wallet) {
+      return { data: [], total: 0, page: Number(page), limit: Number(limit) };
+    }
+
+    const skip = (page - 1) * limit;
+    
+    const [transactions, total] = await Promise.all([
+      this.prisma.wallet_transactions.findMany({
+        where: { wallet_id: wallet.id },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
+      this.prisma.wallet_transactions.count({
+        where: { wallet_id: wallet.id },
+      })
+    ]);
+
+    return {
+      data: transactions,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
+  }
+
   /**
    * Hàm nội bộ để xử lý giao dịch ví một cách nguyên tử (Atomic).
    * BẮT BUỘC phải được gọi bên trong một Prisma Transaction.
@@ -132,6 +178,14 @@ export class WalletsService {
         throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
       }
 
+      const providerProfile = await tx.provider_profiles.findUnique({
+        where: { user_id: providerId },
+      });
+
+      if (!providerProfile) {
+        throw new BadRequestException('Không tìm thấy hồ sơ Provider');
+      }
+
       // 1. Ghi nhận giao dịch trừ tiền (PAYOUT)
       await this.processTransaction(
         wallet.id,
@@ -145,7 +199,7 @@ export class WalletsService {
       // 2. Tạo bản ghi chờ duyệt (PENDING)
       const request = await tx.payout_requests.create({
         data: {
-          provider_id: providerId,
+          provider_id: providerProfile.id,
           amount: amount,
           status: payout_status.PAYOUT_PENDING,
         },

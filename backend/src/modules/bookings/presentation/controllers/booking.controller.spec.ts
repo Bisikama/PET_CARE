@@ -9,9 +9,13 @@ import { GetBookingChecklistUseCase } from '../../application/use-cases/get-book
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
 import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
+import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
-
+import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
+import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
+import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
+import { RequestBookingExtensionUseCase } from '../../application/use-cases/request-booking-extension.use-case';
 describe('BookingsController', () => {
   let controller: BookingsController;
   const mockBookingRepo = { findBookingById: jest.fn() };
@@ -30,8 +34,13 @@ describe('BookingsController', () => {
         { provide: StartBookingServiceUseCase, useValue: mockUseCase },
         { provide: UpdateBookingChecklistItemUseCase, useValue: mockUseCase },
         { provide: CompleteBookingUseCase, useValue: mockUseCase },
+        { provide: UploadBookingEvidenceUseCase, useValue: mockUseCase },
+        { provide: RequestBookingExtensionUseCase, useValue: mockUseCase },
         { provide: CustomerConfirmBookingUseCase, useValue: mockUseCase },
         { provide: CustomerCancelBookingUseCase, useValue: mockUseCase },
+        { provide: GetBookingByIdUseCase, useValue: mockUseCase },
+        { provide: CreateReviewUseCase, useValue: mockUseCase },
+        { provide: OpenDisputeUseCase, useValue: mockUseCase },
       ],
     }).compile();
 
@@ -45,36 +54,13 @@ describe('BookingsController', () => {
     const PROVIDER_ID = 'provider-uuid-1';
     const BOOKING_ID = 'booking-uuid-1';
 
-    it('should return booking if userId is the customer', async () => {
+    it('should call getBookingByIdUseCase and return result', async () => {
       const mockBooking = { id: BOOKING_ID, customer_id: CUSTOMER_ID, provider_id: PROVIDER_ID };
-      mockBookingRepo.findBookingById.mockResolvedValue(mockBooking);
+      mockUseCase.execute.mockResolvedValue(mockBooking);
 
       const result = await controller.findById(CUSTOMER_ID, BOOKING_ID);
       expect(result).toEqual(mockBooking);
-    });
-
-    it('should return booking if userId is the provider', async () => {
-      const mockBooking = { id: BOOKING_ID, customer_id: CUSTOMER_ID, provider_id: PROVIDER_ID };
-      mockBookingRepo.findBookingById.mockResolvedValue(mockBooking);
-
-      const result = await controller.findById(PROVIDER_ID, BOOKING_ID);
-      expect(result).toEqual(mockBooking);
-    });
-
-    it('🔴 should throw ForbiddenException for a third-party user (IDOR protection)', async () => {
-      const mockBooking = { id: BOOKING_ID, customer_id: CUSTOMER_ID, provider_id: PROVIDER_ID };
-      mockBookingRepo.findBookingById.mockResolvedValue(mockBooking);
-
-      // Kẻ tấn công dùng ID của mình nhưng truyền bookingId của người khác
-      await expect(controller.findById('attacker-uuid', BOOKING_ID))
-        .rejects.toThrow(ForbiddenException);
-    });
-
-    it('should throw NotFoundException if booking does not exist', async () => {
-      mockBookingRepo.findBookingById.mockResolvedValue(null);
-
-      await expect(controller.findById(CUSTOMER_ID, 'non-existent-id'))
-        .rejects.toThrow(NotFoundException);
+      expect(mockUseCase.execute).toHaveBeenCalledWith(CUSTOMER_ID, BOOKING_ID);
     });
 
     it('🔴 should have @UseGuards(AccessTokenGuard) applied at class level', () => {

@@ -235,22 +235,23 @@ model payments {
 }
 
 model pets {
-  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id   String         @db.Uuid
-  name          String         @db.VarChar(100)
-  species       String         @db.VarChar(50)
-  breed         String?        @db.VarChar(100)
-  age           Int?
-  weight        Decimal?       @db.Decimal(5, 2)
-  gender        String?        @db.VarChar(20)
-  health_note   String?
-  behavior_note String?
-  avatar_url    String?
-  created_at    DateTime?      @default(now()) @db.Timestamp(6)
-  updated_at    DateTime?      @default(now()) @db.Timestamp(6)
-  booking_pets  booking_pets[]
-  pet_photos    pet_photos[]
-  users         User           @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id         String                @db.Uuid
+  name                String                @db.VarChar(100)
+  species             String                @db.VarChar(50)
+  breed               String?               @db.VarChar(100)
+  age                 Int?
+  weight              Decimal?              @db.Decimal(5, 2)
+  gender              String?               @db.VarChar(20)
+  health_note         String?
+  behavior_note       String?
+  avatar_url          String?
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  booking_pets        booking_pets[]
+  pet_photos          pet_photos[]
+  pet_medical_records pet_medical_records[]
+  users               User                  @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([customer_id], map: "idx_pets_customer_id")
 }
@@ -292,6 +293,7 @@ model provider_profiles {
   rating_avg               Decimal?                 @default(0) @db.Decimal(3, 2)
   total_reviews            Int?                     @default(0)
   total_completed_bookings Int?                     @default(0)
+  trust_score              Int?                     @default(100)
   id_number                String?                  @unique @db.VarChar(50)
   full_name_on_id          String?                  @db.VarChar(100)
   dob                      DateTime?                @db.Date
@@ -395,62 +397,63 @@ model services {
 }
 
 model User {
-  id                                            String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fullName                                      String                    @map("full_name") @db.VarChar(100)
-  email                                         String                    @unique @db.VarChar(150)
-  phone                                         String?                   @db.VarChar(20)
-  passwordHash                                  String?                   @map("password_hash")
-  supabaseId                                    String?                   @unique @map("supabase_id") @db.Uuid
-  emailVerifiedAt                               DateTime?                 @map("email_verified_at") @db.Timestamp(6)
-  avatarUrl                                     String?                   @map("avatar_url")
-  role                                          Role                      @default(CUSTOMER)
-  isActive                                      Boolean                   @default(true) @map("is_active")
-  status                                        user_status               @default(ACTIVE)
+  id                                            String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName                                      String                          @map("full_name") @db.VarChar(100)
+  email                                         String                          @unique @db.VarChar(150)
+  phone                                         String?                         @db.VarChar(20)
+  passwordHash                                  String?                         @map("password_hash")
+  supabaseId                                    String?                         @unique @map("supabase_id") @db.Uuid
+  emailVerifiedAt                               DateTime?                       @map("email_verified_at") @db.Timestamp(6)
+  avatarUrl                                     String?                         @map("avatar_url")
+  role                                          Role                            @default(CUSTOMER)
+  isActive                                      Boolean                         @default(true) @map("is_active")
+  status                                        user_status                     @default(ACTIVE)
   suspended_reason                              String?
-  suspended_at                                  DateTime?                 @db.Timestamp(6)
-  createdAt                                     DateTime?                 @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt                                     DateTime?                 @default(now()) @map("updated_at") @db.Timestamp(6)
-  notification_settings                         Json?                     @default("{\"email\": true, \"push\": true, \"marketing\": false}")
+  suspended_at                                  DateTime?                       @db.Timestamp(6)
+  createdAt                                     DateTime?                       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                     DateTime?                       @default(now()) @map("updated_at") @db.Timestamp(6)
+  notification_settings                         Json?                           @default("{\"email\": true, \"push\": true, \"marketing\": false}")
   booking_media                                 booking_media[]
   booking_status_logs                           booking_status_logs[]
-  bookings                                      bookings[]                @relation("customer_bookings")
-  cancelled_bookings                            bookings[]                @relation("cancelled_bookings")
-  cancellation_requested_bookings               bookings[]                @relation("cancellation_requested_bookings")
+  bookings                                      bookings[]                      @relation("customer_bookings")
+  cancelled_bookings                            bookings[]                      @relation("cancelled_bookings")
+  cancellation_requested_bookings               bookings[]                      @relation("cancellation_requested_bookings")
   chat_messages                                 chat_messages[]
-  chat_rooms_chat_rooms_customer_idTousers      chat_rooms[]              @relation("chat_rooms_customer_idTousers")
-  chat_rooms_chat_rooms_provider_user_idTousers chat_rooms[]              @relation("chat_rooms_provider_user_idTousers")
+  chat_rooms_chat_rooms_customer_idTousers      chat_rooms[]                    @relation("chat_rooms_customer_idTousers")
+  chat_rooms_chat_rooms_provider_user_idTousers chat_rooms[]                    @relation("chat_rooms_provider_user_idTousers")
   complaint_evidences                           complaint_evidences[]
-  complaints_complaints_accused_idTousers       complaints[]              @relation("complaints_accused_idTousers")
-  complaints_complaints_admin_idTousers         complaints[]              @relation("complaints_admin_idTousers")
-  complaints_complaints_complainant_idTousers   complaints[]              @relation("complaints_complainant_idTousers")
-  incident_reports                              incidents[]               @relation("incident_reporter")
-  incident_assignments                          incidents[]               @relation("incident_admin")
+  complaints_complaints_accused_idTousers       complaints[]                    @relation("complaints_accused_idTousers")
+  complaints_complaints_admin_idTousers         complaints[]                    @relation("complaints_admin_idTousers")
+  complaints_complaints_complainant_idTousers   complaints[]                    @relation("complaints_complainant_idTousers")
+  incident_reports                              incidents[]                     @relation("incident_reporter")
+  incident_assignments                          incidents[]                     @relation("incident_admin")
   customer_addresses                            customer_addresses[]
   notifications                                 notifications[]
   payments                                      payments[]
   pets                                          pets[]
   provider_profiles                             provider_profiles?
   refresh_tokens                                refresh_tokens[]
-  reviews_reviews_reviewee_idTousers            reviews[]                 @relation("reviews_reviewee_idTousers")
-  reviews_reviews_reviewer_idTousers            reviews[]                 @relation("reviews_reviewer_idTousers")
-  reviews_reviews_hidden_byTousers              reviews[]                 @relation("reviews_hidden_byTousers")
-  provider_documents_reviewed                   provider_documents[]      @relation("reviewed_documents")
-  approved_capabilities                         provider_services[]       @relation("approved_capabilities")
+  reviews_reviews_reviewee_idTousers            reviews[]                       @relation("reviews_reviewee_idTousers")
+  reviews_reviews_reviewer_idTousers            reviews[]                       @relation("reviews_reviewer_idTousers")
+  reviews_reviews_hidden_byTousers              reviews[]                       @relation("reviews_hidden_byTousers")
+  provider_documents_reviewed                   provider_documents[]            @relation("reviewed_documents")
+  approved_capabilities                         provider_services[]             @relation("approved_capabilities")
   booking_events                                booking_events[]
-  booking_cancellations_requested               booking_cancellations[]   @relation("requested_cancellations")
-  booking_cancellations_reviewed                booking_cancellations[]   @relation("reviewed_cancellations")
-  support_tickets_user                          support_tickets[]         @relation("user_tickets")
-  support_tickets_assigned                      support_tickets[]         @relation("assigned_tickets")
+  booking_cancellations_requested               booking_cancellations[]         @relation("requested_cancellations")
+  booking_cancellations_reviewed                booking_cancellations[]         @relation("reviewed_cancellations")
+  support_tickets_user                          support_tickets[]               @relation("user_tickets")
+  support_tickets_assigned                      support_tickets[]               @relation("assigned_tickets")
   support_ticket_messages                       support_ticket_messages[]
-  granted_badges                                provider_trust_badges[]   @relation("granted_badges")
+  granted_badges                                provider_trust_badges[]         @relation("granted_badges")
   audit_logs                                    audit_logs[]
   subscriptions                                 subscriptions[]
   promotion_usages                              promotion_usages[]
   payout_requests                               payout_requests[]
+  account_deactivation_requests                 account_deactivation_requests[]
+  wallets                                       wallets?
 
   @@index([role], map: "idx_users_role")
   @@map("users")
-  wallets                                       wallets?
 }
 
 model provider_documents {
@@ -737,6 +740,7 @@ enum booking_status {
   EXPIRED
   DISPUTED
   INCIDENT_REPORTED
+  RESOLVED
 }
 
 enum checklist_item_status {
@@ -869,15 +873,15 @@ enum payout_status {
 }
 
 model payout_requests {
-  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_id     String?           @db.Uuid
-  customer_id     String?           @db.Uuid
-  amount          Decimal           @db.Decimal(12, 2)
-  status          payout_status     @default(PAYOUT_PENDING)
-  bank_details    Json?
-  admin_note      String?
-  created_at      DateTime          @default(now()) @db.Timestamp(6)
-  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamp(6)
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id  String?       @db.Uuid
+  customer_id  String?       @db.Uuid
+  amount       Decimal       @db.Decimal(12, 2)
+  status       payout_status @default(PAYOUT_PENDING)
+  bank_details Json?
+  admin_note   String?
+  created_at   DateTime      @default(now()) @db.Timestamp(6)
+  updated_at   DateTime      @default(now()) @updatedAt @db.Timestamp(6)
 
   provider_profiles provider_profiles? @relation(fields: [provider_id], references: [id], onDelete: Cascade)
   users             User?              @relation(fields: [customer_id], references: [id], onDelete: Cascade)
@@ -1004,6 +1008,7 @@ enum support_ticket_category {
   TECHNICAL_ERROR
   NOTIFICATION
   VOUCHER
+  SERVICE_SUGGESTION
   OTHER
 }
 
@@ -1095,6 +1100,7 @@ model promotions {
   min_order_value     Decimal?  @db.Decimal(10, 2)
   max_discount_amount Decimal?  @db.Decimal(10, 2)
   usage_limit         Int?
+  max_usage_per_user  Int?
   used_count          Int       @default(0)
   start_date          DateTime  @db.Timestamp(6)
   end_date            DateTime  @db.Timestamp(6)
@@ -1132,15 +1138,15 @@ enum address_type {
 }
 
 model provider_bank_accounts {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  provider_id    String    @db.Uuid
-  bank_name      String    @db.VarChar(100)
-  account_number String    @db.VarChar(50)
-  account_name   String    @db.VarChar(100)
-  branch         String?   @db.VarChar(100)
-  is_default     Boolean   @default(false)
-  created_at     DateTime  @default(now()) @db.Timestamp(6)
-  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_id    String   @db.Uuid
+  bank_name      String   @db.VarChar(100)
+  account_number String   @db.VarChar(50)
+  account_name   String   @db.VarChar(100)
+  branch         String?  @db.VarChar(100)
+  is_default     Boolean  @default(false)
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamp(6)
 
   provider_profiles provider_profiles @relation(fields: [provider_id], references: [id], onDelete: Restrict)
 
@@ -1148,9 +1154,47 @@ model provider_bank_accounts {
 }
 
 model system_configs {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  key         String    @unique @db.VarChar(100)
-  value       String    @db.Text
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String   @unique @db.VarChar(100)
+  value       String   @db.Text
   description String?
-  updated_at  DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(6)
+}
+
+enum medical_record_type {
+  VACCINE
+  ALLERGY
+  SURGERY
+}
+
+model pet_medical_records {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pet_id      String              @db.Uuid
+  record_type medical_record_type
+  description String
+  date        DateTime            @db.Date
+  attachments Json?
+  created_at  DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?           @default(now()) @updatedAt @db.Timestamp(6)
+
+  pet pets @relation(fields: [pet_id], references: [id], onDelete: Cascade)
+}
+
+enum deactivation_status {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model account_deactivation_requests {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String              @db.Uuid
+  reason       String
+  status       deactivation_status @default(PENDING)
+  requested_at DateTime            @default(now()) @db.Timestamp(6)
+  processed_at DateTime?           @db.Timestamp(6)
+  admin_note   String?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

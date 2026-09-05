@@ -53,6 +53,17 @@ export class SupabaseStorageService {
     const { error } = await this.supabase.storage.from(bucket).remove([path]);
     if (error) {
       this.logger.error(`Error deleting file from Supabase: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not delete file from storage');
     }
+  }
+
+  extractPathFromUrl(url: string, bucket: string): string | null {
+    if (!url) return null;
+    const bucketUrlPart = `/object/public/${bucket}/`;
+    const index = url.indexOf(bucketUrlPart);
+    if (index !== -1) {
+      return url.substring(index + bucketUrlPart.length);
+    }
+    return null;
   }
 }

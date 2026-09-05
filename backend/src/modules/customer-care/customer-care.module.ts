@@ -9,9 +9,10 @@ import { DisputesService } from './application/use-cases/disputes.service';
 import { IncidentsService } from './application/use-cases/incidents.service';
 import { SettlementsModule } from '../settlements/settlements.module';
 import { ChatModule } from './chat/chat.module';
+import { AdminCoreModule } from '../admin-core/admin-core.module';
 
 @Module({
-  imports: [PrismaModule, StorageModule, SettlementsModule, ChatModule],
+  imports: [PrismaModule, StorageModule, SettlementsModule, ChatModule, AdminCoreModule],
   controllers: [CustomerCareController, AdminCustomerCareController],
   providers: [
     ReviewsService,

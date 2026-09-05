@@ -1,12 +1,20 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import { SuspendUserDto } from '../../dto/suspend-user.dto';
 import { GetAuditLogsDto } from '../../dto/get-audit-logs.dto';
-import { Role, user_status, provider_status } from '@prisma/client';
+import { Role, user_status, provider_status, booking_status } from '@prisma/client';
+import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
+import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
 @Injectable()
 export class AdminCoreService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminCoreService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settlementsService: SettlementsService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async getDashboardStats() {
     const [
@@ -64,7 +72,7 @@ export class AdminCoreService {
         },
       });
 
-      // 2. If provider, suspend profile
+      // 2. If provider, suspend profile and handle cascading effects
       if (user.role === Role.PROVIDER) {
         const profile = await tx.provider_profiles.findUnique({
           where: { user_id: targetUserId },
@@ -75,6 +83,59 @@ export class AdminCoreService {
             where: { user_id: targetUserId },
             data: { status: provider_status.SUSPENDED },
           });
+
+          // 2.2 Disable future available working slots
+          await tx.$executeRaw`
+            UPDATE provider_working_slots pws
+            SET status = 'BLOCKED', updated_at = NOW()
+            FROM provider_working_days pwd
+            WHERE pws.working_day_id = pwd.id
+              AND pwd.provider_id = ${targetUserId}::uuid
+              AND pws.status = 'AVAILABLE'
+              AND pwd.work_date >= CURRENT_DATE
+          `;
+
+          // 2.3 Find all pending bookings with Pessimistic Lock
+          const pendingBookingIds = await tx.$queryRaw<{id: string}[]>`
+            SELECT id FROM bookings
+            WHERE provider_id = ${targetUserId}::uuid 
+              AND status IN ('PENDING_PROVIDER_ACCEPTANCE', 'ACCEPTED')
+            FOR UPDATE
+          `;
+
+          if (pendingBookingIds.length > 0) {
+            const ids = pendingBookingIds.map(b => b.id);
+            const bookings = await tx.bookings.findMany({
+              where: { id: { in: ids } },
+              include: { payments: true }
+            });
+
+            for (const booking of bookings) {
+              // Cancel Booking
+              await tx.bookings.update({
+                where: { id: booking.id },
+                data: { status: booking_status.CANCELLED, cancellation_reason: 'Provider suspended by admin' }
+              });
+
+              // Auto Refund if paid
+              if (booking.payments && ['PAID_HELD_IN_ESCROW', 'ESCROW_ON_HOLD'].includes(booking.payments.status)) {
+                await this.settlementsService.refund(
+                  booking.id, 
+                  tx, 
+                  `Provider đã bị khóa bởi Admin. Lý do: ${reason}`
+                );
+              }
+              
+              // Notify Customer
+              await this.notificationsService.sendNotification({
+                userId: booking.customer_id,
+                type: 'BOOKING_CANCELLED',
+                title: 'Lịch hẹn đã bị hủy',
+                content: 'Đơn đặt lịch của bạn đã bị hủy do Provider hiện không khả dụng. Tiền sẽ được hoàn về ví của bạn (nếu có).',
+                bookingId: booking.id,
+              }).catch((e) => this.logger.warn(`Failed to send notification: ${(e as Error).message}`));
+            }
+          }
         }
       }
 

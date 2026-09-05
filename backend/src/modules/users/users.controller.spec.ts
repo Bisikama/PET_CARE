@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './application/use-cases/users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { DeactivateAccountUseCase } from './application/use-cases/deactivate-account.use-case';
+import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: UsersService;
@@ -18,6 +20,8 @@ describe('UsersController', () => {
             uploadAvatar: jest.fn(),
           },
         },
+        { provide: DeleteAccountUseCase, useValue: { execute: jest.fn() } },
+        { provide: DeactivateAccountUseCase, useValue: { execute: jest.fn() } },
       ],
     }).compile();
 

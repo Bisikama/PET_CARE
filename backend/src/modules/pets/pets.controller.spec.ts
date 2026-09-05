@@ -3,6 +3,7 @@ import { PetsController } from './pets.controller';
 import { PetsService } from './application/use-cases/pets.service';
 import { CreatePetDto, PetSpecies } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+import { MedicalRecordsService } from './application/use-cases/medical-records.service';
 
 describe('PetsController', () => {
   let controller: PetsController;
@@ -23,6 +24,15 @@ describe('PetsController', () => {
         {
           provide: PetsService,
           useValue: mockPetsService,
+        },
+        {
+          provide: MedicalRecordsService,
+          useValue: {
+            create: jest.fn(),
+            findByPetId: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+          },
         },
       ],
     }).compile();
