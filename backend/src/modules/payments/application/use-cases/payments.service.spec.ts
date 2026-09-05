@@ -29,6 +29,9 @@ describe('PaymentsService', () => {
     wallets: {
       findUnique: jest.fn(),
     },
+    provider_profiles: {
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn(async (cb) => cb(mockPrisma)),
   };
 
@@ -206,6 +209,11 @@ describe('PaymentsService', () => {
         },
       });
 
+      mockPrisma.provider_profiles.findUnique.mockResolvedValue({
+        id: 'provider-1',
+        user_id: 'provider-1',
+      });
+
       mockPrisma.wallets.findUnique.mockResolvedValue({
         id: 'wallet-1',
         user_id: 'provider-1',
@@ -285,6 +293,11 @@ describe('PaymentsService', () => {
           provider_id: 'provider-1',
           total_price: 100000,
         },
+      });
+
+      mockPrisma.provider_profiles.findUnique.mockResolvedValue({
+        id: 'provider-1',
+        user_id: 'provider-1',
       });
 
       mockPrisma.wallets.findUnique.mockResolvedValue({
