@@ -9,6 +9,7 @@ import { GetServicesUseCase } from './application/use-cases/get-services.use-cas
 import { ManagePricingRuleUseCase } from './application/use-cases/manage-pricing-rule.use-case';
 import { ManageChecklistTemplateUseCase } from './application/use-cases/manage-checklist-template.use-case';
 import { ManageCancellationPolicyUseCase } from './application/use-cases/manage-cancellation-policy.use-case';
+import { CreateServiceSuggestionUseCase } from './application/use-cases/create-service-suggestion.use-case';
 import { SERVICES_REPOSITORY } from './services.tokens';
 import { PrismaServicesRepository } from './infrastructure/persistence/prisma-services.repository';
 
@@ -23,6 +24,7 @@ import { PrismaServicesRepository } from './infrastructure/persistence/prisma-se
     ManagePricingRuleUseCase,
     ManageChecklistTemplateUseCase,
     ManageCancellationPolicyUseCase,
+    CreateServiceSuggestionUseCase,
     {
       provide: SERVICES_REPOSITORY,
       useClass: PrismaServicesRepository,

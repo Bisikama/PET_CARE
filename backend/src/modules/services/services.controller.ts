@@ -9,9 +9,13 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
+import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -30,6 +34,8 @@ import { CreatePricingRuleDto } from './dto/create-pricing-rule.dto';
 import { UpdatePricingRuleDto } from './dto/update-pricing-rule.dto';
 import { CreateChecklistTemplateDto } from './dto/create-checklist-template.dto';
 import { UpdateChecklistTemplateDto } from './dto/update-checklist-template.dto';
+import { CreateServiceSuggestionUseCase } from './application/use-cases/create-service-suggestion.use-case';
+import { CreateServiceSuggestionDto } from './dto/create-service-suggestion.dto';
 
 @ApiTags('Services')
 @ApiBearerAuth()
@@ -42,6 +48,7 @@ export class ServicesController {
     private readonly getServicesUseCase: GetServicesUseCase,
     private readonly managePricingRuleUseCase: ManagePricingRuleUseCase,
     private readonly manageChecklistTemplateUseCase: ManageChecklistTemplateUseCase,
+    private readonly createServiceSuggestionUseCase: CreateServiceSuggestionUseCase,
   ) {}
 
   // ==========================================
@@ -94,6 +101,9 @@ export class ServicesController {
 
   @Public()
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey('services:list')
+  @CacheTTL(300000) // 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách các gói dịch vụ hoạt động (Công khai)' })
   @ApiResponse({ status: 200, description: 'Trả về danh sách gói dịch vụ.' })
@@ -103,6 +113,8 @@ export class ServicesController {
 
   @Public()
   @Get(':id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy chi tiết gói dịch vụ (Công khai)' })
   @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
@@ -165,6 +177,8 @@ export class ServicesController {
 
   @Public()
   @Get(':id/pricing-rules')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách các bảng giá của gói dịch vụ' })
   @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
@@ -233,6 +247,8 @@ export class ServicesController {
 
   @Public()
   @Get(':id/checklist-templates')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // 5 minutes
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy các checklist template của gói dịch vụ' })
   @ApiParam({ name: 'id', description: 'ID của gói dịch vụ', type: String })
@@ -240,5 +256,19 @@ export class ServicesController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ (SERVICE_NOT_FOUND).' })
   async getChecklistTemplates(@Param('id') serviceId: string) {
     return this.manageChecklistTemplateUseCase.getByServiceId(serviceId);
+  }
+
+  @Post('suggestions')
+  @UseGuards(AccessTokenGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Gửi đề xuất gói dịch vụ mới' })
+  @ApiResponse({ status: 201, description: 'Gửi đề xuất thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  async createSuggestion(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: CreateServiceSuggestionDto,
+  ) {
+    return this.createServiceSuggestionUseCase.execute(userId, dto);
   }
 }

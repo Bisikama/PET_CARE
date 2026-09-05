@@ -2,11 +2,14 @@ import { Module } from '@nestjs/common';
 import { AdminCoreService } from './application/use-cases/admin-core.service';
 import { AdminCoreController } from './admin-core.controller';
 import { PrismaModule } from '../../database/prisma.module';
+import { SettlementsModule } from '../settlements/settlements.module';
+import { GrowthModule } from '../growth/growth.module';
+import { AdminResolveDisputeUseCase } from './application/use-cases/admin-resolve-dispute.use-case';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SettlementsModule, GrowthModule],
   controllers: [AdminCoreController],
-  providers: [AdminCoreService],
-  exports: [AdminCoreService],
+  providers: [AdminCoreService, AdminResolveDisputeUseCase],
+  exports: [AdminCoreService, AdminResolveDisputeUseCase],
 })
 export class AdminCoreModule {}

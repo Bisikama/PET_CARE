@@ -24,6 +24,8 @@ import { CopyWeekScheduleDto } from './dto/copy-week-schedule.dto';
 import { GetProviderAvailableSlotsQueryDto } from './dto/get-provider-available-slots-query.dto';
 import { GetProviderScheduleQueryDto } from './dto/get-provider-schedule-query.dto';
 import { UpdateProviderScheduleDto } from './dto/update-provider-schedule.dto';
+import { CheckConflictSlotUseCase } from './application/use-cases/check-conflict-slot.use-case';
+import { CheckConflictSlotDto } from './dto/check-conflict-slot.dto';
 import { Put, Param } from '@nestjs/common';
 
 @ApiTags('Provider Schedules')
@@ -37,6 +39,7 @@ export class ProviderSchedulesController {
     private readonly updateProviderScheduleUseCase: UpdateProviderScheduleUseCase,
     private readonly copyWeekScheduleUseCase: CopyWeekScheduleUseCase,
     private readonly blockProviderSlotUseCase: BlockProviderSlotUseCase,
+    private readonly checkConflictSlotUseCase: CheckConflictSlotUseCase,
   ) {}
 
   @Put('slots/:slotId/block')
@@ -163,5 +166,15 @@ export class ProviderSchedulesController {
       sourceWeekStart: dto.sourceWeekStart,
       targetWeekStart: dto.targetWeekStart,
     });
+  }
+
+  @Post('check-conflict')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Kiểm tra xem slot có bị trùng hoặc đã bị khóa hay không' })
+  @ApiResponse({ status: 200, description: 'Trả về kết quả kiểm tra xung đột.' })
+  @ApiResponse({ status: 400, description: 'Tham số đầu vào không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  async checkConflict(@Body() dto: CheckConflictSlotDto) {
+    return this.checkConflictSlotUseCase.execute(dto);
   }
 }

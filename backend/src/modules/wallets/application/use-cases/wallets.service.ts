@@ -12,6 +12,52 @@ import { PrismaService } from '../../../../database/prisma.service';
 export class WalletsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getMyWalletData(userId: string) {
+    const wallet = await this.prisma.wallets.findUnique({
+      where: { user_id: userId },
+    });
+    
+    if (!wallet) {
+      return { balance: 0, pendingBalance: 0 };
+    }
+    
+    return {
+      balance: Number(wallet.balance),
+      pendingBalance: Number(wallet.pending_balance),
+    };
+  }
+
+  async getWalletTransactions(userId: string, page: number, limit: number) {
+    const wallet = await this.prisma.wallets.findUnique({
+      where: { user_id: userId },
+    });
+    
+    if (!wallet) {
+      return { data: [], total: 0, page: Number(page), limit: Number(limit) };
+    }
+
+    const skip = (page - 1) * limit;
+    
+    const [transactions, total] = await Promise.all([
+      this.prisma.wallet_transactions.findMany({
+        where: { wallet_id: wallet.id },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: Number(limit),
+      }),
+      this.prisma.wallet_transactions.count({
+        where: { wallet_id: wallet.id },
+      })
+    ]);
+
+    return {
+      data: transactions,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
+  }
+
   /**
    * Hàm nội bộ để xử lý giao dịch ví một cách nguyên tử (Atomic).
    * BẮT BUỘC phải được gọi bên trong một Prisma Transaction.

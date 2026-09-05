@@ -535,6 +535,69 @@ export class PaymentsService {
     }
     return sorted;
   }
+
+  /**
+   * Tạo URL thanh toán MoMo
+   */
+  async createMomoUrl(bookingId: string, amount: number, ipAddr: string, promotionCode?: string): Promise<string> {
+    const partnerCode = this.configService.get<string>('MOMO_PARTNER_CODE', 'DUMMY_PARTNER_CODE');
+    const accessKey = this.configService.get<string>('MOMO_ACCESS_KEY', 'DUMMY_ACCESS_KEY');
+    const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
+    
+    const requestType = 'captureWallet';
+    const orderInfo = `Thanh toán qua MoMo cho Booking ${bookingId}`;
+    const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
+    const returnUrl = `${backendUrl}/api/payments/momo-return`;
+    const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
+    const extraData = promotionCode ? `promotionCode=${promotionCode}` : '';
+    const orderId = bookingId + '_' + new Date().getTime();
+    const requestId = orderId;
+    
+    // Chữ ký Momo yêu cầu các tham số xếp theo thứ tự nhất định
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${returnUrl}&requestId=${requestId}&requestType=${requestType}`;
+    
+    const signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
+    
+    const requestBody = {
+      partnerCode,
+      partnerName: "Pet Care",
+      storeId: "PetCareStore",
+      requestId,
+      amount,
+      orderId,
+      orderInfo,
+      redirectUrl: returnUrl,
+      ipnUrl,
+      lang: "vi",
+      requestType,
+      autoCapture: true,
+      extraData,
+      signature
+    };
+    
+    try {
+      const response = await fetch('https://test-payment.momo.vn/v2/gateway/api/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await response.json();
+      
+      if (data.resultCode !== 0) {
+        this.logger.error(`Momo URL creation failed: ${data.message}`, data);
+        throw new BadRequestException('Không thể tạo giao dịch MoMo');
+      }
+      
+      return data.payUrl;
+    } catch (error) {
+      this.logger.error('Error calling MoMo API', error);
+      throw new BadRequestException('Lỗi kết nối đến cổng thanh toán MoMo');
+    }
+  }
+
   /**
    * Xử lý IPN Webhook từ Momo gửi về
    */
@@ -608,6 +671,29 @@ export class PaymentsService {
                 'Ký quỹ thanh toán từ Momo',
                 tx,
               );
+            }
+            // 4. Xử lý lưu promotion usage nếu có
+            if (extraData && extraData.includes('promotionCode=')) {
+              const promoMatch = extraData.match(/promotionCode=([^&]+)/);
+              if (promoMatch && promoMatch[1]) {
+                const promoCode = promoMatch[1];
+                const promotion = await tx.promotions.findUnique({ where: { code: promoCode } });
+                if (promotion) {
+                  // Tăng used_count
+                  await tx.promotions.update({
+                    where: { id: promotion.id },
+                    data: { used_count: { increment: 1 } }
+                  });
+                  // Lưu usage
+                  await tx.promotion_usages.create({
+                    data: {
+                      promotion_id: promotion.id,
+                      user_id: payment.customer_id,
+                      booking_id: payment.booking_id,
+                    }
+                  });
+                }
+              }
             }
           }
         } else {

@@ -157,4 +157,36 @@ export class DisputesService {
       orderBy: { created_at: 'desc' },
     });
   }
+
+  async getBookingDispute(userId: string, bookingId: string) {
+    const booking = await this.prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: {
+        complaints: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Không tìm thấy lịch đặt chỗ (Booking).');
+    }
+
+    if (booking.customer_id !== userId && booking.provider_id !== userId) {
+      throw new ForbiddenException('IDOR Prevented: Bạn không có quyền xem tranh chấp của Booking này.');
+    }
+
+    if (!booking.complaints || booking.complaints.length === 0) {
+      throw new NotFoundException('Booking này chưa có bất kỳ tranh chấp nào được mở.');
+    }
+
+    const complaint = booking.complaints[booking.complaints.length - 1];
+
+    return {
+      id: complaint.id,
+      status: complaint.status,
+      decision: complaint.decision,
+      resolutionNote: complaint.resolution_note,
+      createdAt: complaint.created_at,
+      resolvedAt: complaint.resolved_at,
+    };
+  }
 }
