@@ -350,4 +350,43 @@ export class ProvidersService {
       orderBy: { created_at: 'desc' },
     });
   }
+
+  async getProviderDashboard(userId: string) {
+    const provider = await this.providersRepository.findProfileByUserId(userId);
+    if (!provider) {
+      throw new NotFoundException('Provider profile not found');
+    }
+
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Total revenue this month (Completed bookings)
+    const completedBookingsThisMonth = await this.prisma.bookings.findMany({
+      where: {
+        provider_id: provider.id,
+        status: 'COMPLETED',
+        completed_at: {
+          gte: firstDayOfMonth,
+        },
+      },
+    });
+
+    const totalRevenueThisMonth = completedBookingsThisMonth.reduce((acc, curr) => {
+      return acc + Number(curr.total_price);
+    }, 0);
+
+    const totalCompleted = await this.prisma.bookings.count({
+      where: { provider_id: provider.id, status: 'COMPLETED' },
+    });
+
+    const totalCancelled = await this.prisma.bookings.count({
+      where: { provider_id: provider.id, status: 'CANCELLED' },
+    });
+
+    return {
+      totalRevenueThisMonth,
+      totalCompletedBookings: totalCompleted,
+      totalCancelledBookings: totalCancelled,
+    };
+  }
 }

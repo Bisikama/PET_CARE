@@ -1,16 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../../database/prisma.service';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 
 describe('ChatService', () => {
   let service: ChatService;
   let prisma: PrismaService;
+  
+  const mockStorageService = {
+    uploadFile: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChatService,
+        {
+          provide: SupabaseStorageService,
+          useValue: mockStorageService,
+        },
         {
           provide: PrismaService,
           useValue: {
@@ -93,6 +102,37 @@ describe('ChatService', () => {
       await expect(
         service.saveMessage('user-1', { roomId: 'room-999', content: 'hello' })
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('saveMediaMessage', () => {
+    it('should upload video and save message with VIDEO type', async () => {
+      const mockRoom = { id: 'room-1', customer_id: 'user-1', provider_user_id: 'provider-1' };
+      (prisma.chat_rooms.findUnique as jest.Mock).mockResolvedValue(mockRoom);
+      mockStorageService.uploadFile.mockResolvedValue('http://supabase/video.mp4');
+      (prisma.chat_messages.create as jest.Mock).mockResolvedValue({ id: 'msg-1' });
+
+      const mockFile = { mimetype: 'video/mp4' } as any;
+      const res = await service.saveMediaMessage('user-1', 'room-1', mockFile);
+
+      expect(mockStorageService.uploadFile).toHaveBeenCalledWith(mockFile, 'chat_media', expect.any(String));
+      expect(prisma.chat_messages.create).toHaveBeenCalledWith({
+        data: {
+          chat_room_id: 'room-1',
+          sender_id: 'user-1',
+          content: 'http://supabase/video.mp4',
+          message_type: 'VIDEO',
+        }
+      });
+      expect(res.receiverId).toBe('provider-1');
+    });
+
+    it('should throw BadRequestException if file is missing', async () => {
+      const mockRoom = { id: 'room-1', customer_id: 'user-1', provider_user_id: 'provider-1' };
+      (prisma.chat_rooms.findUnique as jest.Mock).mockResolvedValue(mockRoom);
+
+      await expect(service.saveMediaMessage('user-1', 'room-1', null as any))
+        .rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -101,10 +101,6 @@ export class PetsController {
     return this.petsService.delete(id, userId);
   }
 
-  // ==========================================
-  // MEDICAL RECORDS
-  // ==========================================
-
   @Post(':id/medical-records')
   @ApiOperation({ summary: 'Thêm sổ y tế cho thú cưng' })
   @ApiParam({ name: 'id', description: 'ID của thú cưng', type: String })

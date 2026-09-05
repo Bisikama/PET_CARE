@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { SendMessageDto } from './dto/chat.dto';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: SupabaseStorageService
+  ) {}
 
   async getMyRooms(userId: string) {
     const rooms = await this.prisma.chat_rooms.findMany({
@@ -83,6 +87,48 @@ export class ChatService {
         sender_id: userId,
         content: dto.content,
         message_type: 'TEXT'
+      }
+    });
+
+    const receiverId = room.customer_id === userId ? room.provider_user_id : room.customer_id;
+
+    return { message, receiverId };
+  }
+
+  async saveMediaMessage(userId: string, roomId: string, file: Express.Multer.File) {
+    const room = await this.prisma.chat_rooms.findUnique({
+      where: { id: roomId }
+    });
+
+    if (!room) {
+      throw new NotFoundException('Không tìm thấy phòng chat');
+    }
+
+    if (room.customer_id !== userId && room.provider_user_id !== userId) {
+      throw new ForbiddenException('Bạn không có quyền gửi tin nhắn vào phòng này');
+    }
+
+    if (!file) {
+      throw new BadRequestException('Vui lòng chọn file');
+    }
+
+    // Determine type
+    const isVideo = file.mimetype.startsWith('video/');
+    const messageType = isVideo ? 'VIDEO' : 'IMAGE';
+
+    // Upload
+    const fileUrl = await this.storageService.uploadFile(
+      file, 
+      'chat_media', 
+      `chat-${Date.now()}-${file.originalname}`
+    );
+
+    const message = await this.prisma.chat_messages.create({
+      data: {
+        chat_room_id: roomId,
+        sender_id: userId,
+        content: fileUrl,
+        message_type: messageType
       }
     });
 

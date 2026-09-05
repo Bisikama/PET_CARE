@@ -163,4 +163,14 @@ export class PromotionsService {
       }
     });
   }
+
+  async updatePromotionLimits(id: string, dto: any) {
+    return this.prisma.promotions.update({
+      where: { id },
+      data: {
+        usage_limit: dto.usageLimit,
+        max_usage_per_user: dto.maxUsagePerUser,
+      },
+    });
+  }
 }

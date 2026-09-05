@@ -5,10 +5,12 @@ import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { ChatDocsController } from './chat-docs.controller';
 import { PrismaModule } from '../../database/prisma.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     PrismaModule,
+    StorageModule,
     JwtModule.register({}), // Phải import để sử dụng JwtService trong Gateway
   ],
   controllers: [ChatController, ChatDocsController],

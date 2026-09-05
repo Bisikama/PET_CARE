@@ -6,6 +6,7 @@ import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.de
 
 import { DiscoverPackagesUseCase } from './application/use-cases/discover-packages.use-case';
 import { DiscoverProvidersUseCase } from './application/use-cases/discover-providers.use-case';
+import { GetRecommendationsUseCase } from './application/use-cases/get-recommendations.use-case';
 
 import { DiscoverPackagesDto } from './dto/discover-packages.dto';
 import { DiscoverProvidersDto } from './dto/discover-providers.dto';
@@ -16,6 +17,7 @@ export class ServiceDiscoveryController {
   constructor(
     private readonly discoverPackagesUseCase: DiscoverPackagesUseCase,
     private readonly discoverProvidersUseCase: DiscoverProvidersUseCase,
+    private readonly getRecommendationsUseCase: GetRecommendationsUseCase,
   ) {}
 
   @Public()
@@ -50,5 +52,19 @@ export class ServiceDiscoveryController {
     return this.discoverProvidersUseCase.execute({
       ...query,
     });
+  }
+
+  @Public()
+  @Get('recommendations')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Gợi ý các provider xuất sắc (Guest/Public)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về danh sách 5 provider có rating cao nhất.',
+  })
+  async getRecommendations() {
+    return this.getRecommendationsUseCase.execute();
   }
 }

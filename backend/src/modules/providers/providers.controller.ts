@@ -211,6 +211,13 @@ export class ProvidersController {
     return { success: true, message: 'Xóa chứng chỉ thành công' };
   }
 
+  @Get('me/dashboard')
+  @ApiOperation({ summary: 'Lấy thống kê Dashboard của Provider' })
+  @ApiResponse({ status: 200, description: 'Trả về số liệu doanh thu và đơn hàng.' })
+  async getMyDashboard(@GetCurrentUserId() userId: string) {
+    return this.providersService.getProviderDashboard(userId);
+  }
+
   @Get('me/reviews')
   @ApiOperation({ summary: 'Lấy danh sách đánh giá của Provider' })
   @ApiResponse({ status: 200, description: 'Trả về danh sách đánh giá.' })

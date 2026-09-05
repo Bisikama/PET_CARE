@@ -1,9 +1,11 @@
 import { Controller, Post } from '@nestjs/common';
+import { Public } from '../../common/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SendMessageDto, MessageReceivedDto, BookingUpdatedDto } from './dto/chat.dto';
 
 @ApiTags('WebSockets Documentation')
 @Controller('ws/docs')
+@Public()
 export class ChatDocsController {
   
   @Post('chat-message-send')

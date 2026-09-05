@@ -24,6 +24,7 @@ import { CustomerCancelBookingUseCase } from './application/use-cases/customer-c
 import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id.use-case';
 import { CreateReviewUseCase } from './application/use-cases/create-review.use-case';
 import { OpenDisputeUseCase } from './application/use-cases/open-dispute.use-case';
+import { RequestBookingExtensionUseCase } from './application/use-cases/request-booking-extension.use-case';
 
 @Module({
   imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule],
@@ -42,6 +43,7 @@ import { OpenDisputeUseCase } from './application/use-cases/open-dispute.use-cas
     CustomerCancelBookingUseCase,
     CreateReviewUseCase,
     OpenDisputeUseCase,
+    RequestBookingExtensionUseCase,
     BookingStateMachineService,
     AutoReleaseEscrowCron,
     {

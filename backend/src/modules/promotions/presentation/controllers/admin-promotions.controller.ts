@@ -7,13 +7,15 @@ import { RolesGuard } from '../../../../common/guards/roles.guard';
 import { Roles } from '../../../../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
+import { PromotionsService } from '../../../growth/promotions/promotions.service';
+
 @ApiTags('Admin - Promotions')
 @ApiBearerAuth()
 @Controller('api/admin/promotions')
 @UseGuards(AccessTokenGuard, RolesGuard)
 @Roles(Role.ADMIN)
 export class AdminPromotionsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly promotionsService: PromotionsService) {}
 
   @Post()
   @ApiOperation({ summary: 'Tạo mã giảm giá mới (Admin)' })
@@ -22,19 +24,18 @@ export class AdminPromotionsController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
   async createPromotion(@Body() dto: CreatePromotionDto) {
-    const promotion = await this.prisma.promotions.create({
-      data: {
-        code: dto.code.toUpperCase().trim(),
-        discount_percent: dto.discount_percent,
-        discount_amount: dto.discount_amount,
-        max_discount_amount: dto.max_discount_amount,
-        min_order_value: dto.min_order_value,
-        usage_limit: dto.usage_limit,
-        max_usage_per_user: dto.max_usage_per_user,
-        start_date: new Date(dto.start_date),
-        end_date: new Date(dto.end_date),
-      },
-    });
+    const mappedDto = {
+      code: dto.code,
+      discountPercent: dto.discount_percent,
+      discountAmount: dto.discount_amount,
+      maxDiscountAmount: dto.max_discount_amount,
+      minOrderValue: dto.min_order_value,
+      usageLimit: dto.usage_limit,
+      maxUsagePerUser: dto.max_usage_per_user,
+      startDate: dto.start_date,
+      endDate: dto.end_date,
+    };
+    const promotion = await this.promotionsService.createPromotion(mappedDto as any);
     return { success: true, promotion };
   }
 
@@ -46,13 +47,7 @@ export class AdminPromotionsController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
   async updateLimits(@Param('id') id: string, @Body() dto: UpdatePromotionLimitsDto) {
-    const updated = await this.prisma.promotions.update({
-      where: { id },
-      data: {
-        usage_limit: dto.usageLimit,
-        max_usage_per_user: dto.maxUsagePerUser,
-      },
-    });
+    const updated = await this.promotionsService.updatePromotionLimits(id, dto);
     return { success: true, promotion: updated };
   }
 }

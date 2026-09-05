@@ -14,6 +14,7 @@ import { CustomerCancelBookingUseCase } from '../../application/use-cases/custom
 import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
 import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
 import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
+import { RequestBookingExtensionUseCase } from '../../application/use-cases/request-booking-extension.use-case';
 describe('BookingsController', () => {
   let controller: BookingsController;
   const mockBookingRepo = { findBookingById: jest.fn() };
@@ -32,6 +33,7 @@ describe('BookingsController', () => {
         { provide: StartBookingServiceUseCase, useValue: mockUseCase },
         { provide: UpdateBookingChecklistItemUseCase, useValue: mockUseCase },
         { provide: CompleteBookingUseCase, useValue: mockUseCase },
+        { provide: RequestBookingExtensionUseCase, useValue: mockUseCase },
         { provide: CustomerConfirmBookingUseCase, useValue: mockUseCase },
         { provide: CustomerCancelBookingUseCase, useValue: mockUseCase },
         { provide: GetBookingByIdUseCase, useValue: mockUseCase },

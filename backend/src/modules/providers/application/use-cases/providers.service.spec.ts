@@ -42,6 +42,7 @@ describe('ProvidersService', () => {
             $transaction: jest.fn((callback) => callback(mockProvidersRepository)),
             provider_profiles: { update: jest.fn() },
             provider_documents: { count: jest.fn() },
+            bookings: { findMany: jest.fn(), count: jest.fn() },
           },
         },
       ],
@@ -143,6 +144,34 @@ describe('ProvidersService', () => {
           service_radius_km: 10,
         }
       });
+    });
+  });
+
+  describe('getProviderDashboard', () => {
+    it('should calculate revenue and booking counts correctly', async () => {
+      mockProvidersRepository.findProfileByUserId.mockResolvedValue({ id: 'provider-1' });
+      const prismaService = (service as any).prisma;
+      
+      prismaService.bookings.findMany.mockResolvedValue([
+        { total_price: 100000 },
+        { total_price: 250000 },
+      ]);
+      
+      prismaService.bookings.count.mockImplementation(async (args: any) => {
+        if (args.where.status === 'COMPLETED') return 2;
+        if (args.where.status === 'CANCELLED') return 1;
+        return 0;
+      });
+
+      const result = await service.getProviderDashboard('user-1');
+      expect(result.totalRevenueThisMonth).toBe(350000);
+      expect(result.totalCompletedBookings).toBe(2);
+      expect(result.totalCancelledBookings).toBe(1);
+    });
+
+    it('should throw NotFoundException if profile not found', async () => {
+      mockProvidersRepository.findProfileByUserId.mockResolvedValue(null);
+      await expect(service.getProviderDashboard('user-1')).rejects.toThrow(NotFoundException);
     });
   });
 });
