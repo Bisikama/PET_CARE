@@ -672,6 +672,29 @@ export class PaymentsService {
                 tx,
               );
             }
+            // 4. Xử lý lưu promotion usage nếu có
+            if (extraData && extraData.includes('promotionCode=')) {
+              const promoMatch = extraData.match(/promotionCode=([^&]+)/);
+              if (promoMatch && promoMatch[1]) {
+                const promoCode = promoMatch[1];
+                const promotion = await tx.promotions.findUnique({ where: { code: promoCode } });
+                if (promotion) {
+                  // Tăng used_count
+                  await tx.promotions.update({
+                    where: { id: promotion.id },
+                    data: { used_count: { increment: 1 } }
+                  });
+                  // Lưu usage
+                  await tx.promotion_usages.create({
+                    data: {
+                      promotion_id: promotion.id,
+                      user_id: payment.customer_id,
+                      booking_id: payment.booking_id,
+                    }
+                  });
+                }
+              }
+            }
           }
         } else {
           // Thất bại
