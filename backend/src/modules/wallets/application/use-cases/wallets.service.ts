@@ -159,10 +159,15 @@ export class WalletsService {
    *
    * @param providerId ID của Provider
    * @param amount Số tiền muốn rút
+   * @param bankAccountId ID của thẻ ngân hàng
    */
-  async createPayoutRequest(providerId: string, amount: number) {
+  async createPayoutRequest(providerId: string, amount: number, bankAccountId: string) {
     if (amount <= 0) {
       throw new BadRequestException('Số tiền rút phải lớn hơn 0');
+    }
+
+    if (!bankAccountId) {
+      throw new BadRequestException('Vui lòng chọn thẻ ngân hàng để rút tiền');
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -186,6 +191,21 @@ export class WalletsService {
         throw new BadRequestException('Không tìm thấy hồ sơ Provider');
       }
 
+      const bankAccount = await tx.provider_bank_accounts.findUnique({
+        where: { id: bankAccountId }
+      });
+
+      if (!bankAccount || bankAccount.provider_id !== providerProfile.id) {
+        throw new BadRequestException('Thẻ ngân hàng không hợp lệ hoặc không thuộc về Provider này');
+      }
+
+      const bankDetails = {
+        bank_name: bankAccount.bank_name,
+        account_number: bankAccount.account_number,
+        account_name: bankAccount.account_name,
+        branch: bankAccount.branch,
+      };
+
       // 1. Ghi nhận giao dịch trừ tiền (PAYOUT)
       await this.processTransaction(
         wallet.id,
@@ -202,6 +222,7 @@ export class WalletsService {
           provider_id: providerProfile.id,
           amount: amount,
           status: payout_status.PAYOUT_PENDING,
+          bank_details: bankDetails,
         },
       });
 
@@ -262,17 +283,25 @@ export class WalletsService {
    * @param providerId ID của Provider
    */
   async getPayoutRequests(providerId: string, page: number = 1, limit: number = 20) {
+    const providerProfile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: providerId }
+    });
+
+    if (!providerProfile) {
+      return { data: [], total: 0, page: Number(page), limit: Number(limit) };
+    }
+
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
       this.prisma.payout_requests.findMany({
-        where: { provider_id: providerId },
+        where: { provider_id: providerProfile.id },
         orderBy: { created_at: 'desc' },
         skip,
         take: Number(limit),
       }),
       this.prisma.payout_requests.count({
-        where: { provider_id: providerId },
+        where: { provider_id: providerProfile.id },
       }),
     ]);
 
