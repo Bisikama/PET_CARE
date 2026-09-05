@@ -178,6 +178,14 @@ export class WalletsService {
         throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
       }
 
+      const providerProfile = await tx.provider_profiles.findUnique({
+        where: { user_id: providerId },
+      });
+
+      if (!providerProfile) {
+        throw new BadRequestException('Không tìm thấy hồ sơ Provider');
+      }
+
       // 1. Ghi nhận giao dịch trừ tiền (PAYOUT)
       await this.processTransaction(
         wallet.id,
@@ -191,7 +199,7 @@ export class WalletsService {
       // 2. Tạo bản ghi chờ duyệt (PENDING)
       const request = await tx.payout_requests.create({
         data: {
-          provider_id: providerId,
+          provider_id: providerProfile.id,
           amount: amount,
           status: payout_status.PAYOUT_PENDING,
         },

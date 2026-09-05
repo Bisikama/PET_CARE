@@ -241,19 +241,24 @@ export class PaymentsService {
           // 3. Tiền vào ví Provider ở dạng Ký quỹ (Pending Balance)
           const providerId = payment.bookings?.provider_id;
           if (providerId) {
-            const providerWallet = await tx.wallets.findUnique({
-              where: { user_id: providerId }
+            const providerProfile = await tx.provider_profiles.findUnique({
+              where: { id: providerId }
             });
-            
-            if (providerWallet) {
-              await this.walletsService.processTransaction(
-                providerWallet.id,
-                Number(payment.bookings.total_price), // Đảm bảo ghi nhận giá trị gốc
-                'ESCROW_HOLD',
-                payment.booking_id,
-                'Ký quỹ thanh toán từ VNPay',
-                tx,
-              );
+            if (providerProfile) {
+              const providerWallet = await tx.wallets.findUnique({
+                where: { user_id: providerProfile.user_id }
+              });
+              
+              if (providerWallet) {
+                await this.walletsService.processTransaction(
+                  providerWallet.id,
+                  Number(payment.bookings.total_price), // Đảm bảo ghi nhận giá trị gốc
+                  'ESCROW_HOLD',
+                  payment.booking_id,
+                  'Ký quỹ thanh toán từ VNPay',
+                  tx,
+                );
+              }
             }
           }
 
@@ -410,18 +415,23 @@ export class PaymentsService {
 
       // 4. Ký quỹ vào Ví Provider (ESCROW_HOLD)
       if (booking.provider_id) {
-        const providerWallet = await tx.wallets.findUnique({
-          where: { user_id: booking.provider_id },
+        const providerProfile = await tx.provider_profiles.findUnique({
+          where: { id: booking.provider_id },
         });
-        if (providerWallet) {
-          await this.walletsService.processTransaction(
-            providerWallet.id,
-            finalAmount,
-            'ESCROW_HOLD',
-            bookingId,
-            `Ký quỹ thanh toán từ Ví Customer`,
-            tx,
-          );
+        if (providerProfile) {
+          const providerWallet = await tx.wallets.findUnique({
+            where: { user_id: providerProfile.user_id },
+          });
+          if (providerWallet) {
+            await this.walletsService.processTransaction(
+              providerWallet.id,
+              finalAmount,
+              'ESCROW_HOLD',
+              bookingId,
+              `Ký quỹ thanh toán từ Ví Customer`,
+              tx,
+            );
+          }
         }
       }
 
@@ -658,19 +668,24 @@ export class PaymentsService {
 
           const providerId = payment.bookings?.provider_id;
           if (providerId) {
-            const providerWallet = await tx.wallets.findUnique({
-              where: { user_id: providerId }
+            const providerProfile = await tx.provider_profiles.findUnique({
+              where: { id: providerId }
             });
-            
-            if (providerWallet) {
-              await this.walletsService.processTransaction(
-                providerWallet.id,
-                Number(payment.bookings.total_price),
-                'ESCROW_HOLD',
-                payment.booking_id,
-                'Ký quỹ thanh toán từ Momo',
-                tx,
-              );
+            if (providerProfile) {
+              const providerWallet = await tx.wallets.findUnique({
+                where: { user_id: providerProfile.user_id }
+              });
+              
+              if (providerWallet) {
+                await this.walletsService.processTransaction(
+                  providerWallet.id,
+                  Number(payment.bookings.total_price),
+                  'ESCROW_HOLD',
+                  payment.booking_id,
+                  'Ký quỹ thanh toán từ Momo',
+                  tx,
+                );
+              }
             }
             // 4. Xử lý lưu promotion usage nếu có
             if (extraData && extraData.includes('promotionCode=')) {
