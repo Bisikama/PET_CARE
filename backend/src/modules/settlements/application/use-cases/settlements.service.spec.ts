@@ -6,7 +6,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 
 describe('SettlementsService', () => {
   let service: SettlementsService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
   let walletsService: jest.Mocked<WalletsService>;
 
   beforeEach(async () => {
@@ -23,6 +23,9 @@ describe('SettlementsService', () => {
       audit_logs: {
         create: jest.fn(),
       },
+      provider_profiles: {
+        findUnique: jest.fn(),
+      }
     };
 
     const mockWallets = {
@@ -57,20 +60,27 @@ describe('SettlementsService', () => {
         provider_id: 'provider-1',
       };
 
-      const mockWallet = {
-        id: 'wallet-1',
-        user_id: 'provider-1',
+      const mockProfile = {
+        id: 'provider-1',
+        user_id: 'user-1',
       };
 
-      prismaService.payout_requests.findUnique.mockResolvedValueOnce(mockRequest as any);
-      prismaService.wallets.findUnique.mockResolvedValueOnce(mockWallet as any);
-      prismaService.payout_requests.update.mockResolvedValueOnce({ ...mockRequest, status: 'PAID_OUT' } as any);
-      prismaService.audit_logs.create.mockResolvedValueOnce({} as any);
+      const mockWallet = {
+        id: 'wallet-1',
+        user_id: 'user-1',
+      };
+
+      prismaService.payout_requests.findUnique.mockResolvedValueOnce(mockRequest);
+      prismaService.provider_profiles.findUnique.mockResolvedValueOnce(mockProfile);
+      prismaService.wallets.findUnique.mockResolvedValueOnce(mockWallet);
+      prismaService.payout_requests.update.mockResolvedValueOnce({ ...mockRequest, status: 'PAID_OUT' });
+      prismaService.audit_logs.create.mockResolvedValueOnce({});
 
       const result = await service.approvePayoutRequest(adminId, payoutRequestId);
 
       expect(prismaService.payout_requests.findUnique).toHaveBeenCalledWith({ where: { id: payoutRequestId } });
-      expect(prismaService.wallets.findUnique).toHaveBeenCalledWith({ where: { user_id: 'provider-1' } });
+      expect(prismaService.provider_profiles.findUnique).toHaveBeenCalledWith({ where: { id: 'provider-1' } });
+      expect(prismaService.wallets.findUnique).toHaveBeenCalledWith({ where: { user_id: 'user-1' } });
       expect(prismaService.payout_requests.update).toHaveBeenCalledWith({
         where: { id: payoutRequestId },
         data: {
@@ -86,7 +96,7 @@ describe('SettlementsService', () => {
       prismaService.payout_requests.findUnique.mockResolvedValueOnce({
         id: 'req-1',
         status: 'PAID_OUT',
-      } as any);
+      });
 
       await expect(service.approvePayoutRequest('admin-1', 'req-1')).rejects.toThrow(ConflictException);
     });
@@ -105,15 +115,21 @@ describe('SettlementsService', () => {
         amount: 1000,
       };
 
-      const mockWallet = {
-        id: 'wallet-1',
-        user_id: 'provider-1',
+      const mockProfile = {
+        id: 'provider-1',
+        user_id: 'user-1',
       };
 
-      prismaService.payout_requests.findUnique.mockResolvedValueOnce(mockRequest as any);
-      prismaService.wallets.findUnique.mockResolvedValueOnce(mockWallet as any);
+      const mockWallet = {
+        id: 'wallet-1',
+        user_id: 'user-1',
+      };
+
+      prismaService.payout_requests.findUnique.mockResolvedValueOnce(mockRequest);
+      prismaService.provider_profiles.findUnique.mockResolvedValueOnce(mockProfile);
+      prismaService.wallets.findUnique.mockResolvedValueOnce(mockWallet);
       walletsService.processTransaction.mockResolvedValueOnce({} as any);
-      prismaService.payout_requests.update.mockResolvedValueOnce({ ...mockRequest, status: 'FAILED' } as any);
+      prismaService.payout_requests.update.mockResolvedValueOnce({ ...mockRequest, status: 'FAILED' });
 
       const result = await service.rejectPayoutRequest(adminId, payoutRequestId, reason);
 
