@@ -95,7 +95,7 @@ export class AdminResolveDisputeUseCase {
       // Tỷ lệ hoàn khách > 50% đồng nghĩa Provider có lỗi lớn
       if (customerRefundPercentage > 50 && booking.provider_id) {
         await tx.provider_profiles.update({
-          where: { user_id: booking.provider_id },
+          where: { id: booking.provider_id },
           data: {
             trust_score: {
               decrement: 10, // Trừ 10 điểm uy tín cho mỗi vi phạm nghiêm trọng

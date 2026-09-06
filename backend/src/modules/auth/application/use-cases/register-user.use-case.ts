@@ -58,6 +58,7 @@ export class RegisterUserUseCase {
         status: 'PENDING_VERIFICATION',
         isActive: true,
       });
+      await this.usersService.ensureWalletExists(userByEmail.id);
     }
 
     return {

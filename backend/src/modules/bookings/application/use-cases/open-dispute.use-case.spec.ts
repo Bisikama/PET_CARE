@@ -47,7 +47,7 @@ describe('OpenDisputeUseCase', () => {
       reason: dispute_reason.PROVIDER_NO_SHOW,
       description: 'Provider did not arrive',
     };
-    const mockBooking = { id: bookingId, customer_id: customerId, provider_id: 'provider-1', status: booking_status.IN_PROGRESS };
+    const mockBooking = { id: bookingId, customer_id: customerId, provider_id: 'provider-1', status: booking_status.IN_PROGRESS, provider_profiles: { user_id: 'provider-user-1' } };
 
     (prismaService.bookings.findUnique as jest.Mock).mockResolvedValue(mockBooking);
     (prismaService.complaints.findFirst as jest.Mock).mockResolvedValue(null);
@@ -59,7 +59,7 @@ describe('OpenDisputeUseCase', () => {
       data: {
         booking_id: bookingId,
         complainant_id: customerId,
-        accused_id: mockBooking.provider_id,
+        accused_id: 'provider-user-1',
         title: `Dispute for booking ${bookingId}`,
         description: dto.description,
         reason: dto.reason,

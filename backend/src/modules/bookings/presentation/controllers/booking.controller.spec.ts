@@ -15,8 +15,8 @@ import { CustomerConfirmBookingUseCase } from '../../application/use-cases/custo
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import { ProviderCancelBookingUseCase } from '../../application/use-cases/provider-cancel-booking.use-case';
 import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
-import { GetBookingsUseCase } from '../../application/use-cases/get-bookings.use-case';
 import { GetActiveBookingUseCase } from '../../application/use-cases/get-active-booking.use-case';
+import { GetBookingsUseCase } from '../../application/use-cases/get-bookings.use-case';
 import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
 import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
 import { RequestBookingExtensionUseCase } from '../../application/use-cases/request-booking-extension.use-case';
@@ -49,6 +49,8 @@ describe('BookingsController', () => {
         { provide: CustomerConfirmBookingUseCase, useValue: mockUseCase },
         { provide: CustomerCancelBookingUseCase, useValue: mockUseCase },
         { provide: GetBookingByIdUseCase, useValue: mockUseCase },
+        { provide: GetActiveBookingUseCase, useValue: mockUseCase },
+        { provide: GetBookingsUseCase, useValue: mockUseCase },
         { provide: CreateReviewUseCase, useValue: mockUseCase },
         { provide: OpenDisputeUseCase, useValue: mockUseCase },
       ],

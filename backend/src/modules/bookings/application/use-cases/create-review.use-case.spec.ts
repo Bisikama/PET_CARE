@@ -41,7 +41,7 @@ describe('CreateReviewUseCase', () => {
     const bookingId = 'booking-1';
     const customerId = 'customer-1';
     const dto = { rating: 5, comment: 'Great!' };
-    const mockBooking = { id: bookingId, customer_id: customerId, provider_id: 'provider-1', status: booking_status.COMPLETED };
+    const mockBooking = { id: bookingId, customer_id: customerId, provider_id: 'provider-1', status: booking_status.COMPLETED, provider_profiles: { user_id: 'provider-user-1' } };
 
     (prismaService.bookings.findUnique as jest.Mock).mockResolvedValue(mockBooking);
     (prismaService.reviews.findFirst as jest.Mock).mockResolvedValue(null);
@@ -53,7 +53,7 @@ describe('CreateReviewUseCase', () => {
       data: {
         booking_id: bookingId,
         reviewer_id: customerId,
-        reviewee_id: mockBooking.provider_id,
+        reviewee_id: 'provider-user-1',
         rating: dto.rating,
         comment: dto.comment,
       },
