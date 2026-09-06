@@ -34,6 +34,15 @@ export class BookingStateMachineService {
     return 'CANCELLED';
   }
 
+  providerCancel(status: booking_status): booking_status {
+    if (status !== 'ACCEPTED') {
+      throw new BadRequestException(
+        `Đối tác chỉ có thể hủy đơn khi đơn ở trạng thái đã nhận (ACCEPTED) và chưa bắt đầu. Trạng thái hiện tại: ${status}`,
+      );
+    }
+    return 'CANCELLED';
+  }
+
   startService(status: booking_status): booking_status {
     const validStatuses: booking_status[] = ['ACCEPTED', 'PROVIDER_ARRIVED', 'CHECKED_IN'];
     if (!validStatuses.includes(status)) {
