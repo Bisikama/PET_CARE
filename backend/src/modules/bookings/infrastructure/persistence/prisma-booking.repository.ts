@@ -95,10 +95,13 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
       requestedSlotId: string;
       requestedDate: Date;
       serviceDurationMinutes: number;
+      travelDurationMinutes?: number;
       estimatedStartAt: Date;
       estimatedEndAt: Date;
       status: booking_status;
       totalPrice: number;
+      discountAmount?: number;
+      promotionId?: string;
       customerNote?: string;
       addressSnapshot?: any;
       priceSnapshot?: any;
@@ -138,10 +141,13 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
         requested_slot_id: bookingData.requestedSlotId,
         requested_date: bookingData.requestedDate,
         service_duration_minutes: bookingData.serviceDurationMinutes,
+        travel_duration_minutes: bookingData.travelDurationMinutes || 0,
         estimated_start_at: bookingData.estimatedStartAt,
         estimated_end_at: bookingData.estimatedEndAt,
         status: bookingData.status,
         total_price: bookingData.totalPrice,
+        discount_amount: bookingData.discountAmount || 0,
+        promotion_id: bookingData.promotionId || null,
         customer_note: bookingData.customerNote,
         address_snapshot: bookingData.addressSnapshot,
         price_snapshot: bookingData.priceSnapshot,

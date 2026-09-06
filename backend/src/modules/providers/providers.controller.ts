@@ -10,6 +10,7 @@ import { ProvidersService } from './application/use-cases/providers.service';
 import { CreateProviderProfileDto } from './dto/create-provider-profile.dto';
 import { AddServiceAreaDto } from './dto/add-service-area.dto';
 import { RegisterCapabilityDto } from './dto/register-capability.dto';
+import { UpdateCapabilityDto } from './dto/update-capability.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { SubmitKycDto } from './dto/submit-kyc.dto';
 import { UpdateProviderAddressDto } from './dto/update-provider-address.dto';
@@ -79,6 +80,50 @@ export class ProvidersController {
   ) {
     await this.providersService.registerCapability(userId, dto);
     return { success: true, message: 'Đăng ký dịch vụ thành công' };
+  }
+
+  @Get('me/capabilities')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PROVIDER)
+  @ApiOperation({ summary: 'Lấy danh sách năng lực dịch vụ của Provider đang đăng nhập' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách các dịch vụ đã đăng ký và trạng thái duyệt.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy hồ sơ đối tác (PROVIDER_NOT_FOUND).' })
+  async getMyCapabilities(@GetCurrentUserId() userId: string) {
+    return this.providersService.getMyCapabilities(userId);
+  }
+
+  @Patch('capabilities/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PROVIDER)
+  @ApiOperation({ summary: 'Cập nhật trạng thái bật/tắt hoặc ghi chú cho gói dịch vụ' })
+  @ApiResponse({ status: 200, description: 'Cập nhật dịch vụ thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ (NOT_FOUND).' })
+  async updateCapability(
+    @GetCurrentUserId() userId: string,
+    @Param('id') capabilityId: string,
+    @Body() dto: UpdateCapabilityDto,
+  ) {
+    return this.providersService.updateCapability(userId, capabilityId, dto);
+  }
+
+  @Delete('capabilities/:id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PROVIDER)
+  @ApiOperation({ summary: 'Xóa hoặc vô hiệu hóa an toàn gói dịch vụ của Provider' })
+  @ApiResponse({ status: 200, description: 'Xóa hoặc vô hiệu hóa thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy gói dịch vụ (NOT_FOUND).' })
+  async deleteCapability(
+    @GetCurrentUserId() userId: string,
+    @Param('id') capabilityId: string,
+  ) {
+    return this.providersService.deleteCapability(userId, capabilityId);
   }
 
   @Post('documents')
