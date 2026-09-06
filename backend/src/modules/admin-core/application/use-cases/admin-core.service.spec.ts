@@ -31,6 +31,7 @@ describe('AdminCoreService', () => {
   let prismaService: PrismaService;
   let settlementsService: SettlementsService;
   let notificationsService: NotificationsService;
+  let configService: ConfigService;
 
   let storageService: jest.Mocked<SupabaseStorageService>;
 
