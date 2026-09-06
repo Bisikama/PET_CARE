@@ -23,6 +23,8 @@ import { GrowthModule } from '../growth/growth.module';
 import { StorageModule } from '../storage/storage.module';
 import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
 import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id.use-case';
+import { GetActiveBookingUseCase } from './application/use-cases/get-active-booking.use-case';
+import { GetBookingsUseCase } from './application/use-cases/get-bookings.use-case';
 import { CreateReviewUseCase } from './application/use-cases/create-review.use-case';
 import { OpenDisputeUseCase } from './application/use-cases/open-dispute.use-case';
 import { RequestBookingExtensionUseCase } from './application/use-cases/request-booking-extension.use-case';
@@ -37,6 +39,8 @@ import { UploadBookingEvidenceUseCase } from './application/use-cases/upload-boo
     ProviderRejectBookingUseCase,
     SearchMatchingProvidersUseCase,
     GetBookingByIdUseCase,
+    GetActiveBookingUseCase,
+    GetBookingsUseCase,
     GetBookingChecklistUseCase,
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,
@@ -60,6 +64,8 @@ import { UploadBookingEvidenceUseCase } from './application/use-cases/upload-boo
   ],
   exports: [
     BOOKING_REPOSITORY,
+    GetActiveBookingUseCase,
+    GetBookingsUseCase,
     GetBookingChecklistUseCase,
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,
