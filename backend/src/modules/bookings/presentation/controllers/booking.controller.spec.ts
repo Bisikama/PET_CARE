@@ -3,6 +3,7 @@ import { BookingsController } from './booking.controller';
 import { BOOKING_REPOSITORY } from '../../booking.tokens';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateBookingRequestUseCase } from '../../application/use-cases/create-booking-request.use-case';
+import { CalculateBookingPriceUseCase } from '../../application/use-cases/calculate-booking-price.use-case';
 import { ProviderAcceptBookingUseCase } from '../../application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from '../../application/use-cases/provider-reject-booking.use-case';
 import { GetBookingChecklistUseCase } from '../../application/use-cases/get-booking-checklist.use-case';
@@ -12,10 +13,14 @@ import { CompleteBookingUseCase } from '../../application/use-cases/complete-boo
 import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
+import { ProviderCancelBookingUseCase } from '../../application/use-cases/provider-cancel-booking.use-case';
 import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
+import { GetBookingsUseCase } from '../../application/use-cases/get-bookings.use-case';
+import { GetActiveBookingUseCase } from '../../application/use-cases/get-active-booking.use-case';
 import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
 import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
 import { RequestBookingExtensionUseCase } from '../../application/use-cases/request-booking-extension.use-case';
+import { BatchUpdateChecklistUseCase } from '../../application/use-cases/batch-update-checklist.use-case';
 describe('BookingsController', () => {
   let controller: BookingsController;
   const mockBookingRepo = { findBookingById: jest.fn() };
@@ -28,11 +33,16 @@ describe('BookingsController', () => {
       providers: [
         { provide: BOOKING_REPOSITORY, useValue: mockBookingRepo },
         { provide: CreateBookingRequestUseCase, useValue: mockUseCase },
+        { provide: CalculateBookingPriceUseCase, useValue: mockUseCase },
         { provide: ProviderAcceptBookingUseCase, useValue: mockUseCase },
         { provide: ProviderRejectBookingUseCase, useValue: mockUseCase },
+        { provide: ProviderCancelBookingUseCase, useValue: mockUseCase },
+        { provide: GetBookingsUseCase, useValue: mockUseCase },
+        { provide: GetActiveBookingUseCase, useValue: mockUseCase },
         { provide: GetBookingChecklistUseCase, useValue: mockUseCase },
         { provide: StartBookingServiceUseCase, useValue: mockUseCase },
         { provide: UpdateBookingChecklistItemUseCase, useValue: mockUseCase },
+        { provide: BatchUpdateChecklistUseCase, useValue: mockUseCase },
         { provide: CompleteBookingUseCase, useValue: mockUseCase },
         { provide: UploadBookingEvidenceUseCase, useValue: mockUseCase },
         { provide: RequestBookingExtensionUseCase, useValue: mockUseCase },

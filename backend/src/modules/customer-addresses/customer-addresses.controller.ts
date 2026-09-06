@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
+import { Public } from '../../common/decorators/public.decorator';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -21,9 +22,11 @@ import { CreateAddressUseCase } from './application/use-cases/create-address.use
 import { UpdateAddressUseCase } from './application/use-cases/update-address.use-case';
 import { GetAddressesUseCase } from './application/use-cases/get-addresses.use-case';
 import { DeleteAddressUseCase } from './application/use-cases/delete-address.use-case';
+import { CalculateDistanceUseCase } from './application/use-cases/calculate-distance.use-case';
 
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { CalculateDistanceDto } from './dto/calculate-distance.dto';
 
 @ApiTags('Customer Addresses')
 @ApiBearerAuth()
@@ -36,7 +39,26 @@ export class CustomerAddressesController {
     private readonly updateAddressUseCase: UpdateAddressUseCase,
     private readonly getAddressesUseCase: GetAddressesUseCase,
     private readonly deleteAddressUseCase: DeleteAddressUseCase,
+    private readonly calculateDistanceUseCase: CalculateDistanceUseCase,
   ) {}
+
+  @Public()
+  @Post('calculate-distance')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Tính toán khoảng cách thực tế ước tính (Haversine * 1.3), thời gian di chuyển và phụ phí',
+    description:
+      'Hỗ trợ tính khoảng cách bằng tọa độ (Lat, Lng) hoặc truyền addressId / providerId từ hệ thống.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tính toán thành công, trả về khoảng cách đường chim bay, đường thực tế ước tính, thời gian và phụ phí.',
+  })
+  @ApiResponse({ status: 400, description: 'Thiếu hoặc sai lệch tọa độ kinh/vĩ độ (Validation Error).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy địa chỉ hoặc đối tác (NOT_FOUND).' })
+  async calculateDistance(@Body() dto: CalculateDistanceDto) {
+    return this.calculateDistanceUseCase.execute(dto);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

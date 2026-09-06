@@ -5,6 +5,7 @@ import { CreateAddressUseCase } from './application/use-cases/create-address.use
 import { UpdateAddressUseCase } from './application/use-cases/update-address.use-case';
 import { GetAddressesUseCase } from './application/use-cases/get-addresses.use-case';
 import { DeleteAddressUseCase } from './application/use-cases/delete-address.use-case';
+import { CalculateDistanceUseCase } from './application/use-cases/calculate-distance.use-case';
 import { CUSTOMER_ADDRESSES_REPOSITORY } from './customer-addresses.tokens';
 import { PrismaCustomerAddressesRepository } from './infrastructure/persistence/prisma-customer-addresses.repository';
 
@@ -16,11 +17,12 @@ import { PrismaCustomerAddressesRepository } from './infrastructure/persistence/
     UpdateAddressUseCase,
     GetAddressesUseCase,
     DeleteAddressUseCase,
+    CalculateDistanceUseCase,
     {
       provide: CUSTOMER_ADDRESSES_REPOSITORY,
       useClass: PrismaCustomerAddressesRepository,
     },
   ],
-  exports: [CUSTOMER_ADDRESSES_REPOSITORY, GetAddressesUseCase],
+  exports: [CUSTOMER_ADDRESSES_REPOSITORY, GetAddressesUseCase, CalculateDistanceUseCase],
 })
 export class CustomerAddressesModule {}

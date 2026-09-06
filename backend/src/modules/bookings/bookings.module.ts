@@ -22,6 +22,8 @@ import { SettlementsModule } from '../settlements/settlements.module';
 import { GrowthModule } from '../growth/growth.module';
 import { StorageModule } from '../storage/storage.module';
 import { CustomerCancelBookingUseCase } from './application/use-cases/customer-cancel-booking.use-case';
+import { ProviderCancelBookingUseCase } from './application/use-cases/provider-cancel-booking.use-case';
+import { CalculateBookingPriceUseCase } from './application/use-cases/calculate-booking-price.use-case';
 import { GetBookingByIdUseCase } from './application/use-cases/get-booking-by-id.use-case';
 import { GetActiveBookingUseCase } from './application/use-cases/get-active-booking.use-case';
 import { GetBookingsUseCase } from './application/use-cases/get-bookings.use-case';
@@ -29,14 +31,17 @@ import { CreateReviewUseCase } from './application/use-cases/create-review.use-c
 import { OpenDisputeUseCase } from './application/use-cases/open-dispute.use-case';
 import { RequestBookingExtensionUseCase } from './application/use-cases/request-booking-extension.use-case';
 import { UploadBookingEvidenceUseCase } from './application/use-cases/upload-booking-evidence.use-case';
+import { BatchUpdateChecklistUseCase } from './application/use-cases/batch-update-checklist.use-case';
 
 @Module({
   imports: [PrismaModule, PaymentsModule, SettlementsModule, GrowthModule, StorageModule],
   controllers: [BookingsController, BookingMatchingController],
   providers: [
     CreateBookingRequestUseCase,
+    CalculateBookingPriceUseCase,
     ProviderAcceptBookingUseCase,
     ProviderRejectBookingUseCase,
+    ProviderCancelBookingUseCase,
     SearchMatchingProvidersUseCase,
     GetBookingByIdUseCase,
     GetActiveBookingUseCase,
@@ -44,6 +49,7 @@ import { UploadBookingEvidenceUseCase } from './application/use-cases/upload-boo
     GetBookingChecklistUseCase,
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,
+    BatchUpdateChecklistUseCase,
     CompleteBookingUseCase,
     CustomerConfirmBookingUseCase,
     CustomerCancelBookingUseCase,
@@ -69,8 +75,11 @@ import { UploadBookingEvidenceUseCase } from './application/use-cases/upload-boo
     GetBookingChecklistUseCase,
     StartBookingServiceUseCase,
     UpdateBookingChecklistItemUseCase,
+    BatchUpdateChecklistUseCase,
     CompleteBookingUseCase,
     UploadBookingEvidenceUseCase,
+    ProviderCancelBookingUseCase,
+    CalculateBookingPriceUseCase,
   ],
 })
 export class BookingsModule {}
