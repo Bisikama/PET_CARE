@@ -3,7 +3,10 @@ import { PrismaService } from '../../../../database/prisma.service';
 import { SuspendUserDto } from '../../dto/suspend-user.dto';
 import { GetAuditLogsDto } from '../../dto/get-audit-logs.dto';
 import { GetUsersDto } from '../../dto/get-users.dto';
-import { Role, user_status, provider_status, booking_status } from '@prisma/client';
+import { UpdateUserRoleDto } from '../../dto/update-user-role.dto';
+import { GetDeactivationRequestsDto } from '../../dto/get-deactivation-requests.dto';
+import { RejectDeactivationRequestDto } from '../../dto/reject-deactivation-request.dto';
+import { Role, user_status, provider_status, booking_status, deactivation_status } from '@prisma/client';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
 
@@ -370,6 +373,183 @@ export class AdminCoreService {
       });
 
       return { success: true, data: updatedConfigs };
+    });
+  }
+
+  async updateUserRole(adminId: string, targetUserId: string, dto: UpdateUserRoleDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role === dto.role) {
+      throw new ConflictException(`User is already ${dto.role}`);
+    }
+
+    const oldRole = user.role;
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: targetUserId },
+        data: { role: dto.role },
+      });
+
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'UPDATE_USER_ROLE',
+          target_type: 'USER',
+          target_id: targetUserId,
+          old_value: { role: oldRole },
+          new_value: { role: dto.role },
+          reason: `Phân quyền thành ${dto.role}`,
+        },
+      });
+
+      return {
+        message: 'User role updated successfully',
+        user: { id: updatedUser.id, role: updatedUser.role },
+      };
+    });
+  }
+
+  async getDeactivationRequests(query: GetDeactivationRequestsDto) {
+    const { page = 1, limit = 10, status } = query;
+    const skip = (page - 1) * limit;
+    const whereClause: any = {};
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const [requests, total] = await Promise.all([
+      this.prisma.account_deactivation_requests.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { requested_at: 'desc' },
+        include: {
+          user: {
+            select: { id: true, fullName: true, email: true, phone: true, role: true, status: true },
+          },
+        },
+      }),
+      this.prisma.account_deactivation_requests.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: requests,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async approveDeactivationRequest(adminId: string, requestId: string) {
+    const request = await this.prisma.account_deactivation_requests.findUnique({
+      where: { id: requestId },
+      include: { user: true },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Deactivation request not found');
+    }
+    if (request.status !== deactivation_status.PENDING) {
+      throw new ConflictException(`Request is already ${request.status}`);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Soft delete user (similar to self-delete)
+      const emailRandomSuffix = `_deleted_${Date.now()}`;
+      await tx.user.update({
+        where: { id: request.user_id },
+        data: {
+          status: user_status.DELETED,
+          email: `${request.user.email}${emailRandomSuffix}`,
+          fullName: 'Người dùng đã xoá',
+          phone: null,
+          avatarUrl: null,
+        },
+      });
+
+      // 2. Hide provider profile if exists
+      if (request.user.role === Role.PROVIDER) {
+        await tx.provider_profiles.updateMany({
+          where: { user_id: request.user_id },
+          data: { status: provider_status.SUSPENDED },
+        });
+      }
+
+      // 3. Update request status
+      const updatedRequest = await tx.account_deactivation_requests.update({
+        where: { id: requestId },
+        data: {
+          status: deactivation_status.APPROVED,
+          processed_at: new Date(),
+          admin_note: 'Đã duyệt yêu cầu xoá tài khoản',
+        },
+      });
+
+      // 4. Log audit
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'APPROVE_DEACTIVATION',
+          target_type: 'USER',
+          target_id: request.user_id,
+          old_value: { request_status: 'PENDING' },
+          new_value: { request_status: 'APPROVED' },
+          reason: 'Admin approved deactivation request',
+        },
+      });
+
+      return {
+        message: 'Deactivation request approved successfully',
+        request: updatedRequest,
+      };
+    });
+  }
+
+  async rejectDeactivationRequest(adminId: string, requestId: string, dto: RejectDeactivationRequestDto) {
+    const request = await this.prisma.account_deactivation_requests.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Deactivation request not found');
+    }
+    if (request.status !== deactivation_status.PENDING) {
+      throw new ConflictException(`Request is already ${request.status}`);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedRequest = await tx.account_deactivation_requests.update({
+        where: { id: requestId },
+        data: {
+          status: deactivation_status.REJECTED,
+          processed_at: new Date(),
+          admin_note: dto.reason,
+        },
+      });
+
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'REJECT_DEACTIVATION',
+          target_type: 'USER',
+          target_id: request.user_id,
+          old_value: { request_status: 'PENDING' },
+          new_value: { request_status: 'REJECTED' },
+          reason: `Admin rejected deactivation request: ${dto.reason}`,
+        },
+      });
+
+      return {
+        message: 'Deactivation request rejected successfully',
+        request: updatedRequest,
+      };
     });
   }
 }

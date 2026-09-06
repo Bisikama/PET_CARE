@@ -5,6 +5,9 @@ import { SuspendUserDto } from './dto/suspend-user.dto';
 import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { GetUsersDto } from './dto/get-users.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { GetDeactivationRequestsDto } from './dto/get-deactivation-requests.dto';
+import { RejectDeactivationRequestDto } from './dto/reject-deactivation-request.dto';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -34,6 +37,41 @@ export class AdminCoreController {
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
   async getUsers(@Query() queryDto: GetUsersDto) {
     return this.adminCoreService.getUsers(queryDto);
+  }
+
+  @Get('users/deactivation-requests')
+  @ApiOperation({ summary: 'Lấy danh sách yêu cầu hủy tài khoản (Chỉ dành cho Admin)' })
+  @ApiResponse({ status: 200, description: 'Danh sách yêu cầu.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  async getDeactivationRequests(@Query() queryDto: GetDeactivationRequestsDto) {
+    return this.adminCoreService.getDeactivationRequests(queryDto);
+  }
+
+  @Patch('users/deactivation-requests/:id/approve')
+  @ApiOperation({ summary: 'Phê duyệt yêu cầu hủy tài khoản (Chỉ dành cho Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của yêu cầu', type: String })
+  @ApiResponse({ status: 200, description: 'Phê duyệt thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  async approveDeactivationRequest(@Req() req: any, @Param('id') id: string) {
+    const adminId = req.user.sub;
+    return this.adminCoreService.approveDeactivationRequest(adminId, id);
+  }
+
+  @Patch('users/deactivation-requests/:id/reject')
+  @ApiOperation({ summary: 'Từ chối yêu cầu hủy tài khoản (Chỉ dành cho Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của yêu cầu', type: String })
+  @ApiResponse({ status: 200, description: 'Từ chối thành công.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  async rejectDeactivationRequest(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: RejectDeactivationRequestDto,
+  ) {
+    const adminId = req.user.sub;
+    return this.adminCoreService.rejectDeactivationRequest(adminId, id, dto);
   }
 
   @Get('users/:id')
@@ -77,6 +115,23 @@ export class AdminCoreController {
   ) {
     const adminId = req.user.sub;
     return this.adminCoreService.reactivateUser(adminId, id);
+  }
+
+  @Patch('users/:id/role')
+  @ApiOperation({ summary: 'Phân quyền/Cập nhật vai trò người dùng (Chỉ dành cho Admin)' })
+  @ApiParam({ name: 'id', description: 'ID của người dùng', type: String })
+  @ApiResponse({ status: 200, description: 'Cập nhật vai trò thành công.' })
+  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng.' })
+  async updateUserRole(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRoleDto,
+  ) {
+    const adminId = req.user.sub;
+    return this.adminCoreService.updateUserRole(adminId, id, dto);
   }
 
   @Get('audit-logs')

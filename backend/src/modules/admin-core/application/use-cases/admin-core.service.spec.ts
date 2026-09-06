@@ -38,6 +38,12 @@ describe('AdminCoreService', () => {
               findMany: jest.fn(),
               update: jest.fn(),
             },
+            account_deactivation_requests: {
+              findMany: jest.fn(),
+              count: jest.fn(),
+              findUnique: jest.fn(),
+              update: jest.fn(),
+            },
             $transaction: jest.fn((callback) => callback(prismaService)),
             $executeRaw: jest.fn(),
             $queryRaw: jest.fn(),
@@ -296,6 +302,67 @@ describe('AdminCoreService', () => {
           target_id: targetUserId,
         }),
       });
+    });
+  });
+  describe('updateUserRole', () => {
+    it('should throw NotFoundException if user not found', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.updateUserRole('admin-id', 'user-id', { role: Role.ADMIN })).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ConflictException if user already has the role', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({ role: Role.ADMIN });
+      await expect(service.updateUserRole('admin-id', 'user-id', { role: Role.ADMIN })).rejects.toThrow(ConflictException);
+    });
+
+    it('should update user role and create audit log', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-id', role: Role.CUSTOMER });
+      (prismaService.user.update as jest.Mock).mockResolvedValue({ id: 'user-id', role: Role.ADMIN });
+
+      const result = await service.updateUserRole('admin-id', 'user-id', { role: Role.ADMIN });
+
+      expect(prismaService.user.update).toHaveBeenCalled();
+      expect(prismaService.audit_logs.create).toHaveBeenCalled();
+      expect(result.message).toBe('User role updated successfully');
+    });
+  });
+
+  describe('Deactivation Requests', () => {
+    it('should get deactivation requests', async () => {
+      (prismaService.account_deactivation_requests.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.account_deactivation_requests.count as jest.Mock).mockResolvedValue(0);
+
+      const result = await service.getDeactivationRequests({ page: 1, limit: 10 });
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+    });
+
+    it('approveDeactivationRequest should throw if not found', async () => {
+      (prismaService.account_deactivation_requests.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.approveDeactivationRequest('admin-id', 'req-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('approveDeactivationRequest should approve and soft delete', async () => {
+      const mockReq = { id: 'req-id', status: 'PENDING', user_id: 'user-id', user: { email: 'test@example.com', role: Role.CUSTOMER } };
+      (prismaService.account_deactivation_requests.findUnique as jest.Mock).mockResolvedValue(mockReq);
+      (prismaService.user.update as jest.Mock).mockResolvedValue({});
+      (prismaService.account_deactivation_requests.update as jest.Mock).mockResolvedValue({});
+
+      await service.approveDeactivationRequest('admin-id', 'req-id');
+
+      expect(prismaService.user.update).toHaveBeenCalled();
+      expect(prismaService.account_deactivation_requests.update).toHaveBeenCalled();
+    });
+
+    it('rejectDeactivationRequest should reject', async () => {
+      const mockReq = { id: 'req-id', status: 'PENDING', user_id: 'user-id' };
+      (prismaService.account_deactivation_requests.findUnique as jest.Mock).mockResolvedValue(mockReq);
+      (prismaService.account_deactivation_requests.update as jest.Mock).mockResolvedValue({});
+
+      await service.rejectDeactivationRequest('admin-id', 'req-id', { reason: 'No' });
+
+      expect(prismaService.account_deactivation_requests.update).toHaveBeenCalled();
+      expect(prismaService.audit_logs.create).toHaveBeenCalled();
     });
   });
 });
