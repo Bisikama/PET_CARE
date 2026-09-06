@@ -25,10 +25,13 @@ export interface BookingRepositoryPort {
       requestedSlotId: string;
       requestedDate: Date;
       serviceDurationMinutes: number;
+      travelDurationMinutes?: number;
       estimatedStartAt: Date;
       estimatedEndAt: Date;
       status: booking_status;
       totalPrice: number;
+      discountAmount?: number;
+      promotionId?: string;
       customerNote?: string;
       addressSnapshot?: any;
       priceSnapshot?: any;
