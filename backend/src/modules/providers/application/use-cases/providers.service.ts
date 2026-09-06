@@ -7,6 +7,7 @@ import { AddServiceAreaDto } from '../../dto/add-service-area.dto';
 import { RegisterCapabilityDto } from '../../dto/register-capability.dto';
 import { UploadDocumentDto, ProviderDocumentType } from '../../dto/upload-document.dto';
 import { UpdateProviderAddressDto } from '../../dto/update-provider-address.dto';
+import { UpdateCapabilityDto } from '../../dto/update-capability.dto';
 import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
@@ -389,4 +390,110 @@ export class ProvidersService {
       totalCancelledBookings: totalCancelled,
     };
   }
+
+  async getMyCapabilities(userId: string) {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Không tìm thấy hồ sơ đối tác');
+    }
+
+    return this.prisma.provider_services.findMany({
+      where: { provider_id: profile.id },
+      include: {
+        services: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            category: true,
+            base_price: true,
+            duration_minutes: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  async updateCapability(userId: string, capabilityId: string, dto: UpdateCapabilityDto) {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Không tìm thấy hồ sơ đối tác');
+    }
+
+    const capability = await this.prisma.provider_services.findUnique({
+      where: { id: capabilityId },
+    });
+    if (!capability || capability.provider_id !== profile.id) {
+      throw new NotFoundException('Không tìm thấy gói năng lực hoặc bạn không có quyền sở hữu');
+    }
+
+    const updated = await this.prisma.provider_services.update({
+      where: { id: capabilityId },
+      data: {
+        ...(dto.isActive !== undefined && { is_active: dto.isActive }),
+        ...(dto.customDescription !== undefined && { custom_description: dto.customDescription }),
+        updated_at: new Date(),
+      },
+      include: {
+        services: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Cập nhật dịch vụ thành công',
+      data: updated,
+    };
+  }
+
+  async deleteCapability(userId: string, capabilityId: string) {
+    const profile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+    });
+    if (!profile) {
+      throw new NotFoundException('Không tìm thấy hồ sơ đối tác');
+    }
+
+    const capability = await this.prisma.provider_services.findUnique({
+      where: { id: capabilityId },
+    });
+    if (!capability || capability.provider_id !== profile.id) {
+      throw new NotFoundException('Không tìm thấy gói năng lực hoặc bạn không có quyền sở hữu');
+    }
+
+    // Kiểm tra xem dịch vụ này đã từng có booking liên kết chưa
+    const existingBookingsCount = await this.prisma.booking_services.count({
+      where: { provider_service_id: capabilityId },
+    });
+
+    if (existingBookingsCount > 0) {
+      // Đã có booking trong quá khứ -> Soft Delete (Xóa mềm bằng cách vô hiệu hóa an toàn)
+      await this.prisma.provider_services.update({
+        where: { id: capabilityId },
+        data: {
+          is_active: false,
+          updated_at: new Date(),
+        },
+      });
+      return {
+        success: true,
+        message: 'Dịch vụ đã từng phát sinh đơn đặt lịch, hệ thống đã tự động vô hiệu hóa (xóa mềm) để bảo toàn dữ liệu lịch sử.',
+      };
+    } else {
+      // Chưa từng có booking -> Hard delete an toàn
+      await this.prisma.provider_services.delete({
+        where: { id: capabilityId },
+      });
+      return {
+        success: true,
+        message: 'Xóa dịch vụ thành công.',
+      };
+    }
+  }
 }
+

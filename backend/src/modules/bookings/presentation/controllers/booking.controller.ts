@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -30,6 +31,8 @@ import { CreateBookingRequestUseCase } from '../../application/use-cases/create-
 import { ProviderAcceptBookingUseCase } from '../../application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from '../../application/use-cases/provider-reject-booking.use-case';
 import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
+import { GetBookingsUseCase } from '../../application/use-cases/get-bookings.use-case';
+import { GetActiveBookingUseCase } from '../../application/use-cases/get-active-booking.use-case';
 import { GetBookingChecklistUseCase } from '../../application/use-cases/get-booking-checklist.use-case';
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
@@ -37,15 +40,23 @@ import { CompleteBookingUseCase } from '../../application/use-cases/complete-boo
 import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
+import { ProviderCancelBookingUseCase } from '../../application/use-cases/provider-cancel-booking.use-case';
+import { CalculateBookingPriceUseCase } from '../../application/use-cases/calculate-booking-price.use-case';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { CompleteBookingDto } from '../dto/complete-booking.dto';
+import { GetBookingsDto } from '../dto/get-bookings.dto';
+import { ProviderCancelBookingDto } from '../dto/provider-cancel-booking.dto';
 import { UpdateSingleChecklistItemDto } from '../dto/update-checklist-item.dto';
+import { BatchUpdateChecklistDto } from '../dto/batch-update-checklist.dto';
+import { StartServiceDto } from '../dto/start-service.dto';
+import { CalculateBookingPriceDto } from '../dto/calculate-booking-price.dto';
 import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
 import { CreateReviewDto } from '../../dto/create-review.dto';
 import { OpenDisputeUseCase } from '../../application/use-cases/open-dispute.use-case';
 import { OpenDisputeDto } from '../../dto/open-dispute.dto';
 import { RequestBookingExtensionUseCase } from '../../application/use-cases/request-booking-extension.use-case';
 import { RequestExtensionDto } from '../../dto/request-extension.dto';
+import { BatchUpdateChecklistUseCase } from '../../application/use-cases/batch-update-checklist.use-case';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
@@ -54,12 +65,17 @@ import { RequestExtensionDto } from '../../dto/request-extension.dto';
 export class BookingsController {
   constructor(
     private readonly createBookingUseCase: CreateBookingRequestUseCase,
+    private readonly calculateBookingPriceUseCase: CalculateBookingPriceUseCase,
     private readonly acceptBookingUseCase: ProviderAcceptBookingUseCase,
     private readonly rejectBookingUseCase: ProviderRejectBookingUseCase,
+    private readonly providerCancelBookingUseCase: ProviderCancelBookingUseCase,
     private readonly getBookingByIdUseCase: GetBookingByIdUseCase,
+    private readonly getBookingsUseCase: GetBookingsUseCase,
+    private readonly getActiveBookingUseCase: GetActiveBookingUseCase,
     private readonly getBookingChecklistUseCase: GetBookingChecklistUseCase,
     private readonly startBookingServiceUseCase: StartBookingServiceUseCase,
     private readonly updateBookingChecklistItemUseCase: UpdateBookingChecklistItemUseCase,
+    private readonly batchUpdateChecklistUseCase: BatchUpdateChecklistUseCase,
     private readonly completeBookingUseCase: CompleteBookingUseCase,
     private readonly uploadBookingEvidenceUseCase: UploadBookingEvidenceUseCase,
     private readonly customerConfirmBookingUseCase: CustomerConfirmBookingUseCase,
@@ -68,6 +84,39 @@ export class BookingsController {
     private readonly openDisputeUseCase: OpenDisputeUseCase,
     private readonly requestBookingExtensionUseCase: RequestBookingExtensionUseCase,
   ) {}
+
+  @Post('calculate-price')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Tính toán và báo giá chi tiết cho đơn đặt lịch (Price Calculation / Quote Preview)',
+    description:
+      'Tính toán chi phí dịch vụ theo thú cưng, phụ phí di chuyển theo khoảng cách thực tế (GeoLocationHelper) và khấu trừ khuyến mãi (Voucher).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Báo giá chi tiết thành công kèm phân rã từng loại chi phí.',
+  })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ hoặc không đủ điều kiện (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy thú cưng, địa chỉ hoặc đối tác (NOT_FOUND).' })
+  async calculatePrice(
+    @GetCurrentUserId() userId: string,
+    @Body() dto: CalculateBookingPriceDto,
+  ) {
+    return this.calculateBookingPriceUseCase.execute(userId, dto);
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lấy danh sách đơn đặt lịch của người dùng (Customer hoặc Provider)' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách đơn đặt lịch có phân trang.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  async getBookings(
+    @GetCurrentUserId() userId: string,
+    @Query() query: GetBookingsDto,
+  ) {
+    return this.getBookingsUseCase.execute(userId, query);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -144,17 +193,54 @@ export class BookingsController {
     return this.rejectBookingUseCase.execute(userId, bookingId);
   }
 
+  @Post(':id/provider-cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đối tác chủ động hủy đơn đặt lịch đã nhận',
+    description:
+      'Chỉ cho phép hủy khi đơn ở trạng thái ACCEPTED (chưa bắt đầu thực hiện). Hệ thống sẽ hoàn tiền 100% cho khách hàng, giải phóng slot và ghi nhận vào bảng booking_cancellations.',
+  })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch (Booking ID)', type: 'string' })
+  @ApiResponse({
+    status: 200,
+    description: 'Hủy đơn thành công, đã hoàn tiền cho khách và ghi nhận vào bảng booking_cancellations.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Lý do không hợp lệ hoặc đơn không ở trạng thái ACCEPTED (Validation Error).',
+  })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({
+    status: 403,
+    description: 'Bạn không phải là đối tác được chỉ định cho đơn hàng này (Forbidden).',
+  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
+  async providerCancel(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: ProviderCancelBookingDto,
+  ) {
+    return this.providerCancelBookingUseCase.execute(userId, bookingId, dto);
+  }
+
   @Post(':id/start-service')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đối tác bắt đầu thực hiện dịch vụ (chuyển sang IN_PROGRESS)' })
+  @ApiOperation({
+    summary:
+      'Đối tác bắt đầu thực hiện dịch vụ (chuyển sang IN_PROGRESS) kèm ghi chú / ảnh hiện trạng ban đầu (Check-in)',
+  })
   @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
   @ApiResponse({ status: 200, description: 'Bắt đầu dịch vụ thành công.' })
   @ApiResponse({ status: 400, description: 'Trạng thái đơn hàng không hợp lệ để bắt đầu (Validation Error).' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({ status: 403, description: 'Không phải đối tác được phân công (Forbidden).' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
-  async startService(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
-    return this.startBookingServiceUseCase.execute(userId, bookingId);
+  async startService(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto?: StartServiceDto,
+  ) {
+    return this.startBookingServiceUseCase.execute(userId, bookingId, dto);
   }
 
   @Get(':id/checklist')
@@ -167,6 +253,23 @@ export class BookingsController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn đặt lịch (BOOKING_NOT_FOUND).' })
   async getChecklist(@GetCurrentUserId() userId: string, @Param('id') bookingId: string) {
     return this.getBookingChecklistUseCase.execute(userId, bookingId);
+  }
+
+  @Patch(':id/checklist/batch')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đối tác cập nhật hàng loạt trạng thái các mục checklist (Batch Update)' })
+  @ApiParam({ name: 'id', description: 'ID của đơn đặt lịch', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Cập nhật hàng loạt mục checklist thành công.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ (Validation Error).' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền thao tác trên đơn này (Forbidden).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy mục checklist hoặc đơn đặt lịch (NOT_FOUND).' })
+  async batchUpdateChecklist(
+    @GetCurrentUserId() userId: string,
+    @Param('id') bookingId: string,
+    @Body() dto: BatchUpdateChecklistDto,
+  ) {
+    return this.batchUpdateChecklistUseCase.execute(userId, bookingId, dto);
   }
 
   @Patch(':id/checklist/:itemId')
@@ -260,6 +363,18 @@ export class BookingsController {
     @Param('id') bookingId: string,
   ) {
     return this.customerConfirmBookingUseCase.execute(userId, bookingId);
+  }
+
+  @Get('active')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lấy thông tin đơn dịch vụ đang diễn ra (Active Booking) của user hiện tại' })
+  @ApiResponse({ status: 200, description: 'Trả về chi tiết đơn đặt lịch đang active hoặc null nếu không có.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng (Not Found).' })
+  async getActiveBooking(
+    @GetCurrentUserId() userId: string,
+  ) {
+    return this.getActiveBookingUseCase.execute(userId);
   }
 
   @Get(':id')
