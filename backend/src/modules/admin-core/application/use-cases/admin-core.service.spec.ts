@@ -5,6 +5,25 @@ import { NotFoundException, BadRequestException, ConflictException } from '@nest
 import { Role, user_status, provider_status, booking_status } from '@prisma/client';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      admin: {
+        createUser: jest.fn().mockResolvedValue({
+          data: { user: { id: 'sup-1' } },
+          error: null,
+        }),
+      },
+    },
+  })),
+}));
+
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockResolvedValue('hashedPassword'),
+}));
 
 describe('AdminCoreService', () => {
   let service: AdminCoreService;
@@ -24,6 +43,7 @@ describe('AdminCoreService', () => {
               update: jest.fn(),
               findMany: jest.fn(),
               count: jest.fn(),
+              create: jest.fn(),
             },
             provider_profiles: {
               findUnique: jest.fn(),
@@ -44,6 +64,10 @@ describe('AdminCoreService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
             },
+            refresh_tokens: {
+              findMany: jest.fn(),
+              deleteMany: jest.fn(),
+            },
             $transaction: jest.fn((callback) => callback(prismaService)),
             $executeRaw: jest.fn(),
             $queryRaw: jest.fn(),
@@ -56,6 +80,10 @@ describe('AdminCoreService', () => {
         {
           provide: NotificationsService,
           useValue: { sendNotification: jest.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: ConfigService,
+          useValue: { getOrThrow: jest.fn().mockReturnValue('mocked-key') },
         },
       ],
     }).compile();
@@ -363,6 +391,50 @@ describe('AdminCoreService', () => {
 
       expect(prismaService.account_deactivation_requests.update).toHaveBeenCalled();
       expect(prismaService.audit_logs.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('createUser', () => {
+    it('should throw ConflictException if email exists', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({ email: 'test@example.com' });
+      await expect(service.createUser('admin-id', { email: 'test@example.com', password: 'pass', fullName: 'Test', role: Role.ADMIN, phone: '0123' })).rejects.toThrow(ConflictException);
+    });
+
+    it('should create user', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (prismaService.user.create as jest.Mock).mockResolvedValue({ id: 'new-user', email: 'test@example.com' });
+
+      const result = await service.createUser('admin-id', { email: 'test@example.com', password: 'pass', fullName: 'Test', role: Role.ADMIN, phone: '0123' });
+
+      expect(prismaService.user.create).toHaveBeenCalled();
+      expect(prismaService.audit_logs.create).toHaveBeenCalled();
+      expect(result.data.id).toBe('new-user');
+    });
+  });
+
+  describe('Sessions Management', () => {
+    it('should throw if user not found for sessions', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.getUserSessions('user-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should get user sessions', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-id' });
+      (prismaService.refresh_tokens.findMany as jest.Mock).mockResolvedValue([{ id: 'session-1' }]);
+
+      const result = await service.getUserSessions('user-id');
+      expect(result).toEqual([{ id: 'session-1' }]);
+    });
+
+    it('should revoke user sessions', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-id' });
+      (prismaService.refresh_tokens.deleteMany as jest.Mock).mockResolvedValue({ count: 2 });
+
+      const result = await service.revokeUserSessions('admin-id', 'user-id');
+
+      expect(prismaService.refresh_tokens.deleteMany).toHaveBeenCalledWith({ where: { user_id: 'user-id' } });
+      expect(prismaService.audit_logs.create).toHaveBeenCalled();
+      expect(result.revokedCount).toBe(2);
     });
   });
 });

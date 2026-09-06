@@ -6,9 +6,13 @@ import { GetUsersDto } from '../../dto/get-users.dto';
 import { UpdateUserRoleDto } from '../../dto/update-user-role.dto';
 import { GetDeactivationRequestsDto } from '../../dto/get-deactivation-requests.dto';
 import { RejectDeactivationRequestDto } from '../../dto/reject-deactivation-request.dto';
+import { CreateUserDto } from '../../dto/create-user.dto';
 import { Role, user_status, provider_status, booking_status, deactivation_status } from '@prisma/client';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
+import { ConfigService } from '@nestjs/config';
+import { createClient } from '@supabase/supabase-js';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminCoreService {
@@ -18,6 +22,7 @@ export class AdminCoreService {
     private readonly prisma: PrismaService,
     private readonly settlementsService: SettlementsService,
     private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getDashboardStats() {
@@ -49,46 +54,36 @@ export class AdminCoreService {
     };
   }
 
-  async getUsers(query: GetUsersDto) {
-    const { page = 1, limit = 10, search, role, status } = query;
+  async getUsers(queryDto: GetUsersDto) {
+    const { page = 1, limit = 10, role, status, search } = queryDto;
     const skip = (page - 1) * limit;
 
-    const whereClause: any = {};
-
+    const where: any = {};
+    if (role) where.role = role;
+    if (status) where.status = status;
     if (search) {
-      whereClause.OR = [
-        { fullName: { contains: search, mode: 'insensitive' } },
+      where.OR = [
         { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
+        { fullName: { contains: search, mode: 'insensitive' } },
       ];
-    }
-
-    if (role) {
-      whereClause.role = role;
-    }
-
-    if (status) {
-      whereClause.status = status;
     }
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: whereClause,
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          fullName: true,
           email: true,
-          phone: true,
+          fullName: true,
           role: true,
           status: true,
-          avatarUrl: true,
           createdAt: true,
         },
       }),
-      this.prisma.user.count({ where: whereClause }),
+      this.prisma.user.count({ where }),
     ]);
 
     return {
@@ -99,6 +94,82 @@ export class AdminCoreService {
         limit,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  async createUser(adminId: string, dto: CreateUserDto) {
+    const { email, password, fullName, phone, role } = dto;
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // 1. Create in Supabase Auth
+    const supabaseAdmin = createClient(
+      this.configService.getOrThrow<string>('SUPABASE_URL'),
+      this.configService.getOrThrow<string>('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
+    );
+
+    const { data: supabaseData, error: supabaseError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    });
+
+    if (supabaseError) {
+      this.logger.error(`Supabase Auth error: ${supabaseError.message}`);
+      throw new ConflictException(`Supabase error: ${supabaseError.message}`);
+    }
+
+    const supabaseId = supabaseData.user.id;
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        fullName,
+        role,
+        phone,
+        status: user_status.ACTIVE,
+        supabaseId,
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    await this.prisma.audit_logs.create({
+      data: {
+        actor_id: adminId,
+        action: 'CREATE_USER',
+        target_type: 'USER',
+        target_id: newUser.id,
+        new_value: { email, role, status: user_status.ACTIVE },
+        reason: 'Admin manually created user',
+      },
+    });
+
+    return {
+      message: 'User created successfully',
+      data: newUser,
     };
   }
 
@@ -145,6 +216,11 @@ export class AdminCoreService {
           suspended_reason: reason,
           suspended_at: new Date(),
         },
+      });
+
+      // 1.5. Revoke all sessions (Force Logout)
+      await tx.refresh_tokens.deleteMany({
+        where: { user_id: targetUserId },
       });
 
       // 2. If provider, suspend profile and handle cascading effects
@@ -482,6 +558,11 @@ export class AdminCoreService {
         });
       }
 
+      // 2.5. Revoke all sessions (Force Logout)
+      await tx.refresh_tokens.deleteMany({
+        where: { user_id: request.user_id },
+      });
+
       // 3. Update request status
       const updatedRequest = await tx.account_deactivation_requests.update({
         where: { id: requestId },
@@ -551,5 +632,55 @@ export class AdminCoreService {
         request: updatedRequest,
       };
     });
+  }
+
+  async getUserSessions(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const sessions = await this.prisma.refresh_tokens.findMany({
+      where: { user_id: userId },
+      orderBy: { last_active_at: 'desc' },
+      select: {
+        id: true,
+        device_info: true,
+        ip_address: true,
+        device_id: true,
+        last_active_at: true,
+        expires_at: true,
+        created_at: true,
+      },
+    });
+
+    return sessions;
+  }
+
+  async revokeUserSessions(adminId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const result = await this.prisma.refresh_tokens.deleteMany({
+      where: { user_id: userId },
+    });
+
+    await this.prisma.audit_logs.create({
+      data: {
+        actor_id: adminId,
+        action: 'REVOKE_SESSIONS',
+        target_type: 'USER',
+        target_id: userId,
+        new_value: { revoked_sessions_count: result.count },
+        reason: 'Admin manually revoked all sessions',
+      },
+    });
+
+    return {
+      message: 'Revoked user sessions successfully',
+      revokedCount: result.count,
+    };
   }
 }

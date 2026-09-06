@@ -1,5 +1,6 @@
-import { Controller, Get, Patch, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AdminCoreService } from './application/use-cases/admin-core.service';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
@@ -8,6 +9,7 @@ import { GetUsersDto } from './dto/get-users.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { GetDeactivationRequestsDto } from './dto/get-deactivation-requests.dto';
 import { RejectDeactivationRequestDto } from './dto/reject-deactivation-request.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -37,6 +39,15 @@ export class AdminCoreController {
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
   async getUsers(@Query() queryDto: GetUsersDto) {
     return this.adminCoreService.getUsers(queryDto);
+  }
+
+  @Post('users')
+  @ApiOperation({ summary: 'Tạo tài khoản người dùng/nhân viên mới trực tiếp' })
+  @ApiResponse({ status: 201, description: 'Tạo thành công.' })
+  @ApiResponse({ status: 409, description: 'Email đã tồn tại.' })
+  async createUser(@Req() req: Request, @Body() dto: CreateUserDto) {
+    const adminId = (req.user as any).sub;
+    return this.adminCoreService.createUser(adminId, dto);
   }
 
   @Get('users/deactivation-requests')
@@ -118,20 +129,27 @@ export class AdminCoreController {
   }
 
   @Patch('users/:id/role')
-  @ApiOperation({ summary: 'Phân quyền/Cập nhật vai trò người dùng (Chỉ dành cho Admin)' })
-  @ApiParam({ name: 'id', description: 'ID của người dùng', type: String })
-  @ApiResponse({ status: 200, description: 'Cập nhật vai trò thành công.' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ.' })
-  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
-  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng.' })
-  async updateUserRole(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateUserRoleDto,
-  ) {
-    const adminId = req.user.sub;
+  @ApiOperation({ summary: 'Cấp quyền/Thay đổi Role của người dùng' })
+  @ApiResponse({ status: 200, description: 'Cập nhật thành công.' })
+  @ApiResponse({ status: 409, description: 'Người dùng đã có role này.' })
+  async updateUserRole(@Req() req: Request, @Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
+    const adminId = (req.user as any).sub;
     return this.adminCoreService.updateUserRole(adminId, id, dto);
+  }
+
+  @Get('users/:id/sessions')
+  @ApiOperation({ summary: 'Xem danh sách thiết bị/phiên đăng nhập của người dùng' })
+  @ApiResponse({ status: 200, description: 'Danh sách phiên.' })
+  async getUserSessions(@Param('id') id: string) {
+    return this.adminCoreService.getUserSessions(id);
+  }
+
+  @Delete('users/:id/sessions')
+  @ApiOperation({ summary: 'Buộc người dùng đăng xuất khỏi tất cả thiết bị (Force Logout)' })
+  @ApiResponse({ status: 200, description: 'Đã thu hồi tất cả phiên.' })
+  async revokeUserSessions(@Req() req: Request, @Param('id') id: string) {
+    const adminId = (req.user as any).sub;
+    return this.adminCoreService.revokeUserSessions(adminId, id);
   }
 
   @Get('audit-logs')

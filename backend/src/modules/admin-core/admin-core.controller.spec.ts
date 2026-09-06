@@ -6,6 +6,8 @@ import { GetUsersDto } from './dto/get-users.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { GetDeactivationRequestsDto } from './dto/get-deactivation-requests.dto';
 import { RejectDeactivationRequestDto } from './dto/reject-deactivation-request.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { Request } from 'express';
 
 describe('AdminCoreController', () => {
   let controller: AdminCoreController;
@@ -24,6 +26,9 @@ describe('AdminCoreController', () => {
     getDeactivationRequests: jest.fn(),
     approveDeactivationRequest: jest.fn(),
     rejectDeactivationRequest: jest.fn(),
+    createUser: jest.fn(),
+    getUserSessions: jest.fn(),
+    revokeUserSessions: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -80,7 +85,7 @@ describe('AdminCoreController', () => {
   describe('updateUserRole', () => {
     it('should update user role', async () => {
       const dto: UpdateUserRoleDto = { role: Role.ADMIN };
-      const req = { user: { sub: 'admin-id' } };
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
       mockAdminCoreService.updateUserRole.mockResolvedValue({ message: 'Success' });
 
       const result = await controller.updateUserRole(req, 'user-id', dto);
@@ -103,7 +108,7 @@ describe('AdminCoreController', () => {
     });
 
     it('should approve deactivation request', async () => {
-      const req = { user: { sub: 'admin-id' } };
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
       mockAdminCoreService.approveDeactivationRequest.mockResolvedValue({ message: 'Success' });
 
       const result = await controller.approveDeactivationRequest(req, 'request-id');
@@ -113,13 +118,44 @@ describe('AdminCoreController', () => {
     });
 
     it('should reject deactivation request', async () => {
-      const req = { user: { sub: 'admin-id' } };
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
       const dto: RejectDeactivationRequestDto = { reason: 'No' };
       mockAdminCoreService.rejectDeactivationRequest.mockResolvedValue({ message: 'Success' });
 
       const result = await controller.rejectDeactivationRequest(req, 'request-id', dto);
 
       expect(service.rejectDeactivationRequest).toHaveBeenCalledWith('admin-id', 'request-id', dto);
+      expect(result).toEqual({ message: 'Success' });
+    });
+  });
+
+  describe('createUser', () => {
+    it('should create user', async () => {
+      const dto: CreateUserDto = { email: 'test@example.com', password: 'pass', fullName: 'Test', role: Role.ADMIN };
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
+      const mockResult = { message: 'Success', data: {} };
+      mockAdminCoreService.createUser.mockResolvedValue(mockResult);
+
+      const result = await controller.createUser(req, dto);
+
+      expect(service.createUser).toHaveBeenCalledWith('admin-id', dto);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('Sessions Management', () => {
+    it('should get user sessions', async () => {
+      mockAdminCoreService.getUserSessions.mockResolvedValue([{ id: 'session-1' }]);
+      const result = await controller.getUserSessions('user-id');
+      expect(service.getUserSessions).toHaveBeenCalledWith('user-id');
+      expect(result).toEqual([{ id: 'session-1' }]);
+    });
+
+    it('should revoke user sessions', async () => {
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
+      mockAdminCoreService.revokeUserSessions.mockResolvedValue({ message: 'Success' });
+      const result = await controller.revokeUserSessions(req, 'user-id');
+      expect(service.revokeUserSessions).toHaveBeenCalledWith('admin-id', 'user-id');
       expect(result).toEqual({ message: 'Success' });
     });
   });
