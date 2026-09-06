@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -30,6 +31,8 @@ import { CreateBookingRequestUseCase } from '../../application/use-cases/create-
 import { ProviderAcceptBookingUseCase } from '../../application/use-cases/provider-accept-booking.use-case';
 import { ProviderRejectBookingUseCase } from '../../application/use-cases/provider-reject-booking.use-case';
 import { GetBookingByIdUseCase } from '../../application/use-cases/get-booking-by-id.use-case';
+import { GetBookingsUseCase } from '../../application/use-cases/get-bookings.use-case';
+import { GetActiveBookingUseCase } from '../../application/use-cases/get-active-booking.use-case';
 import { GetBookingChecklistUseCase } from '../../application/use-cases/get-booking-checklist.use-case';
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
@@ -39,6 +42,7 @@ import { CustomerConfirmBookingUseCase } from '../../application/use-cases/custo
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
 import { CreateBookingDto } from '../dto/create-booking.dto';
 import { CompleteBookingDto } from '../dto/complete-booking.dto';
+import { GetBookingsDto } from '../dto/get-bookings.dto';
 import { UpdateSingleChecklistItemDto } from '../dto/update-checklist-item.dto';
 import { CreateReviewUseCase } from '../../application/use-cases/create-review.use-case';
 import { CreateReviewDto } from '../../dto/create-review.dto';
@@ -57,6 +61,8 @@ export class BookingsController {
     private readonly acceptBookingUseCase: ProviderAcceptBookingUseCase,
     private readonly rejectBookingUseCase: ProviderRejectBookingUseCase,
     private readonly getBookingByIdUseCase: GetBookingByIdUseCase,
+    private readonly getBookingsUseCase: GetBookingsUseCase,
+    private readonly getActiveBookingUseCase: GetActiveBookingUseCase,
     private readonly getBookingChecklistUseCase: GetBookingChecklistUseCase,
     private readonly startBookingServiceUseCase: StartBookingServiceUseCase,
     private readonly updateBookingChecklistItemUseCase: UpdateBookingChecklistItemUseCase,
@@ -68,6 +74,18 @@ export class BookingsController {
     private readonly openDisputeUseCase: OpenDisputeUseCase,
     private readonly requestBookingExtensionUseCase: RequestBookingExtensionUseCase,
   ) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lấy danh sách đơn đặt lịch của người dùng (Customer hoặc Provider)' })
+  @ApiResponse({ status: 200, description: 'Trả về danh sách đơn đặt lịch có phân trang.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  async getBookings(
+    @GetCurrentUserId() userId: string,
+    @Query() query: GetBookingsDto,
+  ) {
+    return this.getBookingsUseCase.execute(userId, query);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -260,6 +278,18 @@ export class BookingsController {
     @Param('id') bookingId: string,
   ) {
     return this.customerConfirmBookingUseCase.execute(userId, bookingId);
+  }
+
+  @Get('active')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Lấy thông tin đơn dịch vụ đang diễn ra (Active Booking) của user hiện tại' })
+  @ApiResponse({ status: 200, description: 'Trả về chi tiết đơn đặt lịch đang active hoặc null nếu không có.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng (Not Found).' })
+  async getActiveBooking(
+    @GetCurrentUserId() userId: string,
+  ) {
+    return this.getActiveBookingUseCase.execute(userId);
   }
 
   @Get(':id')
