@@ -14,7 +14,8 @@ import {
   Gavel, 
   BarChart3, 
   Database,
-  Tag 
+  Tag,
+  Headphones 
 } from 'lucide-react';
 import { removeAuthToken } from '@/lib/auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -48,7 +49,8 @@ export const AppSidebar = () => {
         { name: 'Quản Lý Dịch Vụ', href: `${ROUTES.DASHBOARD}?tab=services-manager`, icon: HeartHandshake },
         { name: 'Giám Sát Ca Làm', href: `${ROUTES.DASHBOARD}?tab=monitor-shifts`, icon: Activity },
         { name: 'Quản Lý Escrow', href: `${ROUTES.DASHBOARD}?tab=escrow`, icon: ShieldCheck },
-        { name: 'Trọng Tài Tranh Chấp', href: `${ROUTES.DASHBOARD}?tab=arbitration`, icon: Gavel },
+        { name: 'Trọng Tài Tranh Chấp', href: `${ROUTES.ADMIN_SUPPORT}?tab=disputes`, icon: Gavel },
+        { name: 'Trung Tâm CSKH', href: ROUTES.ADMIN_SUPPORT, icon: Headphones },
         { name: 'Giới Hạn Tài Khoản', href: `${ROUTES.DASHBOARD}?tab=limits`, icon: BarChart3 },
         { name: 'Nhật Ký Hệ Thống', href: `${ROUTES.DASHBOARD}?tab=logs`, icon: Database },
         { name: 'Mã Khuyến Mãi', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
@@ -59,6 +61,7 @@ export const AppSidebar = () => {
         { name: 'Đặt người chăm sóc', href: ROUTES.BOOKINGS, icon: UserCheck },
         { name: 'Kho Ưu Đãi & Voucher', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
         { name: 'Ví Điện Tử', href: `${ROUTES.DASHBOARD}?tab=wallet`, icon: ShieldCheck },
+        { name: 'Hỗ trợ & Trợ giúp', href: ROUTES.SUPPORT, icon: Headphones },
       ];
 
   const handleLogout = () => {

@@ -23,7 +23,6 @@ export const useWallet = () => {
       setWallet(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch wallet');
-      window.alert('Không thể tải thông tin ví');
     } finally {
       setLoading(false);
     }
@@ -55,7 +54,6 @@ export const useWalletTransactions = () => {
       setTransactions(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch transactions');
-      window.alert('Không thể tải lịch sử giao dịch');
     } finally {
       setLoading(false);
     }
@@ -102,10 +100,9 @@ export const usePayoutRequests = () => {
       setLoading(true);
       const data = await walletService.requestProviderPayout(amount);
       addPayoutRequest(data);
-      window.alert('Yêu cầu rút tiền thành công');
       return true;
     } catch (err: any) {
-      window.alert(err.response?.data?.message || 'Rút tiền thất bại');
+      console.error('Payout request error:', err);
       return false;
     } finally {
       setLoading(false);

@@ -4,7 +4,11 @@ import React, { useEffect } from 'react';
 import { useMyTickets } from '../hooks/useCustomerCare';
 import { TicketStatus } from '../types';
 
-export function TicketList() {
+interface TicketListProps {
+  onSelectTicket?: (ticketId: string) => void;
+}
+
+export function TicketList({ onSelectTicket }: TicketListProps) {
   const { myTickets, loading, error, fetchTickets } = useMyTickets();
 
   useEffect(() => {
@@ -58,7 +62,11 @@ export function TicketList() {
   return (
     <div className="w-full space-y-4">
       {myTickets.map((ticket) => (
-        <div key={ticket.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <div
+          key={ticket.id}
+          onClick={() => onSelectTicket && onSelectTicket(ticket.id)}
+          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
+        >
           <div className="flex justify-between items-start mb-2">
             <h4 className="font-bold text-slate-800 text-lg">{ticket.title}</h4>
             <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusColor(ticket.status)}`}>
@@ -70,10 +78,11 @@ export function TicketList() {
           </p>
           <div className="flex justify-between items-center text-xs text-slate-400 font-medium">
             <span>{new Date(ticket.created_at).toLocaleDateString('vi-VN')}</span>
-            <span className="bg-slate-100 px-2 py-1 rounded-md">{ticket.category}</span>
+            <span className="bg-slate-100 px-2.5 py-1 rounded-full font-semibold text-slate-600">{ticket.category}</span>
           </div>
         </div>
       ))}
     </div>
   );
 }
+

@@ -25,7 +25,6 @@ export const useBankAccounts = () => {
       setBankAccounts(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch bank accounts');
-      window.alert('Không thể tải danh sách tài khoản ngân hàng');
     } finally {
       setLoading(false);
     }

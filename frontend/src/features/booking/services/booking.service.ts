@@ -16,7 +16,7 @@ export const bookingService = {
    * Lấy danh sách booking của customer hiện tại
    */
   getMyBookings: async (): Promise<Booking[]> => {
-    const response = await axiosInstance.get('/bookings/my-bookings');
+    const response = await axiosInstance.get('/bookings');
     return response.data.data || response.data;
   },
 

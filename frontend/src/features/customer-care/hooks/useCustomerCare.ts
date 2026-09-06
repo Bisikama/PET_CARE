@@ -109,6 +109,9 @@ export function useCustomerCareMutations() {
     createReview: (bookingId: string, data: CreateReviewRequest) => 
       withMutation(() => customerCareService.createReview(bookingId, data)),
       
+    updateReview: (bookingId: string, data: CreateReviewRequest) => 
+      withMutation(() => customerCareService.updateReview(bookingId, data)),
+      
     createTicket: (data: CreateTicketRequest) => 
       withMutation(() => customerCareService.createTicket(data)),
       

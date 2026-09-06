@@ -1,9 +1,10 @@
-// Enums corresponding to Prisma schema
 export enum SupportTicketCategory {
-  GENERAL = 'GENERAL',
-  PAYMENT = 'PAYMENT',
   ACCOUNT = 'ACCOUNT',
-  TECHNICAL = 'TECHNICAL',
+  BOOKING_GUIDE = 'BOOKING_GUIDE',
+  TECHNICAL_ERROR = 'TECHNICAL_ERROR',
+  NOTIFICATION = 'NOTIFICATION',
+  VOUCHER = 'VOUCHER',
+  SERVICE_SUGGESTION = 'SERVICE_SUGGESTION',
   OTHER = 'OTHER',
 }
 
@@ -44,7 +45,8 @@ export interface TicketMessage {
   id: string;
   ticket_id: string;
   sender_id: string;
-  message: string;
+  message?: string;
+  content?: string;
   created_at: string;
   sender?: {
     id: string;
@@ -55,7 +57,8 @@ export interface TicketMessage {
 
 export interface Ticket {
   id: string;
-  customer_id: string;
+  customer_id?: string;
+  user_id?: string;
   category: SupportTicketCategory;
   title: string;
   description: string;
@@ -64,6 +67,7 @@ export interface Ticket {
   updated_at: string;
   resolved_at?: string;
   messages?: TicketMessage[];
+  support_ticket_messages?: TicketMessage[];
 }
 
 export interface Dispute {

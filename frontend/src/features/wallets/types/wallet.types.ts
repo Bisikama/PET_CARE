@@ -1,6 +1,8 @@
 export type WalletStatus = 'ACTIVE' | 'LOCKED' | 'SUSPENDED';
 
 export type WalletTransactionType =
+  | 'CREDIT'
+  | 'DEBIT'
   | 'DEPOSIT'
   | 'PAYOUT'
   | 'PAYMENT'

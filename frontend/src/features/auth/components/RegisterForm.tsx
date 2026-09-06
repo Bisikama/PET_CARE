@@ -11,14 +11,10 @@ import { ROUTES } from '@/lib/constants';
 import { useRegister } from '../hooks/useRegister';
 import { useAuthStore } from '../stores/auth.store';
 
-// Zod validation matching reference layout and backend requirements
+// Zod validation matching reference layout and backend requirements (fullName, email, password)
 const registerSchema = z
   .object({
     fullName: z.string().min(1, 'Họ và tên không được để trống'),
-    phone: z
-      .string()
-      .min(1, 'Số điện thoại không được để trống')
-      .regex(/^[0-9+]{9,15}$/, 'Số điện thoại không hợp lệ'),
     email: z.string().min(1, 'Email không được để trống').email('Email không hợp lệ'),
     password: z.string().min(8, 'Mật khẩu phải từ 8 ký tự trở lên'),
     confirmPassword: z.string().min(1, 'Vui lòng nhập lại mật khẩu'),
@@ -45,7 +41,6 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: '',
-      phone: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -133,46 +128,26 @@ export function RegisterForm() {
 
         {/* Registration Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {/* Row 1: Họ tên & Số điện thoại (Grid 2 cols) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5" htmlFor="fullName">
-                Họ và tên
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                className={`w-full px-4 py-3 bg-white text-slate-850 rounded-xl border ${
-                  errors.fullName ? 'border-red-400 focus:ring-red-100' : 'border-slate-200 focus:ring-sky-100'
-                } focus:outline-none focus:ring-4 focus:border-sky-500 transition-all text-sm font-medium`}
-                placeholder="Nhập họ và tên"
-                {...register('fullName')}
-              />
-              {errors.fullName && (
-                <p className="mt-1 text-xs text-red-500 font-semibold">{errors.fullName.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5" htmlFor="phone">
-                Số điện thoại
-              </label>
-              <input
-                id="phone"
-                type="text"
-                className={`w-full px-4 py-3 bg-white text-slate-850 rounded-xl border ${
-                  errors.phone ? 'border-red-400 focus:ring-red-100' : 'border-slate-200 focus:ring-sky-100'
-                } focus:outline-none focus:ring-4 focus:border-sky-500 transition-all text-sm font-medium`}
-                placeholder="Nhập số điện thoại"
-                {...register('phone')}
-              />
-              {errors.phone && (
-                <p className="mt-1 text-xs text-red-500 font-semibold">{errors.phone.message}</p>
-              )}
-            </div>
+          {/* Row 1: Họ và tên */}
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5" htmlFor="fullName">
+              Họ và tên
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              className={`w-full px-4 py-3 bg-white text-slate-850 rounded-xl border ${
+                errors.fullName ? 'border-red-400 focus:ring-red-100' : 'border-slate-200 focus:ring-sky-100'
+              } focus:outline-none focus:ring-4 focus:border-sky-500 transition-all text-sm font-medium`}
+              placeholder="Nhập họ và tên"
+              {...register('fullName')}
+            />
+            {errors.fullName && (
+              <p className="mt-1 text-xs text-red-500 font-semibold">{errors.fullName.message}</p>
+            )}
           </div>
 
-          {/* Row 2: Email (Full width) */}
+          {/* Row 2: Email */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1.5" htmlFor="email">
               Email

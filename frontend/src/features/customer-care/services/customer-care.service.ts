@@ -24,6 +24,11 @@ export const customerCareService = {
     return response.data;
   },
 
+  updateReview: async (bookingId: string, data: CreateReviewRequest): Promise<any> => {
+    const response = await axiosInstance.put(`/customer-care/bookings/${bookingId}/reviews`, data);
+    return response.data;
+  },
+
   // --- SUPPORT TICKETS ---
   createTicket: async (data: CreateTicketRequest): Promise<any> => {
     const response = await axiosInstance.post('/customer-care/tickets', data);

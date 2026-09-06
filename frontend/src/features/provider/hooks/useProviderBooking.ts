@@ -19,40 +19,62 @@ export const useProviderBooking = (bookingId?: string) => {
       return;
     }
 
-    setLoading(true);
+    if (!bookingDetail) {
+      setLoading(true);
+    }
     try {
       const data = await providerBookingService.getBookingById(id);
       setBookingDetail(data);
     } catch (err: any) {
       const message = err.response?.data?.message || err.message || 'Lỗi khi tải thông tin đơn đặt lịch';
       setError(message);
-      alert(message);
     } finally {
       setLoading(false);
     }
-  }, [bookingDetail?.id, setBookingDetail, setLoading, setError]);
+  }, [bookingDetail, setBookingDetail, setLoading, setError]);
+
+  const fetchActiveBooking = useCallback(async () => {
+    if (!bookingDetail) {
+      setLoading(true);
+    }
+    try {
+      const activeData = await providerBookingService.getActiveBooking();
+      if (activeData?.id) {
+        // Fetch full detail including checklist items using GET /bookings/:id
+        const fullDetail = await providerBookingService.getBookingById(activeData.id);
+        setBookingDetail(fullDetail || activeData);
+        return fullDetail || activeData;
+      } else {
+        clearBookingDetail();
+        return null;
+      }
+    } catch (err: any) {
+      console.error('Error fetching active booking:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [bookingDetail, setBookingDetail, clearBookingDetail, setLoading]);
 
   const acceptBooking = async (id: string) => {
     try {
       await providerBookingService.acceptBooking(id);
-      alert('Đã chấp nhận đơn đặt lịch');
       // Refresh after accept
       await fetchBookingDetail(id, true);
     } catch (err: any) {
       const message = err.response?.data?.message || err.message || 'Lỗi khi chấp nhận đơn đặt lịch';
-      alert(message);
+      setError(message);
     }
   };
 
   const rejectBooking = async (id: string) => {
     try {
       await providerBookingService.rejectBooking(id);
-      alert('Đã từ chối đơn đặt lịch');
       // Refresh after reject
       await fetchBookingDetail(id, true);
     } catch (err: any) {
       const message = err.response?.data?.message || err.message || 'Lỗi khi từ chối đơn đặt lịch';
-      alert(message);
+      setError(message);
     }
   };
 
@@ -61,6 +83,7 @@ export const useProviderBooking = (bookingId?: string) => {
     isLoading,
     error,
     fetchBookingDetail,
+    fetchActiveBooking,
     acceptBooking,
     rejectBooking,
     clearBookingDetail

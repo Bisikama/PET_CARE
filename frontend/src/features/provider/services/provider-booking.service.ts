@@ -7,6 +7,11 @@ export const providerBookingService = {
     return response.data;
   },
 
+  getActiveBooking: async (): Promise<ProviderBookingDetail | null> => {
+    const response = await axiosInstance.get('/bookings/active');
+    return response.data?.data || response.data || null;
+  },
+
   acceptBooking: async (id: string): Promise<any> => {
     const response = await axiosInstance.post(`/bookings/${id}/provider-accept`);
     return response.data;
@@ -24,6 +29,17 @@ export const providerBookingService = {
 
   updateChecklistItem: async (bookingId: string, itemId: string, data: { status: 'PENDING' | 'DONE' | 'SKIPPED', note?: string }): Promise<any> => {
     const response = await axiosInstance.patch(`/bookings/${bookingId}/checklist/${itemId}`, data);
+    return response.data;
+  },
+
+  uploadEvidence: async (bookingId: string, file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosInstance.post(`/bookings/${bookingId}/evidence-upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

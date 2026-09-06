@@ -3,7 +3,16 @@ import { useWalletTransactions } from '../hooks/useWallet';
 import { WalletTransactionType } from '../types/wallet.types';
 
 
+const DEFAULT_CONFIG = {
+  label: 'Giao dịch',
+  color: 'text-slate-600 bg-slate-100',
+  isPositive: true,
+  icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+};
+
 const TYPE_CONFIG: Record<WalletTransactionType, { label: string, color: string, icon: React.ReactNode, isPositive: boolean }> = {
+  CREDIT: { label: 'Cộng tiền', color: 'text-emerald-600 bg-emerald-50', isPositive: true, icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> },
+  DEBIT: { label: 'Trừ tiền', color: 'text-rose-600 bg-rose-50', isPositive: false, icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> },
   DEPOSIT: { label: 'Nạp tiền', color: 'text-blue-600 bg-blue-50', isPositive: true, icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> },
   PAYOUT: { label: 'Rút tiền', color: 'text-orange-600 bg-orange-50', isPositive: false, icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg> },
   PAYMENT: { label: 'Thanh toán', color: 'text-slate-600 bg-slate-100', isPositive: false, icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg> },
@@ -38,7 +47,11 @@ export const TransactionHistory = () => {
       ) : (
         <div className="space-y-4">
           {transactions.map(tx => {
-            const config = TYPE_CONFIG[tx.type];
+            const config = TYPE_CONFIG[tx.type] || {
+              ...DEFAULT_CONFIG,
+              label: tx.description || tx.type || DEFAULT_CONFIG.label,
+              isPositive: (tx.amount ?? 0) >= 0
+            };
             return (
               <div key={tx.id} className="flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100/80 transition-colors rounded-2xl group">
                 <div className="flex items-center gap-4">

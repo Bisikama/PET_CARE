@@ -10,15 +10,26 @@ interface BookingActionDetailProps {
 }
 
 export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookingId }) => {
-  const { bookingDetail, isLoading, error, fetchBookingDetail, acceptBooking, rejectBooking } = useProviderBooking(bookingId || undefined);
+  const { bookingDetail, isLoading, error, fetchBookingDetail, fetchActiveBooking, acceptBooking, rejectBooking } = useProviderBooking(bookingId || undefined);
 
   useEffect(() => {
     if (bookingId) {
       fetchBookingDetail(bookingId);
+    } else if (!bookingDetail) {
+      fetchActiveBooking();
     }
-  }, [bookingId, fetchBookingDetail]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId]);
 
-  if (!bookingId) {
+  if (isLoading && !bookingDetail) {
+    return <div className="p-8 text-center text-slate-500 font-medium">Đang tải thông tin ca chăm sóc...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-rose-500 font-medium">{error}</div>;
+  }
+
+  if (!bookingDetail) {
     return (
       <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm text-center flex flex-col items-center justify-center min-h-[300px]">
         <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mb-4 border border-teal-100">
@@ -28,18 +39,6 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
         <p className="text-slate-500 mt-2 text-sm max-w-sm">Hệ thống sẽ tự động cập nhật ngay khi có khách hàng đặt lịch với bạn.</p>
       </div>
     );
-  }
-
-  if (isLoading) {
-    return <div className="p-8 text-center text-gray-500">Đang tải thông tin đơn...</div>;
-  }
-
-  if (error) {
-    return <div className="p-8 text-center text-red-500">{error}</div>;
-  }
-
-  if (!bookingDetail) {
-    return null;
   }
 
   const petInfo = bookingDetail.booking_pets?.[0]; // Assume 1 pet for now, or display first
@@ -256,14 +255,14 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
         <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
           <Button 
             className="flex-1 bg-[#009A62] hover:bg-[#008051] text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
-            onClick={() => acceptBooking(bookingId)}
+            onClick={() => acceptBooking(bookingDetail.id)}
           >
             <Check className="w-5 h-5" /> ĐỒNG Ý CHẤP NHẬN ĐƠN (SAFE-PAY ESCROW)
           </Button>
           <Button 
             variant="outline"
             className="sm:w-[200px] bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 hover:text-rose-700 font-bold py-3 rounded-lg flex items-center justify-center gap-2 text-sm"
-            onClick={() => rejectBooking(bookingId)}
+            onClick={() => rejectBooking(bookingDetail.id)}
           >
             Từ chối đơn hàng
           </Button>
@@ -273,18 +272,18 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
       {/* GPS Check-in (only show if accepted) */}
       {isAccepted && (
         <BookingGPSCheckIn 
-          bookingId={bookingId!} 
+          bookingId={bookingDetail.id} 
           suggestedPlaceName={bookingDetail.address_snapshot?.addressLine || ''}
-          onCheckInSuccess={() => fetchBookingDetail(bookingId!, true)}
+          onCheckInSuccess={() => fetchBookingDetail(bookingDetail.id, true)}
         />
       )}
 
       {/* Checklist (only show if in progress) */}
       {isInProgress && (
         <BookingChecklist
-          bookingId={bookingId!}
+          bookingId={bookingDetail.id}
           bookingDetail={bookingDetail}
-          onRefresh={() => fetchBookingDetail(bookingId!, true)}
+          onRefresh={() => fetchBookingDetail(bookingDetail.id, true)}
         />
       )}
 
@@ -306,10 +305,10 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
                 // Mock API call to simulate customer confirming
                 try {
                   const { meBookingService } = await import('@/features/me/services/me-booking.service');
-                  await meBookingService.customerConfirmBooking(bookingId!);
-                  fetchBookingDetail(bookingId!, true);
+                  await meBookingService.customerConfirmBooking(bookingDetail.id);
+                  fetchBookingDetail(bookingDetail.id, true);
                 } catch (error: any) {
-                  alert(error.response?.data?.message || 'Lỗi khi mô phỏng khách hàng nghiệm thu!');
+                  console.error('Error simulating customer confirm:', error);
                 }
               }}
             >

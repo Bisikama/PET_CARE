@@ -10,7 +10,7 @@ interface SupportTicketFormProps {
 
 export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
   const { createTicket, loading, error } = useCustomerCareMutations();
-  const [category, setCategory] = useState<SupportTicketCategory>(SupportTicketCategory.GENERAL);
+  const [category, setCategory] = useState<SupportTicketCategory>(SupportTicketCategory.ACCOUNT);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -20,7 +20,7 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
       await createTicket({ category, title, description });
       setTitle('');
       setDescription('');
-      setCategory(SupportTicketCategory.GENERAL);
+      setCategory(SupportTicketCategory.ACCOUNT);
       if (onSuccess) onSuccess();
     } catch (err) {
       // Error is handled in the hook
@@ -45,10 +45,12 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
             onChange={(e) => setCategory(e.target.value as SupportTicketCategory)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
           >
-            <option value={SupportTicketCategory.GENERAL}>Câu hỏi chung</option>
-            <option value={SupportTicketCategory.PAYMENT}>Thanh toán</option>
             <option value={SupportTicketCategory.ACCOUNT}>Tài khoản</option>
-            <option value={SupportTicketCategory.TECHNICAL}>Kỹ thuật</option>
+            <option value={SupportTicketCategory.BOOKING_GUIDE}>Hướng dẫn đặt lịch</option>
+            <option value={SupportTicketCategory.TECHNICAL_ERROR}>Lỗi kỹ thuật</option>
+            <option value={SupportTicketCategory.NOTIFICATION}>Thông báo</option>
+            <option value={SupportTicketCategory.VOUCHER}>Ưu đãi / Voucher</option>
+            <option value={SupportTicketCategory.SERVICE_SUGGESTION}>Góp ý dịch vụ</option>
             <option value={SupportTicketCategory.OTHER}>Khác</option>
           </select>
         </div>

@@ -99,9 +99,9 @@ export function CustomerAddressModal() {
     );
   };
 
-  const handleAddressChange = (address: { province: string; district: string; ward: string }) => {
+  const handleAddressChange = React.useCallback((address: { province: string; district: string; ward: string }) => {
     setSelectedLocation(address);
-  };
+  }, []);
 
   const initForm = (address?: CustomerAddress) => {
     setValidationErrors({});

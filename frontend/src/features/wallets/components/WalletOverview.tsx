@@ -67,7 +67,9 @@ export const WalletOverview = () => {
         </div>
       </div>
 
-      <PayoutRequestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      {!isCustomer && isModalOpen && (
+        <PayoutRequestModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 };

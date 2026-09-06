@@ -9,7 +9,7 @@ import { useWallet } from '@/features/wallets/hooks/useWallet';
 import { useRouter } from 'next/navigation';
 
 export function PaymentGateway() {
-  const { setStep, createdBookingId } = useBookingStore();
+  const { setStep, createdBookingId, resetBooking } = useBookingStore();
   const { createCheckoutUrl, createMomoCheckoutUrl, checkoutWithWallet, loading, error } = usePayment();
   const { wallet } = useWallet();
   const router = useRouter();
@@ -55,8 +55,8 @@ export function PaymentGateway() {
     if (!createdBookingId) return;
     const success = await checkoutWithWallet({ bookingId: createdBookingId });
     if (success) {
-      alert('Thanh toán bằng ví thành công!');
-      router.push('/dashboard/bookings'); // or wherever customer bookings are
+      resetBooking();
+      router.push('/bookings');
     }
   };
 

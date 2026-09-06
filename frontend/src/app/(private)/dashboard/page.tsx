@@ -9,6 +9,7 @@ import { useMeStore, CustomerBookingAction } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal, BookingActionDetail, useProviderBookingStore } from '@/features/provider';
 import { providerService } from '@/features/provider/services/provider.service';
 import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager } from '@/features/admin';
+import { AdminDisputeList } from '@/features/admin-care/components';
 import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
 import { ServiceDetailModal } from '@/features/services';
 import { ScheduleManager } from '@/features/schedule';
@@ -89,6 +90,11 @@ export default function DashboardPage() {
           <AdminPromotionsManager key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
+        ) : adminTab === 'arbitration' ? (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-800">Trọng Tài Tranh Chấp & Khiếu Nại</h2>
+            <AdminDisputeList key={adminRefreshKey} />
+          </div>
         ) : (
           <div className="bg-white p-12 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
             <div className="p-4 bg-teal-50 text-teal-600 rounded-3xl">
@@ -443,8 +449,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left column: Actions and My Pets List */}
         <div className="lg:col-span-2 space-y-8">
-          {/* TẠM THỜI HARDCODE ID Ở ĐÂY ĐỂ BẠN TEST */}
-          <CustomerBookingAction bookingId="a7ed2144-16f2-499a-83a3-6c99d71374ea" />
+          <CustomerBookingAction />
           <PetList />
         </div>
 

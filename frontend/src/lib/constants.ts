@@ -8,6 +8,8 @@ export const ROUTES = {
   VERIFY_OTP: '/verify-otp',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+  SUPPORT: '/support',
+  ADMIN_SUPPORT: '/admin/support',
 } as const;
 
 export const API_ENDPOINTS = {
