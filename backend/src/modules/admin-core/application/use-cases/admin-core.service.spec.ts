@@ -6,6 +6,7 @@ import { Role, user_status, provider_status, booking_status } from '@prisma/clie
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
 import { ConfigService } from '@nestjs/config';
+import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('@supabase/supabase-js', () => ({
@@ -30,6 +31,8 @@ describe('AdminCoreService', () => {
   let prismaService: PrismaService;
   let settlementsService: SettlementsService;
   let notificationsService: NotificationsService;
+
+  let storageService: jest.Mocked<SupabaseStorageService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -85,13 +88,21 @@ describe('AdminCoreService', () => {
           provide: ConfigService,
           useValue: { getOrThrow: jest.fn().mockReturnValue('mocked-key') },
         },
+        {
+          provide: SupabaseStorageService,
+          useValue: {
+            uploadFile: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<AdminCoreService>(AdminCoreService);
     prismaService = module.get<PrismaService>(PrismaService);
+    configService = module.get<ConfigService>(ConfigService);
     settlementsService = module.get<SettlementsService>(SettlementsService);
     notificationsService = module.get<NotificationsService>(NotificationsService);
+    storageService = module.get(SupabaseStorageService);
   });
 
   afterEach(() => {
@@ -310,6 +321,7 @@ describe('AdminCoreService', () => {
         where: { id: targetUserId },
         data: {
           status: user_status.ACTIVE,
+          isActive: true,
           suspended_reason: null,
           suspended_at: null,
         },
@@ -409,6 +421,52 @@ describe('AdminCoreService', () => {
       expect(prismaService.user.create).toHaveBeenCalled();
       expect(prismaService.audit_logs.create).toHaveBeenCalled();
       expect(result.data.id).toBe('new-user');
+    });
+  });
+
+  describe('Sessions Management', () => {
+    it('should throw if user not found (details)', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.getUserDetails('invalid-id')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateUser', () => {
+    it('should update user profile', async () => {
+      const mockUser = { id: 'user-id', fullName: 'Old', phone: '123' };
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      (prismaService.user.update as jest.Mock).mockResolvedValue({ id: 'user-id', fullName: 'New' });
+
+      const result = await service.updateUser('admin-id', 'user-id', { fullName: 'New' });
+      expect(prismaService.user.update).toHaveBeenCalled();
+      expect(prismaService.audit_logs.create).toHaveBeenCalled();
+      expect(result.data.fullName).toBe('New');
+    });
+
+    it('should throw if user not found for update', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.updateUser('admin-id', 'user-id', {})).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateUserAvatar', () => {
+    it('should upload file and update user avatar', async () => {
+      const mockUser = { id: 'user-id', avatarUrl: 'old' };
+      const file = {} as Express.Multer.File;
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+      storageService.uploadFile.mockResolvedValue('new-url');
+      (prismaService.user.update as jest.Mock).mockResolvedValue({ id: 'user-id', avatarUrl: 'new-url' });
+
+      const result = await service.updateUserAvatar('admin-id', 'user-id', file);
+      expect(storageService.uploadFile).toHaveBeenCalled();
+      expect(prismaService.user.update).toHaveBeenCalled();
+      expect(prismaService.audit_logs.create).toHaveBeenCalled();
+      expect(result.avatarUrl).toBe('new-url');
+    });
+
+    it('should throw if user not found for avatar update', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.updateUserAvatar('admin-id', 'user-id', {} as any)).rejects.toThrow(NotFoundException);
     });
   });
 

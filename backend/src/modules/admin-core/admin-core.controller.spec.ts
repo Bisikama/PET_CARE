@@ -7,6 +7,7 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { GetDeactivationRequestsDto } from './dto/get-deactivation-requests.dto';
 import { RejectDeactivationRequestDto } from './dto/reject-deactivation-request.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { Request } from 'express';
 
 describe('AdminCoreController', () => {
@@ -27,6 +28,8 @@ describe('AdminCoreController', () => {
     approveDeactivationRequest: jest.fn(),
     rejectDeactivationRequest: jest.fn(),
     createUser: jest.fn(),
+    updateUser: jest.fn(),
+    updateUserAvatar: jest.fn(),
     getUserSessions: jest.fn(),
     revokeUserSessions: jest.fn(),
   };
@@ -139,6 +142,32 @@ describe('AdminCoreController', () => {
       const result = await controller.createUser(req, dto);
 
       expect(service.createUser).toHaveBeenCalledWith('admin-id', dto);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('updateUser', () => {
+    it('should update user info', async () => {
+      const dto: UpdateUserDto = { fullName: 'New' };
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
+      const mockResult = { message: 'Success', data: {} };
+      mockAdminCoreService.updateUser.mockResolvedValue(mockResult);
+
+      const result = await controller.updateUser(req, 'user-id', dto);
+      expect(service.updateUser).toHaveBeenCalledWith('admin-id', 'user-id', dto);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe('updateUserAvatar', () => {
+    it('should upload and update avatar', async () => {
+      const req = { user: { sub: 'admin-id' } } as unknown as Request;
+      const file = { originalname: 'test.png', size: 1024 } as Express.Multer.File;
+      const mockResult = { message: 'Success', avatarUrl: 'http://link' };
+      mockAdminCoreService.updateUserAvatar.mockResolvedValue(mockResult);
+
+      const result = await controller.updateUserAvatar(req, 'user-id', file);
+      expect(service.updateUserAvatar).toHaveBeenCalledWith('admin-id', 'user-id', file);
       expect(result).toEqual(mockResult);
     });
   });

@@ -7,9 +7,11 @@ import { UpdateUserRoleDto } from '../../dto/update-user-role.dto';
 import { GetDeactivationRequestsDto } from '../../dto/get-deactivation-requests.dto';
 import { RejectDeactivationRequestDto } from '../../dto/reject-deactivation-request.dto';
 import { CreateUserDto } from '../../dto/create-user.dto';
+import { UpdateUserDto } from '../../dto/update-user.dto';
 import { Role, user_status, provider_status, booking_status, deactivation_status } from '@prisma/client';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
+import { SupabaseStorageService } from '../../../storage/supabase-storage.service';
 import { ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 import * as bcrypt from 'bcrypt';
@@ -23,6 +25,7 @@ export class AdminCoreService {
     private readonly settlementsService: SettlementsService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
+    private readonly storageService: SupabaseStorageService,
   ) {}
 
   async getDashboardStats() {
@@ -191,6 +194,77 @@ export class AdminCoreService {
     return safeUser;
   }
 
+  async updateUser(adminId: string, targetUserId: string, dto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: targetUserId },
+        data: {
+          fullName: dto.fullName !== undefined ? dto.fullName : undefined,
+          phone: dto.phone !== undefined ? dto.phone : undefined,
+        },
+      });
+
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'UPDATE_USER_PROFILE',
+          target_type: 'USER',
+          target_id: targetUserId,
+          old_value: { fullName: user.fullName, phone: user.phone },
+          new_value: { fullName: updatedUser.fullName, phone: updatedUser.phone },
+          reason: 'Admin updated user profile',
+        },
+      });
+
+      return { message: 'User updated successfully', data: updatedUser };
+    });
+  }
+
+  async updateUserAvatar(adminId: string, targetUserId: string, file: Express.Multer.File) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const publicUrl = await this.storageService.uploadFile(
+      file,
+      'avatars',
+      `admin-update-${targetUserId}-${Date.now()}`,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: targetUserId },
+        data: { avatarUrl: publicUrl },
+      });
+
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'UPDATE_USER_AVATAR',
+          target_type: 'USER',
+          target_id: targetUserId,
+          old_value: { avatarUrl: user.avatarUrl },
+          new_value: { avatarUrl: updatedUser.avatarUrl },
+          reason: 'Admin updated user avatar',
+        },
+      });
+
+      return { message: 'Avatar updated successfully', avatarUrl: publicUrl };
+    });
+  }
+
   async suspendUser(adminId: string, targetUserId: string, suspendUserDto: SuspendUserDto) {
     const { reason } = suspendUserDto;
 
@@ -213,6 +287,7 @@ export class AdminCoreService {
         where: { id: targetUserId },
         data: {
           status: user_status.SUSPENDED,
+          isActive: false,
           suspended_reason: reason,
           suspended_at: new Date(),
         },
@@ -330,6 +405,7 @@ export class AdminCoreService {
         where: { id: targetUserId },
         data: {
           status: user_status.ACTIVE,
+          isActive: true,
           suspended_reason: null,
           suspended_at: null,
         },
@@ -543,6 +619,7 @@ export class AdminCoreService {
         where: { id: request.user_id },
         data: {
           status: user_status.DELETED,
+          isActive: false,
           email: `${request.user.email}${emailRandomSuffix}`,
           fullName: 'Người dùng đã xoá',
           phone: null,
