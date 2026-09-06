@@ -4,6 +4,7 @@ import { AdminCoreService } from './application/use-cases/admin-core.service';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
+import { GetUsersDto } from './dto/get-users.dto';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -24,6 +25,26 @@ export class AdminCoreController {
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
   async getDashboardStats() {
     return this.adminCoreService.getDashboardStats();
+  }
+
+  @Get('users')
+  @ApiOperation({ summary: 'Lấy danh sách người dùng có phân trang và lọc (Chỉ dành cho Admin)' })
+  @ApiResponse({ status: 200, description: 'Danh sách người dùng.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  async getUsers(@Query() queryDto: GetUsersDto) {
+    return this.adminCoreService.getUsers(queryDto);
+  }
+
+  @Get('users/:id')
+  @ApiOperation({ summary: 'Xem chi tiết thông tin một người dùng (bao gồm hồ sơ đối tác/địa chỉ)' })
+  @ApiParam({ name: 'id', description: 'ID của người dùng', type: String })
+  @ApiResponse({ status: 200, description: 'Thông tin chi tiết người dùng.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng.' })
+  async getUserDetails(@Param('id') id: string) {
+    return this.adminCoreService.getUserDetails(id);
   }
 
   @Patch('users/:id/suspend')

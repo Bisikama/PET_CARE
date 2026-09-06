@@ -22,6 +22,8 @@ describe('AdminCoreService', () => {
             user: {
               findUnique: jest.fn(),
               update: jest.fn(),
+              findMany: jest.fn(),
+              count: jest.fn(),
             },
             provider_profiles: {
               findUnique: jest.fn(),
@@ -64,6 +66,45 @@ describe('AdminCoreService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('getUsers', () => {
+    it('should return paginated list of users', async () => {
+      const mockUsers = [{ id: '1', fullName: 'Test' }];
+      (prismaService.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
+      (prismaService.user.count as jest.Mock).mockResolvedValue(1);
+
+      const result = await service.getUsers({ page: 1, limit: 10 });
+
+      expect(result.data).toEqual(mockUsers);
+      expect(result.meta.total).toBe(1);
+      expect(prismaService.user.findMany).toHaveBeenCalled();
+      expect(prismaService.user.count).toHaveBeenCalled();
+    });
+  });
+
+  describe('getUserDetails', () => {
+    it('should throw NotFoundException if user not found', async () => {
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.getUserDetails('1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return safe user details', async () => {
+      const mockUser = {
+        id: '1',
+        fullName: 'Test',
+        passwordHash: 'secret',
+        supabaseId: 'sup-1',
+      };
+      (prismaService.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+
+      const result = await service.getUserDetails('1');
+
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result).not.toHaveProperty('supabaseId');
+      expect(result).toHaveProperty('id', '1');
+      expect(result).toHaveProperty('fullName', 'Test');
+    });
   });
 
   describe('suspendUser', () => {

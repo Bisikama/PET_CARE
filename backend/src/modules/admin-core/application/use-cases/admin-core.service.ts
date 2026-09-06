@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException, Logger } from '@nestj
 import { PrismaService } from '../../../../database/prisma.service';
 import { SuspendUserDto } from '../../dto/suspend-user.dto';
 import { GetAuditLogsDto } from '../../dto/get-audit-logs.dto';
+import { GetUsersDto } from '../../dto/get-users.dto';
 import { Role, user_status, provider_status, booking_status } from '@prisma/client';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
@@ -43,6 +44,77 @@ export class AdminCoreService {
       openDisputes,
       totalRevenue: totalRevenueAgg._sum.total_price || 0,
     };
+  }
+
+  async getUsers(query: GetUsersDto) {
+    const { page = 1, limit = 10, search, role, status } = query;
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+
+    if (search) {
+      whereClause.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (role) {
+      whereClause.role = role;
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          role: true,
+          status: true,
+          avatarUrl: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.user.count({ where: whereClause }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getUserDetails(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        provider_profiles: true,
+        customer_addresses: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Omit sensitive fields like passwordHash
+    const { passwordHash, supabaseId, ...safeUser } = user;
+    return safeUser;
   }
 
   async suspendUser(adminId: string, targetUserId: string, suspendUserDto: SuspendUserDto) {
