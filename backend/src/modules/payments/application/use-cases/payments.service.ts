@@ -160,11 +160,17 @@ export class PaymentsService {
    */
   async processPaymentCallback(vnp_Params: any): Promise<{ RspCode: string; Message: string }> {
     const secureHash = vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
+    
+    // Lọc chỉ lấy các tham số bắt đầu bằng vnp_ để tránh lỗi chữ ký do ngrok/browser tự động thêm tham số
+    const vnpayParams: any = {};
+    for (const key in vnp_Params) {
+      if (key.startsWith('vnp_') && key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType') {
+        vnpayParams[key] = vnp_Params[key];
+      }
+    }
 
     const secretKey = this.configService.get<string>('VNP_HASH_SECRET', 'DUMMY_SECRET');
-    const sortedParams = this.sortObject(vnp_Params);
+    const sortedParams = this.sortObject(vnpayParams);
     const signData = qs.stringify(sortedParams, { encode: false });
     const hmac = crypto.createHmac('sha512', secretKey);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
