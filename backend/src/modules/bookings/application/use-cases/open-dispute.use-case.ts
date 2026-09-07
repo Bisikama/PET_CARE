@@ -10,6 +10,7 @@ export class OpenDisputeUseCase {
   async execute(bookingId: string, customerId: string, dto: OpenDisputeDto) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
+      include: { provider_profiles: true },
     });
 
     if (!booking) {
@@ -53,7 +54,7 @@ export class OpenDisputeUseCase {
         data: {
           booking_id: bookingId,
           complainant_id: customerId,
-          accused_id: booking.provider_id,
+          accused_id: booking.provider_profiles?.user_id,
           title: `Dispute for booking ${bookingId}`,
           description: dto.description,
           reason: dto.reason,
