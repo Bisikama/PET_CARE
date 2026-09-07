@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -13,13 +13,13 @@ import { PetModal } from '@/features/pet';
 export default function PrivateLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const router = useRouter();
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = useState(true);
   const { isAuthenticated: isAuth, isLoading: isAuthLoading } = useAuthStore();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthLoading) return;
 
     if (!isAuth) {
