@@ -40,6 +40,14 @@ export class UsersService {
     });
   }
 
+  async ensureWalletExists(userId: string) {
+    return this.prisma.wallets.upsert({
+      where: { user_id: userId },
+      update: {},
+      create: { user_id: userId },
+    });
+  }
+
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },

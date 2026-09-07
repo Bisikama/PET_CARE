@@ -278,6 +278,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
             created_at: 'asc',
           },
         },
+        reviews: true,
       },
     });
   }

@@ -5,9 +5,10 @@ import { PrismaModule } from '../../database/prisma.module';
 import { SettlementsModule } from '../settlements/settlements.module';
 import { GrowthModule } from '../growth/growth.module';
 import { AdminResolveDisputeUseCase } from './application/use-cases/admin-resolve-dispute.use-case';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
-  imports: [PrismaModule, SettlementsModule, GrowthModule],
+  imports: [PrismaModule, SettlementsModule, GrowthModule, StorageModule],
   controllers: [AdminCoreController],
   providers: [AdminCoreService, AdminResolveDisputeUseCase],
   exports: [AdminCoreService, AdminResolveDisputeUseCase],

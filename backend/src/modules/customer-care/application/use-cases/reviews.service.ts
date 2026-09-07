@@ -41,6 +41,7 @@ export class ReviewsService {
   async createReview(reviewerId: string, bookingId: string, dto: SubmitCustomerReviewDto) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
+      include: { provider_profiles: true },
     });
 
     if (!booking) {
@@ -56,7 +57,7 @@ export class ReviewsService {
       throw new ForbiddenException('You are not authorized to review this booking');
     }
 
-    const revieweeId = booking.customer_id === reviewerId ? booking.provider_id : booking.customer_id;
+    const revieweeId = booking.customer_id === reviewerId ? booking.provider_profiles?.user_id : booking.customer_id;
     if (!revieweeId) {
       throw new BadRequestException('Cannot determine reviewee');
     }

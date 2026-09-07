@@ -107,7 +107,7 @@ describe('AdminResolveDisputeUseCase', () => {
 
       // Verify Trust Score is penalized since 100 > 50
       expect(mockPrisma.provider_profiles.update).toHaveBeenCalledWith({
-        where: { user_id: 'provider-1' },
+        where: { id: 'provider-1' },
         data: { trust_score: { decrement: 10 } },
       });
     });
