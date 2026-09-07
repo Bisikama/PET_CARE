@@ -113,9 +113,12 @@ export default function DashboardPage() {
   }
 
   if (user?.role === 'PROVIDER') {
-    if (searchParams.get('tab') === 'promotions') {
+    const providerTab = searchParams.get('tab') || 'active-cases';
+
+    if (providerTab === 'promotions') {
       return (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in space-y-8">
+          <ProviderHeader />
           <PromotionsView />
         </div>
       );
@@ -124,8 +127,7 @@ export default function DashboardPage() {
     return (
       <>
         <div className="space-y-8 animate-fade-in">
-        {/* Customer Header Component */}
-          <ProviderHeader activeTab={providerTab} onTabChange={setProviderTab} />
+          <ProviderHeader />
           
           {/* Tab Contents */}
           {providerTab === 'active-cases' && (
@@ -142,88 +144,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {providerTab === 'onboarding' && (
-            <div className="bg-white p-6 md:p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-              <div className="space-y-1 pb-5 border-b border-slate-100">
-                <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wide">
-                  Tiến trình onboarding & xác minh
-                </h3>
-                <p className="text-slate-400 text-xs font-medium">
-                  Hoàn thành các bước dưới đây để tài khoản của bạn được kiểm duyệt và kích hoạt đầy đủ tính năng.
-                </p>
-              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Checklist */}
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
-                        <Check className="w-4 h-4 stroke-[3]" />
-                      </div>
-                      <span className="text-sm font-bold text-slate-700">Xác thực số điện thoại & Email</span>
-                    </div>
-                    <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg">
-                      Đã hoàn thành
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
-                        !
-                      </div>
-                      <span className="text-sm font-bold text-slate-700">Xác minh danh tính (CCCD/CMND)</span>
-                    </div>
-                    <span className="text-xs text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-lg">
-                      Đang kiểm duyệt
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                    <div className="flex items-center gap-3 opacity-60">
-                      <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">
-                        -
-                      </div>
-                      <span className="text-sm font-bold text-slate-700">Kiểm tra kiến thức & năng lực</span>
-                    </div>
-                    <span className="text-xs text-slate-400 font-bold bg-slate-100 px-2.5 py-1 rounded-lg">
-                      Chưa thực hiện
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                    <div className="flex items-center gap-3 opacity-60">
-                      <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">
-                        -
-                      </div>
-                      <span className="text-sm font-bold text-slate-700">Ký hợp đồng đối tác điện tử</span>
-                    </div>
-                    <span className="text-xs text-slate-400 font-bold bg-slate-100 px-2.5 py-1 rounded-lg">
-                      Chưa ký
-                    </span>
-                  </div>
-                </div>
-
-                {/* Guide card */}
-                <div className="lg:col-span-1 p-6 bg-slate-50 border border-slate-100 rounded-3xl flex flex-col justify-between space-y-4">
-                  <div className="space-y-3">
-                    <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-amber-500" />
-                      Lưu ý kiểm duyệt
-                    </h4>
-                    <p className="text-slate-500 text-xs md:text-sm leading-relaxed font-medium">
-                      Hồ sơ của bạn đang được đội ngũ PET CARE kiểm tra thông tin CCCD trong vòng 24h làm việc. 
-                      Trong lúc chờ đợi, bạn có thể xem các tài liệu hướng dẫn hoặc liên hệ bộ phận hỗ trợ đối tác nếu cần trợ giúp gấp.
-                    </p>
-                  </div>
-                  <button className="w-full py-3 bg-[#031625] hover:bg-[#031625]/90 text-[#f0c05a] text-sm font-bold rounded-2xl transition-all duration-200 active:scale-[0.98] cursor-pointer">
-                    Xem Hướng Dẫn Đối Tác
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {providerTab === 'schedule' && (
             <div className="space-y-6">

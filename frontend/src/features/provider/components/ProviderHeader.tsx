@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Star, Lock, Activity, ShieldAlert, Calendar, Wallet } from 'lucide-react';
+import { Star, Activity, ShieldAlert, Calendar, Wallet } from 'lucide-react';
 import { useProvider } from '../hooks/use-provider';
 
 interface ProviderHeaderProps {
-  activeTab: string;
-  onTabChange: (tabId: string) => void;
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
 }
 
 export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) {
@@ -24,7 +24,6 @@ export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) 
     ? `PROV-${user.id.substring(0, 4).toUpperCase()}`
     : 'PROV-1209';
   const status = 'DRAFT'; // Static DRAFT status (Chưa kiểm duyệt) to match the mockup
-  const escrowBalance = 250000; // Static mock as requested
 
   const statusLabels: Record<string, { text: string; className: string }> = {
     APPROVED: { text: 'Đã kiểm duyệt', className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
@@ -37,36 +36,8 @@ export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) 
 
   const statusInfo = statusLabels[status] || statusLabels.DRAFT;
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'decimal' }).format(val) + ' đ';
-  };
-
-  const tabs = [
-    {
-      id: 'active-cases',
-      label: 'Ca Chăm Sóc Thực Tế',
-      icon: Activity,
-    },
-    {
-      id: 'onboarding',
-      label: 'Onboarding & Xác Minh',
-      icon: ShieldAlert,
-      badge: 'CHƯA XONG',
-    },
-    {
-      id: 'schedule',
-      label: 'Lịch & Năng Lực Dịch Vụ',
-      icon: Calendar,
-    },
-    {
-      id: 'wallet',
-      label: 'Ví thu nhập',
-      icon: Wallet,
-    },
-  ];
-
   return (
-    <div className="space-y-6">
+    <div>
       {/* Banner */}
       <div className="relative bg-[#02101b] bg-gradient-to-r from-[#02101b] via-[#081e30] to-[#0c2a43] p-6 md:p-8 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/80">
         {/* Decorative lighting */}
@@ -95,7 +66,7 @@ export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) 
                 </span>
               </div>
 
-              <p className="text-slate-400 text-xs md:text-sm font-medium">
+              <p className="text-[#a4b5c6] text-xs md:text-sm font-medium">
                 Mã đối tác: {partnerCode} <span className="mx-1">•</span> {email}
               </p>
 
@@ -113,51 +84,7 @@ export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) 
               </div>
             </div>
           </div>
-
-          {/* Right: Escrow Box */}
-          <div className="w-full lg:w-auto shrink-0">
-            <div className="px-6 py-5 bg-[#0a253b]/40 backdrop-blur-sm border border-[#1e4868]/30 rounded-2xl flex flex-col items-center lg:items-end text-center lg:text-right min-w-[240px] space-y-1 md:space-y-1.5">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
-                Ví tạm giữ Escrow (Bảo hộ)
-              </span>
-              <span className="text-2xl md:text-3.5xl font-extrabold text-[#f0c05a] tracking-tight">
-                {formatCurrency(escrowBalance)}
-              </span>
-              <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                <Lock className="w-3.5 h-3.5" />
-                <span>Đang giữ an toàn (Chờ chủ nuôi)</span>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-
-      {/* Tabs Menu Navigation */}
-      <div className="border-b border-slate-100 flex items-center justify-start overflow-x-auto scrollbar-none gap-8 pt-1">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-2 pb-4 font-bold text-sm transition-all duration-200 border-b-2 relative shrink-0 outline-none cursor-pointer ${
-                isActive
-                  ? 'border-slate-800 text-slate-800 font-extrabold'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5]' : ''}`} />
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black rounded-md tracking-wider">
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
       </div>
     </div>
   );
