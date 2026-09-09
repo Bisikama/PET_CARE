@@ -1,11 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { FolderHeart, Plus, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { FolderHeart, Plus, Loader2, Pencil, Trash2, FileText } from 'lucide-react';
 import { usePet } from '../hooks/use-pet';
+import { PetMedicalRecordModal } from './PetMedicalRecordModal';
 
 export function PetList() {
   const { pets, isLoading, error, fetchPets, openModal, setSelectedPet, deletePet } = usePet();
+  const [medicalRecordPet, setMedicalRecordPet] = React.useState<{ id: string; name: string } | null>(null);
+
+
 
   React.useEffect(() => {
     fetchPets();
@@ -121,7 +125,15 @@ export function PetList() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-250">
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setMedicalRecordPet({ id: pet.id, name: pet.name })}
+                    className="flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/60 transition-all cursor-pointer active:scale-95 shadow-sm"
+                    title="Sổ y tế"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Sổ y tế
+                  </button>
                   <button
                     onClick={() => {
                       setSelectedPet(pet);
@@ -149,6 +161,17 @@ export function PetList() {
           })}
         </div>
       )}
+
+      {/* Pet Medical Record Modal */}
+      {medicalRecordPet && (
+        <PetMedicalRecordModal
+          petId={medicalRecordPet.id}
+          petName={medicalRecordPet.name}
+          isOpen={!!medicalRecordPet}
+          onClose={() => setMedicalRecordPet(null)}
+        />
+      )}
     </div>
   );
 }
+

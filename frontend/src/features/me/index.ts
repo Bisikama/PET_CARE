@@ -20,4 +20,8 @@ export * from './stores/me.store';
 export * from './types';
 export * from './components/UpdateProfileModal';
 export * from './hooks/useUpdateProfile';
+export * from './components/AccountDeactivationModal';
 export * from './components/CustomerBookingAction';
+export * from './hooks/useUserSettings';
+
+

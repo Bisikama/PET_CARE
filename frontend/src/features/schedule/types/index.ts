@@ -28,6 +28,7 @@ export interface ProviderWorkingSlotView {
   endTime: string;
   slotOrder: number;
   status: AvailabilitySlotStatus;
+  isAvailable?: boolean;
   heldUntil?: string | null;
   reservedUntil?: string | null;
   booking?: BookingSummaryItem | null;

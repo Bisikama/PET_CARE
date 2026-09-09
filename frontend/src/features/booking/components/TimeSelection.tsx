@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Calendar as CalendarIcon, Loader2, AlertCircle } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { bookingService } from '../services/booking.service';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
@@ -68,12 +68,15 @@ export function TimeSelection() {
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = React.useState<string>(todayStr);
   const [holdTimer, setHoldTimer] = React.useState<number | null>(null);
-  const [isHolding, setIsHolding] = React.useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = React.useState(false);
 
   const { slots, loading } = useProviderSchedule(selectedProviderId || null, selectedDate);
 
-  // Countdown logic
+  const availableSlotsCount = React.useMemo(() => {
+    return slots.filter((s) => s.status === 'AVAILABLE' && s.providerWorkingSlotId).length;
+  }, [slots]);
+
+  // Countdown logic for active hold timer
   React.useEffect(() => {
     let interval: NodeJS.Timeout;
     if (holdTimer !== null && holdTimer > 0) {
@@ -86,7 +89,7 @@ export function TimeSelection() {
       setHoldTimer(null);
     }
     return () => clearInterval(interval);
-  }, [holdTimer]);
+  }, [holdTimer, setSelectedSlotId]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -95,21 +98,17 @@ export function TimeSelection() {
   };
 
   const handleSelectSlot = (slotId: string) => {
-    // If a booking is already created, don't allow changing slot here
-    // They would need to cancel or go back from scratch.
     if (createdBookingId) return;
-    
     setSelectedSlotId(slotId);
-    setCreatedBookingId(null); // Reset if they change slot
+    setCreatedBookingId(null);
   };
 
   const handleCreateBooking = async () => {
     if (!selectedPetId || !selectedAddressId || !selectedServiceId || !selectedSlotId) {
-      alert('Thiếu thông tin đặt lịch.');
+      alert('Vui lòng chọn 1 khung giờ làm việc khả dụng.');
       return;
     }
     
-    // If already created, just navigate to next step
     if (createdBookingId) {
       setStep(8);
       return;
@@ -128,11 +127,11 @@ export function TimeSelection() {
       const actualBookingId = createdBooking?.data?.booking?.id || createdBooking?.data?.id || createdBooking?.booking?.id || createdBooking?.id;
       if (actualBookingId) {
         setCreatedBookingId(actualBookingId);
-        setHoldTimer(10 * 60); // 10 minutes countdown for UI
+        setHoldTimer(10 * 60); // 10 minutes temporary hold countdown
       }
     } catch (error: any) {
       console.error('Failed to create booking:', error);
-      alert(error?.response?.data?.message || 'Không thể tạo đơn đặt lịch. Khung giờ có thể đã bị người khác đặt.');
+      alert(error?.response?.data?.message || 'Không thể tạo đơn đặt lịch. Khung giờ có thể đã được người khác giữ.');
     } finally {
       setIsCreatingBooking(false);
     }
@@ -145,15 +144,15 @@ export function TimeSelection() {
         <h2 className="text-2xl font-bold text-[#0f172a] tracking-tight">
           Chọn Lịch Chăm Sóc & Giữ Chỗ Tạm Thời
         </h2>
-        <p className="text-slate-400 text-sm font-medium">
-          Khi bạn chọn 1 khung giờ, hệ thống sẽ Khóa & Giữ Chỗ tạm thời cho bạn trong 10 phút để thanh toán.
+        <p className="text-slate-500 text-sm font-medium">
+          Chọn khung giờ khả dụng bên dưới. Khi bấm <span className="font-bold text-slate-800">"Đặt lịch & Giữ chỗ"</span>, hệ thống sẽ tạm khóa giữ chỗ cho bạn trong 10 phút để thanh toán.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Col: Date Selection */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
+          <div className="bg-slate-50/80 border border-slate-200/80 rounded-3xl p-6">
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest text-center mb-4 pb-4 border-b border-slate-200/60">
               Chọn ngày chăm sóc
             </h3>
@@ -163,64 +162,96 @@ export function TimeSelection() {
                   type="date"
                   value={selectedDate}
                   min={todayStr}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setSelectedSlotId(null);
+                    setCreatedBookingId(null);
+                  }}
                   className="w-full p-4 pl-4 pr-10 bg-white border border-slate-300 rounded-xl text-slate-800 font-bold focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all cursor-pointer"
                 />
                 <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               </div>
               <p className="text-center text-xs font-semibold text-slate-500">
-                Bạn đang xếp lịch phục vụ cho ngày làm việc <span className="font-bold text-slate-700 border-b border-slate-300">{selectedDate}</span>.
+                Ngày được chọn: <span className="font-bold text-slate-700 border-b border-slate-300">{selectedDate}</span>
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Col: Slots */}
+        {/* Right Col: Provider Slots */}
         <div className="lg:col-span-8 space-y-6">
-          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">
-            Khung giờ làm việc của {provider?.fullName?.split(' ').pop()?.toUpperCase() || 'CHUYÊN VIÊN'}:
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+              Khung giờ làm việc của {provider?.fullName?.split(' ').pop()?.toUpperCase() || 'CHUYÊN VIÊN'}:
+            </h3>
+            {availableSlotsCount > 0 && (
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                {availableSlotsCount} ca khả dụng
+              </span>
+            )}
+          </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="flex flex-col items-center justify-center py-12 gap-3 bg-slate-50/50 rounded-2xl border border-slate-100">
               <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
-              <span className="text-xs font-semibold text-slate-400">Đang tải lịch trống...</span>
+              <span className="text-xs font-semibold text-slate-400">Đang kiểm tra lịch làm việc...</span>
             </div>
-          ) : slots.length === 0 ? (
-            <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 text-center">
-              <p className="text-sm font-semibold text-slate-500">
-                Chuyên viên không có lịch làm việc trong ngày này.
+          ) : slots.length === 0 || availableSlotsCount === 0 ? (
+            <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-6 text-center space-y-2">
+              <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+              <h4 className="text-sm font-bold text-slate-800">Chưa có lịch đăng ký cho ngày này</h4>
+              <p className="text-xs text-slate-600 max-w-md mx-auto">
+                Chuyên viên <span className="font-semibold text-slate-800">{provider?.fullName || 'đối tác'}</span> chưa đăng ký ca làm việc nào vào ngày <span className="font-bold">{selectedDate}</span>. Vui lòng chọn ngày khác trên lịch.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {slots.map((slot) => {
-                const isSelected = selectedSlotId === slot.providerWorkingSlotId;
-                const isAvailable = slot.status === 'AVAILABLE';
+                const hasSlotId = Boolean(slot.providerWorkingSlotId);
+                const isAvailable = hasSlotId && slot.status === 'AVAILABLE';
+                
+                // CRITICAL FIX: Only evaluate isSelected if both IDs are non-null string values
+                const isSelected = Boolean(
+                  selectedSlotId && 
+                  slot.providerWorkingSlotId && 
+                  selectedSlotId === slot.providerWorkingSlotId
+                );
+
                 return (
                   <button
                     key={slot.slotId}
-                    onClick={() => slot.providerWorkingSlotId && handleSelectSlot(slot.providerWorkingSlotId)}
+                    type="button"
+                    onClick={() => {
+                      if (isAvailable && slot.providerWorkingSlotId) {
+                        handleSelectSlot(slot.providerWorkingSlotId);
+                      }
+                    }}
                     disabled={!isAvailable || !!createdBookingId}
                     className={`flex items-center justify-between p-4 rounded-[20px] border-2 transition-all ${
                       isSelected
-                        ? 'border-[#f0c05a] bg-amber-50/10'
+                        ? 'border-amber-400 bg-amber-50/40 shadow-sm ring-2 ring-amber-400/20'
                         : isAvailable
-                        ? 'border-slate-100 hover:border-slate-200 bg-white cursor-pointer'
-                        : 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
+                        ? 'border-slate-200 hover:border-teal-500 hover:shadow-md bg-white cursor-pointer'
+                        : 'border-slate-100 bg-slate-50/80 opacity-50 cursor-not-allowed'
                     }`}
                   >
                     <div className="flex items-center gap-3 text-slate-700 font-bold text-sm">
-                      <Clock className={`w-4 h-4 ${isSelected ? 'text-[#f0c05a]' : 'text-slate-400'}`} />
+                      <Clock className={`w-4 h-4 ${isSelected ? 'text-amber-500' : isAvailable ? 'text-teal-500' : 'text-slate-400'}`} />
                       {slot.startTime} - {slot.endTime}
                     </div>
+
                     {isSelected ? (
-                      <span className="px-3 py-1 bg-slate-800 text-white text-[10px] font-black rounded-lg">
-                        GIỮ CHỖ (PENDING)
+                      <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black rounded-lg flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        {createdBookingId ? 'ĐANG GIỮ CHỖ' : 'ĐÃ CHỌN'}
+                      </span>
+                    ) : isAvailable ? (
+                      <span className="text-[10px] font-black tracking-wider text-teal-600 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg">
+                        KHẢ DỤNG
                       </span>
                     ) : (
-                      <span className={`text-[10px] font-black tracking-wider ${isAvailable ? 'text-teal-600' : 'text-slate-400'}`}>
-                        {isAvailable ? 'KHẢ DỤNG' : 'ĐÃ ĐẶT'}
+                      <span className="text-[10px] font-bold tracking-wider text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
+                        {slot.status === 'BOOKED' ? 'ĐÃ ĐẶT' : 'CHƯA MỞ'}
                       </span>
                     )}
                   </button>
@@ -234,10 +265,13 @@ export function TimeSelection() {
             <div className="mt-6 bg-[#ebf3ff] border border-blue-200 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-bottom-4 duration-300">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-500 shadow-sm border border-blue-100">
-                  <Clock className="w-5 h-5" />
+                  <Clock className="w-5 h-5 animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">Đang Giữ Chỗ Tạm Thời</h4>
+                  <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <span>Đang Giữ Chỗ Tạm Thời</span>
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">10 Phút</span>
+                  </h4>
                   <p className="text-xs font-medium text-slate-500">
                     Khung giờ <span className="font-bold text-slate-700">{slots.find(s => s.providerWorkingSlotId === selectedSlotId)?.startTime} - {slots.find(s => s.providerWorkingSlotId === selectedSlotId)?.endTime}</span> đã được bảo hộ tạm giữ cho bạn.
                   </p>
@@ -254,6 +288,7 @@ export function TimeSelection() {
       {/* Navigation Footer */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-8">
         <button
+          type="button"
           onClick={() => setStep(5)}
           className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
         >
@@ -261,14 +296,15 @@ export function TimeSelection() {
           Quay lại
         </button>
         <button
+          type="button"
           onClick={handleCreateBooking}
           disabled={!selectedSlotId || isCreatingBooking}
-          className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all"
+          className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all cursor-pointer shadow-md"
         >
           {isCreatingBooking ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Đang tạo đơn...
+              Đang giữ chỗ...
             </>
           ) : createdBookingId ? (
             <>
@@ -277,7 +313,7 @@ export function TimeSelection() {
             </>
           ) : (
             <>
-              Đặt lịch
+              Đặt lịch & Giữ chỗ
               <ChevronRight className="w-4 h-4" />
             </>
           )}

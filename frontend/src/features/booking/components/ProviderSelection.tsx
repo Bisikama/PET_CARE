@@ -165,16 +165,20 @@ export function ProviderSelection() {
                 {/* Left Side: Avatar + Details */}
                 <div className="flex items-start gap-4 flex-1">
                   {/* Avatar */}
-                  <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden border border-slate-100 shadow-inner bg-slate-50 flex items-center justify-center">
+                  <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-gradient-to-tr from-teal-600 via-emerald-500 to-cyan-600 flex items-center justify-center text-white font-extrabold text-xl uppercase tracking-wider">
                     {p.avatarUrl ? (
                       <img
                         src={p.avatarUrl}
                         alt={p.fullName}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
                       />
-                    ) : (
-                      <span className="text-2xl">👤</span>
-                    )}
+                    ) : null}
+                    <span className="select-none drop-shadow-sm">
+                      {p.fullName?.charAt(0) || 'P'}
+                    </span>
                   </div>
 
                   {/* Info details */}

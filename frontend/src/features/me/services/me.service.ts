@@ -108,4 +108,25 @@ export const meService = {
     const response = await axiosInstance.get('/services');
     return response.data;
   },
+
+  getUserMe: async (): Promise<User> => {
+    const response = await axiosInstance.get<User>('/users/me');
+    return response.data;
+  },
+
+  updateNotificationSettings: async (settings: any): Promise<any> => {
+    const response = await axiosInstance.patch('/users/me/notification-settings', settings);
+    return response.data;
+  },
+
+  deleteAccount: async (): Promise<any> => {
+    const response = await axiosInstance.delete('/users/me');
+    return response.data;
+  },
+
+  deactivateAccount: async (): Promise<any> => {
+    const response = await axiosInstance.patch('/users/me/deactivate');
+    return response.data;
+  },
 };
+

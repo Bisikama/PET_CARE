@@ -25,4 +25,10 @@ export const customerAddressesService = {
   deleteAddress: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/customer-addresses/${id}`);
   },
+
+  calculateDistance: async (data: { originLat: number; originLng: number; destLat: number; destLng: number }): Promise<{ distanceKm: number }> => {
+    const response = await axiosInstance.post('/customer-addresses/calculate-distance', data);
+    return response.data;
+  },
 };
+

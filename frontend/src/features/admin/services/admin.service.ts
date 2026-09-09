@@ -84,4 +84,65 @@ export const adminService = {
     const response = await axiosInstance.get('/admin/audit-logs', { params });
     return response.data;
   },
+
+  getUsers: async (params?: any): Promise<any> => {
+    const response = await axiosInstance.get('/admin/users', { params });
+    return response.data;
+  },
+
+  createUser: async (data: any): Promise<any> => {
+    const response = await axiosInstance.post('/admin/users', data);
+    return response.data;
+  },
+
+  getDeactivationRequests: async (): Promise<any[]> => {
+    const response = await axiosInstance.get('/admin/users/deactivation-requests');
+    return response.data;
+  },
+
+  approveDeactivation: async (id: string): Promise<any> => {
+    const response = await axiosInstance.patch(`/admin/users/deactivation-requests/${id}/approve`);
+    return response.data;
+  },
+
+  rejectDeactivation: async (id: string, reason?: string): Promise<any> => {
+    const response = await axiosInstance.patch(`/admin/users/deactivation-requests/${id}/reject`, { reason });
+    return response.data;
+  },
+
+  getUserDetail: async (id: string): Promise<any> => {
+    const response = await axiosInstance.get(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  updateUser: async (id: string, data: any): Promise<any> => {
+    const response = await axiosInstance.patch(`/admin/users/${id}`, data);
+    return response.data;
+  },
+
+  updateUserRole: async (id: string, role: string): Promise<any> => {
+    const response = await axiosInstance.patch(`/admin/users/${id}/role`, { role });
+    return response.data;
+  },
+
+  getUserSessions: async (id: string): Promise<any[]> => {
+    const response = await axiosInstance.get(`/admin/users/${id}/sessions`);
+    return response.data;
+  },
+
+  deleteUserSessions: async (id: string): Promise<any> => {
+    const response = await axiosInstance.delete(`/admin/users/${id}/sessions`);
+    return response.data;
+  },
+
+  getConfigs: async (): Promise<any> => {
+    const response = await axiosInstance.get('/admin/configs');
+    return response.data;
+  },
+
+  updateConfigs: async (configs: any): Promise<any> => {
+    const response = await axiosInstance.patch('/admin/configs', configs);
+    return response.data;
+  },
 };
+

@@ -52,4 +52,50 @@ export const providerService = {
     const response = await axiosInstance.get('/services');
     return response.data;
   },
+
+  getDashboard: async (): Promise<any> => {
+    const response = await axiosInstance.get('/providers/me/dashboard');
+    return response.data;
+  },
+
+  getReviews: async (): Promise<any[]> => {
+    const response = await axiosInstance.get('/providers/me/reviews');
+    return response.data;
+  },
+
+  getTrustScoreLogs: async (): Promise<any[]> => {
+    const response = await axiosInstance.get('/providers/me/trust-score-logs');
+    return response.data;
+  },
+
+  updateStatus: async (status: string): Promise<any> => {
+    const response = await axiosInstance.patch('/providers/me/status', { status });
+    return response.data;
+  },
+
+  getCapabilities: async (): Promise<any[]> => {
+    const response = await axiosInstance.get('/providers/me/capabilities');
+    return response.data;
+  },
+
+  updateCapability: async (id: string, data: any): Promise<any> => {
+    const response = await axiosInstance.patch(`/providers/capabilities/${id}`, data);
+    return response.data;
+  },
+
+  deleteCapability: async (id: string): Promise<any> => {
+    const response = await axiosInstance.delete(`/providers/capabilities/${id}`);
+    return response.data;
+  },
+
+  getAdminProviderProfile: async (providerId: string): Promise<any> => {
+    const response = await axiosInstance.get(`/admin/providers/${providerId}/profile`);
+    return response.data;
+  },
+
+  removeAdminProviderBadge: async (providerId: string, badgeCode: string): Promise<any> => {
+    const response = await axiosInstance.delete(`/admin/providers/${providerId}/badges/${badgeCode}`);
+    return response.data;
+  },
 };
+

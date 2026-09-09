@@ -17,4 +17,9 @@ export * from './services/booking.service';
 export * from './hooks/useBooking';
 export * from './hooks/useDiscoverProviders';
 export * from './hooks/useCustomerBookings';
+export * from './components/BookingDetailModal';
+export * from './components/BookingMatchingSearchModal';
+export * from './hooks/useBookingDetail';
+export * from './hooks/useBookingMatching';
+
 

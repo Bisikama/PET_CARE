@@ -97,8 +97,9 @@ export const CustomerBookingAction: React.FC<CustomerBookingActionProps> = ({ bo
   const evidence = bookingDetail.booking_media?.[0]; // Get the first uploaded evidence
   const existingReview = bookingDetail.reviews?.[0] || null;
 
-  // Only render if awaiting or completed
-  if (!isAwaiting && !isCompleted) return null;
+  // Only render if awaiting confirmation, OR if completed but not reviewed yet
+  if (!isAwaiting && (!isCompleted || existingReview)) return null;
+
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-[32px] border border-slate-100 shadow-sm mt-8 space-y-6 animate-fade-in">

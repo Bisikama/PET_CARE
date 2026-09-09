@@ -88,9 +88,10 @@ export const UpdateProfileModal: React.FC<UpdateProfileModalProps> = ({ isOpen, 
               <div className="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
-                ) : user?.avatar ? (
-                  <img src={user.avatar} alt="Current avatar" className="w-full h-full object-cover" />
+                ) : (user as any)?.avatar || user?.avatarUrl ? (
+                  <img src={(user as any)?.avatar || user?.avatarUrl} alt="Current avatar" className="w-full h-full object-cover" />
                 ) : (
+
                   <span className="text-3xl font-bold text-slate-300">
                     {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                   </span>

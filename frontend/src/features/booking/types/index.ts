@@ -89,3 +89,69 @@ export interface CancelBookingPayload {
   reason: CancelReason;
   note?: string;
 }
+
+export interface CalculatePriceDto {
+  serviceId: string;
+  petId?: string;
+  startTime: string;
+  endTime?: string;
+  promotionCode?: string;
+}
+
+export interface CalculatePriceResponse {
+  basePrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  appliedRules?: any[];
+}
+
+export interface SearchMatchingProviderDto {
+  serviceId: string;
+  petId?: string;
+  latitude: number;
+  longitude: number;
+  scheduledTime: string;
+  maxDistanceKm?: number;
+}
+
+export interface BookingChecklistItem {
+  id: string;
+  bookingId: string;
+  title: string;
+  description?: string;
+  status: 'PENDING' | 'DONE' | 'SKIPPED';
+  completedAt?: string;
+  evidencePhotoUrl?: string;
+}
+
+export interface BookingChecklistResponse {
+  bookingId: string;
+  items: BookingChecklistItem[];
+}
+
+export interface UpdateChecklistItemDto {
+  status: 'DONE' | 'SKIPPED';
+  evidencePhotoUrl?: string;
+}
+
+export interface ProviderCancelBookingDto {
+  reason: string;
+  note?: string;
+}
+
+export interface BookingReviewDto {
+  rating: number;
+  comment?: string;
+}
+
+export interface BookingDisputeDto {
+  reason: string;
+  description: string;
+  evidenceUrls?: string[];
+}
+
+export interface RequestExtensionDto {
+  additionalMinutes: number;
+  reason: string;
+}
+

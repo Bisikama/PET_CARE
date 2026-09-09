@@ -31,7 +31,8 @@ export const useProviderScheduleStore = create<ProviderScheduleState>((set, get)
     set({ isLoading: true, error: null });
     try {
       const data = await providerScheduleService.getAvailableSlots(providerId, startDate, endDate);
-      set({ schedules: data, lastFetchedProviderId: providerId, isLoading: false });
+      set({ schedules: data as any, lastFetchedProviderId: providerId, isLoading: false });
+
     } catch (error: any) {
       set({ error: error.message || 'Failed to fetch schedules', isLoading: false });
     }

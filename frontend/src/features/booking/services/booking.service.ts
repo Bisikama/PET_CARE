@@ -51,4 +51,45 @@ export const bookingService = {
     const response = await axiosInstance.get('/service-discovery/providers', { params });
     return response.data;
   },
+
+  calculatePrice: async (dto: any): Promise<any> => {
+    const response = await axiosInstance.post('/bookings/calculate-price', dto);
+    return response.data;
+  },
+
+  searchMatchingProviders: async (dto: any): Promise<any[]> => {
+    const response = await axiosInstance.post('/booking-matching/search', dto);
+    return response.data;
+  },
+
+  providerCancelBooking: async (bookingId: string, payload: { reason: string; note?: string }): Promise<any> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/provider-cancel`, payload);
+    return response.data;
+  },
+
+  getBookingChecklist: async (bookingId: string): Promise<any> => {
+    const response = await axiosInstance.get(`/bookings/${bookingId}/checklist`);
+    return response.data;
+  },
+
+  updateChecklistItem: async (bookingId: string, itemId: string, data: any): Promise<any> => {
+    const response = await axiosInstance.patch(`/bookings/${bookingId}/checklist/${itemId}`, data);
+    return response.data;
+  },
+
+  createBookingReview: async (bookingId: string, data: { rating: number; comment?: string }): Promise<any> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/reviews`, data);
+    return response.data;
+  },
+
+  createBookingDispute: async (bookingId: string, data: { reason: string; description: string }): Promise<any> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/dispute`, data);
+    return response.data;
+  },
+
+  requestBookingExtension: async (bookingId: string, data: { additionalMinutes: number; reason: string }): Promise<any> => {
+    const response = await axiosInstance.patch(`/bookings/${bookingId}/request-extension`, data);
+    return response.data;
+  },
 };
+
