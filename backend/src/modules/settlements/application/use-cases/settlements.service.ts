@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, booking_status } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
 
@@ -301,7 +301,7 @@ export class SettlementsService {
   /**
    * Internal logic: Refund payment
    */
-  async refund(bookingId: string, tx: Prisma.TransactionClient, reason: string) {
+  async refund(bookingId: string, tx: Prisma.TransactionClient, reason: string, newBookingStatus: booking_status = 'REJECTED') {
     const booking = await tx.bookings.findUnique({
       where: { id: bookingId },
       include: { payments: true },
@@ -372,7 +372,7 @@ export class SettlementsService {
 
     await tx.bookings.update({
       where: { id: bookingId },
-      data: { status: 'REJECTED' },
+      data: { status: newBookingStatus },
     });
 
     return updatedPayment;
