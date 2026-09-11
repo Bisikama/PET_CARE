@@ -40,6 +40,9 @@ describe('WalletsService (Ledger Logic)', () => {
       wallet_transactions: {
         create: jest.fn(),
       },
+      audit_logs: {
+        create: jest.fn(),
+      },
       $queryRaw: jest.fn().mockResolvedValue([]),
     };
   });
@@ -156,6 +159,49 @@ describe('WalletsService (Ledger Logic)', () => {
       await expect(
         service.processTransaction(walletId, amountDecimal, wallet_transaction_type.DEBIT, null, null, txMock)
       ).rejects.toThrow(`S\u1ed1 d\u01b0 kh\u1ea3 d\u1ee5ng kh\u00f4ng \u0111\u1ee7 trong v\u00ed ${walletId}`); // "Số dư khả dụng không đủ trong ví"
+    });
+  });
+
+  describe('adminDirectWithdraw', () => {
+    const adminId = 'admin-123';
+    
+    it('should throw BadRequestException if amount is <= 0', async () => {
+      await expect(service.adminDirectWithdraw(adminId, 0)).rejects.toThrow('Số tiền rút phải lớn hơn 0');
+    });
+
+    it('should throw BadRequestException if admin wallet is not found', async () => {
+      txMock.wallets.findUnique.mockResolvedValueOnce(null);
+      await expect(service.adminDirectWithdraw(adminId, 1000)).rejects.toThrow('Không tìm thấy ví của Admin');
+    });
+
+    it('should throw ConflictException if balance is less than amount', async () => {
+      txMock.wallets.findUnique.mockResolvedValueOnce({ balance: new Prisma.Decimal(500) });
+      await expect(service.adminDirectWithdraw(adminId, 1000)).rejects.toThrow('Số dư khả dụng không đủ để rút tiền');
+    });
+
+    it('should successfully process payout transaction and create audit log', async () => {
+      const wallet = { id: 'wallet-1', balance: new Prisma.Decimal(5000), pending_balance: new Prisma.Decimal(0) };
+      txMock.wallets.findUnique.mockResolvedValue(wallet);
+      txMock.$queryRaw.mockResolvedValue([wallet]);
+      txMock.wallets.update.mockResolvedValue({ balance: new Prisma.Decimal(4000) });
+      txMock.wallet_transactions.create.mockResolvedValue({ id: 'txn-1' });
+
+      const bankDetails = { bank_name: 'VIB', account_number: '123' };
+      const result = await service.adminDirectWithdraw(adminId, 1000, 'Rút tiền abc', bankDetails);
+
+      expect(result.success).toBe(true);
+      expect(txMock.wallets.update).toHaveBeenCalled();
+      expect(txMock.wallet_transactions.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ type: 'PAYOUT', amount: new Prisma.Decimal(1000) })
+      }));
+      expect(txMock.audit_logs.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          actor_id: adminId,
+          action: 'ADMIN_WITHDRAWAL',
+          target_type: 'WALLET',
+          new_value: { amount: 1000, bankDetails }
+        })
+      }));
     });
   });
 });
