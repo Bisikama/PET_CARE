@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, Star, Award, MapPin, Loader2, Sparkles, Building2, CheckCircle2, ShieldCheck, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Award, MapPin, Loader2, Building2, CheckCircle2, ShieldCheck, Plus, AlertTriangle, Search } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useDiscoverProviders, DiscoveredProvider } from '../hooks/useDiscoverProviders';
@@ -117,8 +117,8 @@ export function ProviderSelection() {
 
       {/* Loading & Error States */}
       {!selectedAddressId ? (
-        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center">
-          <span className="text-4xl block mb-3">📍</span>
+        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
+          <MapPin className="w-10 h-10 text-slate-400 mb-3" />
           <h3 className="text-base font-bold text-slate-800">Chưa chọn địa chỉ phục vụ</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto font-medium">
             Vui lòng thêm hoặc chọn địa chỉ nhận dịch vụ ở góc trên để tìm kiếm các chuyên viên chăm sóc gần bạn nhất.
@@ -130,16 +130,16 @@ export function ProviderSelection() {
           <span className="text-sm font-semibold text-slate-500">Đang tìm chuyên viên phù hợp ở gần bạn...</span>
         </div>
       ) : providersError ? (
-        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center">
-          <span className="text-4xl block mb-3">⚠️</span>
+        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
+          <AlertTriangle className="w-10 h-10 text-amber-500 mb-3" />
           <h3 className="text-base font-bold text-slate-800">Lỗi tìm kiếm đối tác</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto font-medium">
             {providersError}
           </p>
         </div>
       ) : providers.length === 0 ? (
-        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center">
-          <span className="text-4xl block mb-3">🔍</span>
+        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
+          <Search className="w-10 h-10 text-slate-400 mb-3" />
           <h3 className="text-base font-bold text-slate-800">Không tìm thấy chuyên viên</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto font-medium leading-relaxed">
             Rất tiếc, hiện tại không có chuyên viên nào phục vụ loài vật của bạn ({selectedPet?.species}) ở khu vực {selectedAddress?.district}. Vui lòng kiểm tra lại địa chỉ hoặc thử dịch vụ khác.

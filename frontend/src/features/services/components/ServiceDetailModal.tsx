@@ -4,7 +4,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, 
-  Sparkles, 
+  Package, 
   AlertCircle, 
   Loader2, 
   DollarSign, 
@@ -64,7 +64,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
 
           <div className="flex items-center gap-4 relative z-10 min-w-0 pr-4">
             <div className="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-500/30 text-teal-400 flex items-center justify-center shrink-0 shadow-inner">
-              <Sparkles className="w-6 h-6 fill-teal-400/20" />
+              <Package className="w-6 h-6" />
             </div>
             <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">

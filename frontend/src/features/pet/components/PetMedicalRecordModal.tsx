@@ -12,7 +12,6 @@ import {
   Syringe,
   Stethoscope,
   AlertTriangle,
-  Sparkles,
   ShieldAlert,
   List,
   CheckCircle2,
@@ -149,7 +148,7 @@ export const PetMedicalRecordModal: React.FC<PetMedicalRecordModalProps> = ({
         <div className="flex items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 ring-1 ring-emerald-500/20">
-              <Sparkles className="h-6 w-6" />
+              <FileText className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">

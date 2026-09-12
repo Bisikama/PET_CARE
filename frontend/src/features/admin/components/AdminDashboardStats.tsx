@@ -11,7 +11,7 @@ import {
   RefreshCw, 
   ShieldAlert,
   ArrowUpRight,
-  Sparkles
+  BarChart3
 } from 'lucide-react';
 import { adminService } from '../services/admin.service';
 
@@ -63,7 +63,7 @@ export function AdminDashboardStats({ refreshKey = 0, onLoadingChange }: AdminDa
       <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-teal-500" />
+            <BarChart3 className="w-5 h-5 text-teal-500" />
             Tổng Quan Hệ Thống (Dashboard Stats)
           </h3>
           <p className="text-xs text-slate-400 font-medium mt-0.5">

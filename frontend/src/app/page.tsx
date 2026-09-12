@@ -11,7 +11,6 @@ import {
   HeartHandshake,
   Search,
   Award,
-  Sparkles,
   Clock,
   CreditCard,
   Lock,
@@ -138,7 +137,7 @@ export default function LandingPage() {
           
           {/* Paw Icon Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/65 backdrop-blur-md border border-slate-800 text-[#F7C948] text-xs font-bold tracking-wider uppercase mb-6 animate-pulse">
-            <Sparkles className="h-4 w-4 text-[#F7C948]" />
+            <Star className="h-4 w-4 text-[#F7C948] fill-[#F7C948]" />
             Dịch vụ chuyên nghiệp hàng đầu
           </div>
 
@@ -320,7 +319,7 @@ export default function LandingPage() {
           <div className="flex flex-col items-center space-y-6">
             
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#F7C948]/10 text-[#f3b51a]">
-              🛡️ BẢO VỆ GIAO DỊCH KHÁCH HÀNG
+              <ShieldCheck className="h-4 w-4 text-[#f3b51a]" /> BẢO VỆ GIAO DỊCH KHÁCH HÀNG
             </span>
             
             <h2 className="text-3xl md:text-4xl font-extrabold text-[#08243D] leading-tight max-w-2xl">

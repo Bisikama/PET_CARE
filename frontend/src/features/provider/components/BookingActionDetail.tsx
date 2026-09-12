@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useProviderBooking } from '../hooks/useProviderBooking';
-import { ShieldAlert, Clock, Package, DollarSign, User, Phone, Mail, MapPin, Check, X, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, Clock, Package, DollarSign, User, Phone, Mail, MapPin, Check, X, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BookingGPSCheckIn } from './BookingGPSCheckIn';
 import { BookingChecklist } from './BookingChecklist';
@@ -70,6 +70,7 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
   const isInProgress = bookingDetail.status === 'IN_PROGRESS';
   const isAwaitingCustomer = bookingDetail.status === 'AWAITING_CUSTOMER_CONFIRMATION';
   const isCompleted = bookingDetail.status === 'COMPLETED';
+  const canViewPrivateInfo = isAccepted || isInProgress || isAwaitingCustomer || isCompleted;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 max-w-4xl mx-auto space-y-8">
@@ -96,23 +97,7 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
           <ShieldAlert className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <h4 className="font-semibold text-amber-800 mb-1 flex items-center gap-2">
-              <span role="img" aria-label="lock">🔒</span> Chế Độ Bảo Mật Thông Tin Khách Hàng Kích Hoạt
-            </h4>
-            <p className="text-sm text-amber-700">
-              Để bảo vệ sự riêng tư, <strong>số điện thoại, email và số nhà chính xác</strong> của chủ nuôi được mã hóa tạm thời. 
-              Thông tin sẽ được tự động mở khóa đầy đủ ngay sau khi bạn đồng ý nhận ca chăm sóc này.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Security Alert (only show if pending) */}
-      {isPending && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 items-start">
-          <ShieldAlert className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-amber-800 mb-1 flex items-center gap-2">
-              <span role="img" aria-label="lock">🔒</span> Chế Độ Bảo Mật Thông Tin Khách Hàng Kích Hoạt
+              <Lock className="w-4 h-4 text-amber-600 shrink-0" /> Chế Độ Bảo Mật Thông Tin Khách Hàng Kích Hoạt
             </h4>
             <p className="text-sm text-amber-700">
               Để bảo vệ sự riêng tư, <strong>số điện thoại, email và số nhà chính xác</strong> của chủ nuôi được mã hóa tạm thời. 
@@ -206,9 +191,9 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
             </div>
             <div>
               <p className="text-xs text-gray-400 font-medium">SỐ ĐIỆN THOẠI</p>
-              {isPending ? (
-                 <p className="text-sm font-bold text-rose-600 flex items-center gap-1 italic">
-                    <span role="img" aria-label="lock">🔒</span> 090* *** ***
+              {!canViewPrivateInfo ? (
+                 <p className="text-sm font-bold text-rose-600 flex items-center gap-1.5 italic">
+                    <Lock className="w-3.5 h-3.5 text-rose-500 shrink-0" /> 090* *** ***
                  </p>
               ) : (
                 <p className="text-sm font-bold text-gray-800">{bookingDetail.address_snapshot?.phone || 'N/A'}</p>
@@ -231,12 +216,14 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
            <MapPin className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
            <div>
              <p className="text-xs text-gray-400 font-medium mb-1">ĐỊA CHỈ THỰC HIỆN CA CHĂM SÓC</p>
-             {isPending ? (
+             {!canViewPrivateInfo ? (
                <>
-                 <p className="text-sm font-bold text-rose-600 flex items-center gap-1 italic mb-1">
-                    <span role="img" aria-label="lock">🔒</span> [CĂN HỘ VÀ SỐ NHÀ CHÍNH XÁC ĐÃ ẨN]
+                 <p className="text-sm font-bold text-rose-600 flex items-center gap-1.5 italic mb-1">
+                    <Lock className="w-3.5 h-3.5 text-rose-500 shrink-0" /> [CĂN HỘ VÀ SỐ NHÀ CHÍNH XÁC ĐÃ ẨN]
                  </p>
-                 <p className="text-sm text-gray-500 font-medium">{bookingDetail.address_snapshot?.ward}, {bookingDetail.address_snapshot?.district}, {bookingDetail.address_snapshot?.city}</p>
+                 <p className="text-sm text-gray-500 font-medium">
+                   {bookingDetail.address_snapshot ? `${bookingDetail.address_snapshot.ward}, ${bookingDetail.address_snapshot.district}, ${bookingDetail.address_snapshot.city}` : 'N/A'}
+                 </p>
                </>
              ) : (
                 <p className="text-sm font-bold text-gray-800">

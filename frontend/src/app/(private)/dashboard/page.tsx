@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
-import { Heart, Mail, Plus, Shield, Sparkles, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity } from 'lucide-react';
+import { Heart, Mail, Plus, Shield, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity } from 'lucide-react';
 import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore, CustomerBookingAction } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal, BookingActionDetail, useProviderBookingStore } from '@/features/provider';
@@ -325,7 +325,7 @@ export default function DashboardPage() {
           <div className="space-y-3.5">
             {/* Badge */}
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/5 border border-amber-400/15 text-[#f0c05a] text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 fill-current" />
+              <Heart className="w-3.5 h-3.5 fill-current" />
               Khu vực chủ nuôi
             </div>
             

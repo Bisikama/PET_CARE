@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePayoutRequests } from '../hooks/usePayoutRequests';
 import { useSettlementActions } from '../hooks/useSettlementActions';
-import { ShieldCheck, CheckCircle, XCircle, Search, DollarSign } from 'lucide-react';
+import { ShieldCheck, CheckCircle, XCircle, Search, DollarSign, Wallet, Clock, Lock } from 'lucide-react';
+import { adminService } from '@/features/admin/services/admin.service';
 
 export const EscrowManagement = () => {
   const { payoutRequests, isLoading, error } = usePayoutRequests();
   const { approvePayout, rejectPayout, releaseEscrow, refundCustomer } = useSettlementActions();
   const [bookingIdInput, setBookingIdInput] = useState('');
+  const [stats, setStats] = useState<{ totalRevenue?: number; totalBookings?: number } | null>(null);
+
+  useEffect(() => {
+    adminService.getDashboardStats()
+      .then((res) => setStats(res))
+      .catch((err) => console.error('Error fetching admin stats in Escrow page:', err));
+  }, []);
 
   const pendingRequests = payoutRequests.filter(r => r.status === 'PENDING');
+  const pendingTotalAmount = pendingRequests.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+  };
 
   const handleRelease = async () => {
     if (!bookingIdInput) return;
@@ -33,7 +46,52 @@ export const EscrowManagement = () => {
   };
 
   return (
-   
+    <div className="space-y-6">
+      {/* Top Escrow Summary Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Total Escrow Revenue */}
+        <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-3xl text-white shadow-lg space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-teal-400 uppercase tracking-wider">Tổng Doanh Thu Ký Quỹ</span>
+            <div className="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
+              <Wallet className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl font-black text-amber-400 tracking-tight">
+            {stats ? formatCurrency(stats.totalRevenue || 0) : '0 đ'}
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium">Doanh thu giao dịch qua cổng bảo chứng Escrow</p>
+        </div>
+
+        {/* Card 2: Pending Payouts */}
+        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Tiền Rút Đang Chờ Duyệt</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl font-black text-slate-800 tracking-tight">
+            {formatCurrency(pendingTotalAmount)}
+          </div>
+          <p className="text-[11px] text-amber-600 font-bold">{pendingRequests.length} yêu cầu rút tiền từ Provider</p>
+        </div>
+
+        {/* Card 3: Escrow Status */}
+        <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Trạng Thái Ký Quỹ</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Lock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="text-base font-black text-emerald-700">100% An Toàn (Active)</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium">Hệ thống Escrow hoạt động tự động 24/7</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payout Requests */}
@@ -137,5 +195,6 @@ export const EscrowManagement = () => {
           </div>
         </div>
       </div>
+    </div>
   );
 };
