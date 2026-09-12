@@ -15,7 +15,7 @@ export class AdminWithdrawDto {
   @ApiProperty({
     description: 'Thông tin tài khoản ngân hàng nhận tiền',
     required: false,
-    type: 'object',
+    type: Object,
     example: {
       bank_name: 'Vietcombank',
       account_number: '123456789',
