@@ -32,6 +32,9 @@ describe('PaymentsService', () => {
     provider_profiles: {
       findUnique: jest.fn(),
     },
+    system_configs: {
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn(async (cb) => cb(mockPrisma)),
   };
 
@@ -214,6 +217,11 @@ describe('PaymentsService', () => {
         user_id: 'provider-1',
       });
 
+      mockPrisma.system_configs.findUnique.mockResolvedValue({
+        key: 'COMMISSION_RATE',
+        value: '0.1',
+      });
+
       mockPrisma.wallets.findUnique.mockResolvedValue({
         id: 'wallet-1',
         user_id: 'provider-1',
@@ -298,6 +306,11 @@ describe('PaymentsService', () => {
       mockPrisma.provider_profiles.findUnique.mockResolvedValue({
         id: 'provider-1',
         user_id: 'provider-1',
+      });
+
+      mockPrisma.system_configs.findUnique.mockResolvedValue({
+        key: 'COMMISSION_RATE',
+        value: '0.1',
       });
 
       mockPrisma.wallets.findUnique.mockResolvedValue({

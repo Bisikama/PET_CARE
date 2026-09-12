@@ -6,6 +6,7 @@ import type { BookingRepositoryPort } from '../ports/booking-repository.port';
 import type { UnitOfWorkPort } from '../ports/unit-of-work.port';
 import { BookingStateMachineService } from '../../domain/services/booking-state-machine.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
+import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 
 @Injectable()
 export class ProviderRejectBookingUseCase {
@@ -16,6 +17,7 @@ export class ProviderRejectBookingUseCase {
     private readonly unitOfWork: UnitOfWorkPort,
     private readonly stateMachine: BookingStateMachineService,
     private readonly notificationsService: NotificationsService,
+    private readonly settlementsService: SettlementsService,
   ) {}
 
   async execute(providerUserId: string, bookingId: string) {
@@ -60,6 +62,19 @@ export class ProviderRejectBookingUseCase {
         'Booking request rejected by provider',
         tx,
       );
+
+      // 4. Hoàn tiền
+      try {
+        await this.settlementsService.refund(bookingId, tx as any, 'Đối tác từ chối đơn đặt lịch', nextStatus);
+      } catch (e: any) {
+        // Chỉ bỏ qua nếu lỗi là do đơn hàng chưa thanh toán (BadRequest/Conflict từ refund)
+        // Nếu là lỗi hệ thống (ví dụ: DB sập, không trừ được tiền), PHẢI throw ra để rollback transaction
+        if (e.status === 400 || e.status === 409) {
+          // Log lại info nếu cần
+        } else {
+          throw e; // Ném lỗi ra để rollback toàn bộ (không đổi trạng thái đơn)
+        }
+      }
 
       return { bookingId, status: nextStatus };
     });
