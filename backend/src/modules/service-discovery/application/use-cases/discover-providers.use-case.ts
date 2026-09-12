@@ -102,7 +102,7 @@ export class DiscoverProvidersUseCase {
         id: p.id,
         userId: p.user_id,
         fullName: p.users?.fullName || 'Unknown',
-        avatarUrl: p.avatar_url || p.users?.avatarUrl || null,
+        avatarUrl: p.users?.avatarUrl || null,
         ratingAvg,
         trustScore,
         totalCompletedBookings: completedBookings,

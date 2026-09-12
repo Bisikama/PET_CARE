@@ -160,7 +160,7 @@ export function AdminDashboardStats({ refreshKey = 0, onLoadingChange }: AdminDa
         {/* Card 5: Revenue */}
         <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-3xl text-white shadow-lg space-y-3 relative overflow-hidden group col-span-1 sm:col-span-2 lg:col-span-1 xl:col-span-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-extrabold text-teal-400 uppercase tracking-wider">Doanh Thu Đã Xong</span>
+            <span className="text-[11px] font-extrabold text-teal-400 uppercase tracking-wider">Tổng Giá Trị Giao Dịch (GMV)</span>
             <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center group-hover:scale-110 transition-transform">
               <DollarSign className="w-5 h-5" />
             </div>
@@ -169,7 +169,7 @@ export function AdminDashboardStats({ refreshKey = 0, onLoadingChange }: AdminDa
             <div className="text-xl font-black text-amber-400 tracking-tight truncate">
               {loading ? '...' : formatCurrency(Number(stats?.totalRevenue || 0))}
             </div>
-            <p className="text-[11px] text-slate-400 font-medium mt-0.5">Hoàn tất quy trình Escrow</p>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5">Tổng dòng tiền hoàn tất qua Escrow</p>
           </div>
           <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
             <div className="h-full bg-amber-400 rounded-full w-full" />
