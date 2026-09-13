@@ -160,11 +160,17 @@ export class PaymentsService {
    */
   async processPaymentCallback(vnp_Params: any): Promise<{ RspCode: string; Message: string }> {
     const secureHash = vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
+    
+    // Lọc chỉ lấy các tham số bắt đầu bằng vnp_ để tránh lỗi chữ ký do ngrok/browser tự động thêm tham số
+    const vnpayParams: any = {};
+    for (const key in vnp_Params) {
+      if (key.startsWith('vnp_') && key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType') {
+        vnpayParams[key] = vnp_Params[key];
+      }
+    }
 
     const secretKey = this.configService.get<string>('VNP_HASH_SECRET', 'DUMMY_SECRET');
-    const sortedParams = this.sortObject(vnp_Params);
+    const sortedParams = this.sortObject(vnpayParams);
     const signData = qs.stringify(sortedParams, { encode: false });
     const hmac = crypto.createHmac('sha512', secretKey);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
@@ -643,7 +649,7 @@ export class PaymentsService {
     const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
     
     const requestType = 'captureWallet';
-    const orderInfo = `Thanh toán qua MoMo cho Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
+    const orderInfo = `PetCare Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
     const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
     const returnUrl = `${backendUrl}/api/payments/momo-return`;
     const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
@@ -706,11 +712,15 @@ export class PaymentsService {
       
       if (data.resultCode !== 0) {
         this.logger.error(`Momo URL creation failed: ${data.message}`, data);
-        throw new BadRequestException('Không thể tạo giao dịch MoMo');
+        throw new BadRequestException(`Không thể tạo giao dịch MoMo: ${data.message}`);
       }
       
       return data.payUrl;
     } catch (error) {
+      // Re-throw HttpException (BadRequestException, etc.) trực tiếp, không wrap lại
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error('Error calling MoMo API', error);
       throw new BadRequestException('Lỗi kết nối đến cổng thanh toán MoMo');
     }

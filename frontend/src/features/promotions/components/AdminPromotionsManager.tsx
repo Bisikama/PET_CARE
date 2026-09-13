@@ -14,8 +14,7 @@ import {
   CheckCircle2, 
   Calendar, 
   Coins, 
-  X,
-  Sparkles
+  X
 } from 'lucide-react';
 import { Promotion, CreatePromotionInput } from '../types';
 import { promotionsService } from '../services/promotions.service';

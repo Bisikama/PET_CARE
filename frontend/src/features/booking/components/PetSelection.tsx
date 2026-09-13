@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, ChevronRight } from 'lucide-react';
+import { Plus, ChevronRight, Dog, Cat, Heart } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useBookingStore } from '../stores/booking.store';
@@ -67,8 +67,8 @@ export function PetSelection() {
 
       {/* Pet Cards List */}
       {pets.length === 0 ? (
-        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center">
-          <span className="text-4xl block mb-3">🐶</span>
+        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
+          <Dog className="w-10 h-10 text-slate-400 mb-3" />
           <h3 className="text-base font-bold text-slate-800">Chưa có hồ sơ bé cưng nào</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto font-medium">
             Tài khoản của bạn chưa đăng ký bé cưng nào. Vui lòng bấm vào nút "Đăng ký mới" ở trên để tạo hồ sơ.
@@ -100,10 +100,10 @@ export function PetSelection() {
                       alt={pet.name}
                       className="w-full h-full object-cover"
                     />
+                  ) : pet.species === 'Dog' || pet.species.toLowerCase() === 'dog' ? (
+                    <Dog className="w-8 h-8 text-teal-600" />
                   ) : (
-                    <span className="text-3xl">
-                      {pet.species === 'Dog' || pet.species.toLowerCase() === 'dog' ? '🐶' : '🐱'}
-                    </span>
+                    <Cat className="w-8 h-8 text-teal-600" />
                   )}
                 </div>
 

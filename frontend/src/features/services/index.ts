@@ -21,6 +21,13 @@ export * from './hooks/useCancellationPolicies';
 export * from './hooks/useCreateCancellationPolicy';
 export * from './stores/services.store';
 export * from './types';
+export * from './types/discovery.types';
+
+export * from './services/service-discovery.service';
+export * from './stores/service-discovery.store';
+export * from './hooks/useServiceDiscovery';
+export * from './components/ServiceDiscoveryPackagesView';
+
 
 
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Service } from '../types';
-import { Clock, Coins, Home, Scissors, Sparkles, Stethoscope } from 'lucide-react';
+import { Clock, Coins, Home, Scissors, Heart, Stethoscope } from 'lucide-react';
 import { ServiceDetailModal } from './ServiceDetailModal';
 
 interface ServiceCardProps {
@@ -50,7 +50,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
         };
       default:
         return {
-          icon: Sparkles,
+          icon: Heart,
           label: service.category || 'Dịch vụ thú cưng',
           colorClass: 'bg-indigo-50 text-indigo-600 border-indigo-100/80',
           gradientBg: 'from-indigo-500/5 to-indigo-500/0',

@@ -24,7 +24,7 @@ export class GetBookingByIdUseCase {
     }
 
     // Authorization: Chỉ customer hoặc provider của booking mới được truy cập
-    if (booking.customer_id !== userId && booking.provider_id !== userId) {
+    if (booking.customer_id !== userId && booking.provider_profiles?.user_id !== userId) {
       throw new ForbiddenException('Bạn không có quyền xem đơn đặt lịch này');
     }
 
