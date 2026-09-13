@@ -91,7 +91,8 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { bookingService } = await import('../services/booking.service');
-      const items = await bookingService.getBookingChecklist(bookingId);
+      const res = await bookingService.getBookingChecklist(bookingId);
+      const items = res?.data?.checklistItems || res?.checklistItems || (Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
       set((state) => ({
         checklistsMap: { ...state.checklistsMap, [bookingId]: items },
         isLoading: false,

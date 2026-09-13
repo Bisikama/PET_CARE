@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { providerBookingService } from '../services/provider-booking.service';
 import { useProviderBookingStore } from '../stores/provider-booking.store';
 
@@ -33,8 +33,8 @@ export const useProviderBooking = (bookingId?: string) => {
     }
   }, [bookingDetail, setBookingDetail, setLoading, setError]);
 
-  const fetchActiveBooking = useCallback(async () => {
-    if (!bookingDetail) {
+  const fetchActiveBooking = useCallback(async (silent = false) => {
+    if (!bookingDetail && !silent) {
       setLoading(true);
     }
     try {
@@ -52,9 +52,43 @@ export const useProviderBooking = (bookingId?: string) => {
       console.error('Error fetching active booking:', err);
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [bookingDetail, setBookingDetail, clearBookingDetail, setLoading]);
+
+  // Background Auto-Polling & Window Focus Re-sync for Provider
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        if (bookingId) {
+          fetchBookingDetail(bookingId, true);
+        } else {
+          fetchActiveBooking(true);
+        }
+      }
+    }, 7000);
+
+    const handleFocus = () => {
+      if (bookingId) {
+        fetchBookingDetail(bookingId, true);
+      } else {
+        fetchActiveBooking(true);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, [bookingId, fetchBookingDetail, fetchActiveBooking]);
 
   const acceptBooking = async (id: string) => {
     try {

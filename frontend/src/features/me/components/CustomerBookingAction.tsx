@@ -51,23 +51,51 @@ export const CustomerBookingAction: React.FC<CustomerBookingActionProps> = ({ bo
     loadLatestBooking();
   }, [propBookingId]);
 
-  const fetchBookingDetail = async () => {
+  const fetchBookingDetail = async (silent = false) => {
     if (!activeBookingId) return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const data = await meBookingService.getBookingDetail(activeBookingId);
       setBookingDetail(data);
     } catch (err: any) {
-      setError(err.message || 'Lỗi tải chi tiết đơn');
+      if (!silent) setError(err.message || 'Lỗi tải chi tiết đơn');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
     if (activeBookingId) {
-      fetchBookingDetail();
+      fetchBookingDetail(false);
     }
+  }, [activeBookingId]);
+
+  // Silent Auto-polling & Focus sync for customer action card on dashboard
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        if (activeBookingId) {
+          fetchBookingDetail(true);
+        }
+      }
+    }, 7000);
+
+    const handleFocus = () => {
+      if (activeBookingId) {
+        fetchBookingDetail(true);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
   }, [activeBookingId]);
 
   const handleConfirm = async () => {
