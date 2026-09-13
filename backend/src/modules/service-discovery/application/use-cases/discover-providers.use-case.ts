@@ -16,6 +16,7 @@ export interface DiscoveredProviderOutput {
   id: string;
   userId: string;
   fullName: string;
+  avatarUrl: string | null;
   ratingAvg: number;
   trustScore: number;
   totalCompletedBookings: number;
@@ -57,7 +58,7 @@ export class DiscoverProvidersUseCase {
         } : {}),
       },
       include: {
-        users: { select: { fullName: true } },
+        users: { select: { fullName: true, avatarUrl: true } },
         provider_services: { where: { service_id: input.serviceId } },
         provider_trust_badges: true,
       },
@@ -101,6 +102,7 @@ export class DiscoverProvidersUseCase {
         id: p.id,
         userId: p.user_id,
         fullName: p.users?.fullName || 'Unknown',
+        avatarUrl: p.users?.avatarUrl || null,
         ratingAvg,
         trustScore,
         totalCompletedBookings: completedBookings,

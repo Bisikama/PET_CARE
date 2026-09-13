@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Eye, Plus, Sparkles, RefreshCw, HeartHandshake, Tag, Clock, CheckCircle2, XCircle, Edit3, Trash2, Coins, ListChecks, Shield } from 'lucide-react';
+import { Eye, Plus, Package, RefreshCw, HeartHandshake, Tag, Clock, CheckCircle2, XCircle, Edit3, Trash2, Coins, ListChecks, Shield } from 'lucide-react';
 import { CreateServiceModal, EditServiceModal, DeleteServiceConfirmModal, ServiceDetailModal, ServicePricingRulesModal, ServiceChecklistTemplatesModal, CancellationPoliciesModal, useServices, Service } from '@/features/services';
 
 
@@ -84,7 +84,7 @@ export function AdminServicesManager() {
           </div>
         ) : services.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <Sparkles className="w-10 h-10 text-teal-400 mx-auto" />
+            <Package className="w-10 h-10 text-teal-400 mx-auto" />
             <p className="text-sm font-bold text-slate-700">Chưa có gói dịch vụ nào</p>
             <p className="text-xs text-slate-400">Bấm nút "Tạo Gói Dịch Vụ Mới" ở trên để khởi tạo dịch vụ đầu tiên.</p>
           </div>

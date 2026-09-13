@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Scissors, Home, Stethoscope, Package, AlertTriangle, Heart } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useServices } from '@/features/services/hooks/useServices';
@@ -61,7 +61,7 @@ export function ServiceSelection() {
     return (
       <div className="w-full bg-white rounded-3xl p-6 md:p-8 select-none">
         <div className="flex flex-col items-center justify-center py-12 gap-4">
-          <span className="text-4xl">⚠️</span>
+          <AlertTriangle className="w-10 h-10 text-amber-500" />
           <h3 className="text-base font-bold text-slate-800">Không thể tải dịch vụ</h3>
           <p className="text-slate-400 text-xs max-w-xs mx-auto text-center font-medium">
             {error}
@@ -104,8 +104,8 @@ export function ServiceSelection() {
 
       {/* Service Cards */}
       {services.length === 0 ? (
-        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center">
-          <span className="text-4xl block mb-3">🐾</span>
+        <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
+          <Heart className="w-10 h-10 text-slate-400 mb-3" />
           <h3 className="text-base font-bold text-slate-800">Chưa có dịch vụ nào</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-xs mx-auto font-medium">
             Hệ thống hiện chưa có gói dịch vụ nào được kích hoạt. Vui lòng quay lại sau.
@@ -140,15 +140,17 @@ export function ServiceSelection() {
                   <div className="space-y-3">
                     <div className="flex items-start gap-3 pr-8">
                       {/* Service Icon */}
-                      <span className="text-2xl shrink-0 mt-0.5">
-                        {service.category?.toUpperCase() === 'GROOMER'
-                          ? '✂️'
-                          : service.category?.toUpperCase() === 'SITTER'
-                          ? '🏠'
-                          : service.category?.toUpperCase() === 'VET'
-                          ? '🩺'
-                          : '✨'}
-                      </span>
+                      <div className="shrink-0 mt-0.5">
+                        {service.category?.toUpperCase() === 'GROOMER' ? (
+                          <Scissors className="w-6 h-6 text-amber-500" />
+                        ) : service.category?.toUpperCase() === 'SITTER' ? (
+                          <Home className="w-6 h-6 text-teal-500" />
+                        ) : service.category?.toUpperCase() === 'VET' ? (
+                          <Stethoscope className="w-6 h-6 text-rose-500" />
+                        ) : (
+                          <Package className="w-6 h-6 text-indigo-500" />
+                        )}
+                      </div>
 
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">

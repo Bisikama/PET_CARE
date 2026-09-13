@@ -226,6 +226,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     return await client.bookings.findFirst({
       where: { id: bookingId },
       include: {
+        provider_profiles: true,
         provider_working_slots: {
           include: {
             time_slots: true,
@@ -253,7 +254,9 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
               include: {
                 booking_checklist_items: {
                   orderBy: {
-                    created_at: 'asc',
+                    service_checklist_templates: {
+                      sort_order: 'asc',
+                    },
                   },
                 },
               },

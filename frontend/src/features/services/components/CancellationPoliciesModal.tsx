@@ -13,7 +13,7 @@ import {
   FileText,
   Clock,
   Percent,
-  Sparkles
+  ShieldCheck
 } from 'lucide-react';
 import { useCancellationPolicies } from '../hooks/useCancellationPolicies';
 import { useCreateCancellationPolicy } from '../hooks/useCreateCancellationPolicy';
@@ -270,7 +270,7 @@ export const CancellationPoliciesModal: React.FC<CancellationPoliciesModalProps>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5 fill-current" /> Thêm Chính Sách
+                    <ShieldCheck className="w-3.5 h-3.5" /> Thêm Chính Sách
                   </>
                 )}
               </button>

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { X, Sparkles, AlertCircle, Loader2, DollarSign, Clock, Tag, FileText, Shield } from 'lucide-react';
+import { X, Package, AlertCircle, Loader2, DollarSign, Clock, Tag, FileText, Shield } from 'lucide-react';
 import { servicesService } from '../services/services.service';
 import { useCreateService } from '../hooks/useCreateService';
 import { CreateServiceData } from '../types';
@@ -14,13 +14,13 @@ interface CreateServiceModalProps {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'GROOMING', label: '✂️ Tắm & Cắt tỉa (Grooming)' },
-  { value: 'PET_SITTING', label: '🏠 Chăm sóc tại nhà (Pet Sitting)' },
-  { value: 'BOARDING', label: '🏨 Lưu trú thú cưng (Boarding)' },
-  { value: 'DOG_WALKING', label: '🦮 Dắt chó đi dạo (Dog Walking)' },
-  { value: 'VET', label: '🏥 Khám thú y & Y tế (Vet Care)' },
-  { value: 'TRAINING', label: '🎾 Huấn luyện thú cưng (Training)' },
-  { value: 'OTHER', label: '✨ Dịch vụ khác' },
+  { value: 'GROOMING', label: 'Tắm & Cắt tỉa (Grooming)' },
+  { value: 'PET_SITTING', label: 'Chăm sóc tại nhà (Pet Sitting)' },
+  { value: 'BOARDING', label: 'Lưu trú thú cưng (Boarding)' },
+  { value: 'DOG_WALKING', label: 'Dắt chó đi dạo (Dog Walking)' },
+  { value: 'VET', label: 'Khám thú y & Y tế (Vet Care)' },
+  { value: 'TRAINING', label: 'Huấn luyện thú cưng (Training)' },
+  { value: 'OTHER', label: 'Dịch vụ khác' },
 ];
 
 export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({
@@ -142,7 +142,7 @@ export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({
 
           <div className="flex items-center gap-4 relative z-10 min-w-0 pr-4">
             <div className="w-12 h-12 rounded-2xl bg-teal-500/20 border border-teal-500/30 text-teal-400 flex items-center justify-center shrink-0 shadow-inner">
-              <Sparkles className="w-6 h-6 fill-teal-400/20" />
+              <Package className="w-6 h-6 text-teal-400" />
             </div>
             <div className="space-y-1 min-w-0">
               <h3 className="text-xl font-black tracking-tight text-white truncate">
@@ -344,7 +344,7 @@ export const CreateServiceModal: React.FC<CreateServiceModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 fill-current" />
+                  <Package className="w-4 h-4" />
                   Xác Nhận Tạo Gói Dịch Vụ
                 </>
               )}

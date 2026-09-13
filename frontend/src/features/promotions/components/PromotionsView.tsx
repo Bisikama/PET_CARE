@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Tag, Search, RefreshCw, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
+import { Tag, Search, RefreshCw, Loader2, AlertTriangle } from 'lucide-react';
 import { Promotion } from '../types';
 import { promotionsService } from '../services/promotions.service';
 import { PromotionCard } from './PromotionCard';
@@ -42,7 +42,7 @@ export function PromotionsView() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-wider backdrop-blur-sm">
-              <Sparkles className="w-3.5 h-3.5" /> Kho Ưu Đãi & Mã Giảm Giá Đang Áp Dụng
+              <Tag className="w-3.5 h-3.5" /> Kho Ưu Đãi & Mã Giảm Giá Đang Áp Dụng
             </div>
             <h2 className="text-2xl md:text-3xl font-black tracking-tight">
               Sưu Tầm Voucher Tiết Kiệm Chi Phí Chăm Sóc Bé Cưng

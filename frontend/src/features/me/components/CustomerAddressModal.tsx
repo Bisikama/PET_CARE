@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { X, Loader2, MapPin, ChevronLeft, Navigation, Compass, Plus, Trash2, Edit3, ShieldAlert } from 'lucide-react';
 import { useMeStore } from '../stores/me.store';
 import { useCustomerAddresses } from '../hooks/useCustomerAddresses';
@@ -20,27 +20,27 @@ export function CustomerAddressModal() {
   } = useCustomerAddresses();
 
   // Mode: 'LIST' | 'CREATE' | 'EDIT'
-  const [mode, setMode] = React.useState<'LIST' | 'CREATE' | 'EDIT'>('LIST');
-  const [editingAddress, setEditingAddress] = React.useState<CustomerAddress | null>(null);
+  const [mode, setMode] = useState<'LIST' | 'CREATE' | 'EDIT'>('LIST');
+  const [editingAddress, setEditingAddress] = useState<CustomerAddress | null>(null);
 
   // Form Fields
-  const [label, setLabel] = React.useState('');
-  const [receiverName, setReceiverName] = React.useState('');
-  const [phone, setPhone] = React.useState('');
-  const [addressLine, setAddressLine] = React.useState('');
-  const [selectedLocation, setSelectedLocation] = React.useState<{ province: string; district: string; ward: string } | null>(null);
-  const [latitude, setLatitude] = React.useState('');
-  const [longitude, setLongitude] = React.useState('');
-  const [addressType, setAddressType] = React.useState<'HOME' | 'OFFICE' | 'OTHER'>('OTHER');
-  const [isDefault, setIsDefault] = React.useState(false);
+  const [label, setLabel] = useState('');
+  const [receiverName, setReceiverName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [addressLine, setAddressLine] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<{ province: string; district: string; ward: string } | null>(null);
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [addressType, setAddressType] = useState<'HOME' | 'OFFICE' | 'OTHER'>('OTHER');
+  const [isDefault, setIsDefault] = useState(false);
 
-  const [locating, setLocating] = React.useState(false);
-  const [locatingError, setLocatingError] = React.useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = React.useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locatingError, setLocatingError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle ESC key to close modal
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isSubmitting) closeAddressModal();
     };
@@ -55,12 +55,16 @@ export function CustomerAddressModal() {
   }, [isAddressModalOpen, isSubmitting, closeAddressModal]);
 
   // Sync addresses on mount/open
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAddressModalOpen) {
       fetchAddresses();
       setMode('LIST');
     }
   }, [isAddressModalOpen, fetchAddresses]);
+
+  const handleAddressChange = useCallback((address: { province: string; district: string; ward: string }) => {
+    setSelectedLocation(address);
+  }, []);
 
   if (!isAddressModalOpen) return null;
 
@@ -97,10 +101,6 @@ export function CustomerAddressModal() {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  };
-
-  const handleAddressChange = (address: { province: string; district: string; ward: string }) => {
-    setSelectedLocation(address);
   };
 
   const initForm = (address?: CustomerAddress) => {
@@ -141,7 +141,7 @@ export function CustomerAddressModal() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setValidationErrors({});
     setIsSubmitting(true);
