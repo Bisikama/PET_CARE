@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { Prisma, booking_status } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
 
@@ -8,6 +9,7 @@ export class SettlementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletsService: WalletsService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -214,12 +216,48 @@ export class SettlementsService {
     // 4. Giải phóng ký quỹ (ESCROW_RELEASE: Giảm pending_balance, Tăng balance)
     await this.walletsService.processTransaction(
       providerWallet.id,
-      Number(booking.total_price), // Đảm bảo release theo giá trị gốc
+      Number(payment.provider_amount), // Chỉ giải phóng phần tiền thực nhận của Provider
       'ESCROW_RELEASE',
       bookingId,
       `Giải phóng tiền ký quỹ cho Booking ${bookingId}`,
       tx,
     );
+
+    // 4.1. Chuyển phí hoa hồng cho Admin
+    if (payment.platform_fee && Number(payment.platform_fee) > 0) {
+      let adminUserId: string | null = null;
+      
+      const envAdminId = this.configService.get<string>('ADMIN_WALLET_USER_ID');
+      if (envAdminId) {
+        adminUserId = envAdminId;
+      } else {
+        const configAdminId = await tx.system_configs.findUnique({ where: { key: 'ADMIN_WALLET_USER_ID' } });
+        
+        if (configAdminId && configAdminId.value) {
+          adminUserId = configAdminId.value;
+        } else {
+          // Fallback: Tìm user đầu tiên có role ADMIN (nếu không có config)
+          const adminUser = await tx.user.findFirst({
+            where: { role: 'ADMIN' as any }
+          });
+          if (adminUser) adminUserId = adminUser.id;
+        }
+      }
+
+      if (adminUserId) {
+        const adminWallet = await tx.wallets.findUnique({ where: { user_id: adminUserId } });
+        if (adminWallet) {
+          await this.walletsService.processTransaction(
+            adminWallet.id,
+            Number(payment.platform_fee),
+            'CREDIT',
+            bookingId,
+            `Thu phí hoa hồng cho Booking ${bookingId}`,
+            tx,
+          );
+        }
+      }
+    }
 
     // 5. Cập nhật trạng thái Payment
     const updatedPayment = await tx.payments.update({
@@ -301,7 +339,7 @@ export class SettlementsService {
   /**
    * Internal logic: Refund payment
    */
-  async refund(bookingId: string, tx: Prisma.TransactionClient, reason: string) {
+  async refund(bookingId: string, tx: Prisma.TransactionClient, reason: string, newBookingStatus: booking_status = 'REJECTED') {
     const booking = await tx.bookings.findUnique({
       where: { id: bookingId },
       include: { payments: true },
@@ -327,19 +365,19 @@ export class SettlementsService {
       if (providerProfile) {
         const providerWallet = await tx.wallets.findUnique({ where: { user_id: providerProfile.user_id } });
         if (providerWallet) {
-          // Giải phóng ký quỹ ảo
+          // Giải phóng ký quỹ ảo (Chỉ giải phóng đúng số tiền đã ký quỹ ban đầu)
           await this.walletsService.processTransaction(
             providerWallet.id,
-            Number(booking.total_price),
+            Number(payment.provider_amount),
             'ESCROW_RELEASE',
             bookingId,
             `Hoàn tiền (Hủy ký quỹ) Booking ${bookingId}`,
             tx,
           );
-          // Trừ lại số dư
+          // Trừ lại số dư (Trừ đúng số tiền đã ký quỹ)
           await this.walletsService.processTransaction(
             providerWallet.id,
-            Number(booking.total_price),
+            Number(payment.provider_amount),
             'DEBIT',
             bookingId,
             `Hoàn tiền (Trừ số dư) Booking ${bookingId}`,
@@ -372,7 +410,7 @@ export class SettlementsService {
 
     await tx.bookings.update({
       where: { id: bookingId },
-      data: { status: 'REJECTED' },
+      data: { status: newBookingStatus },
     });
 
     return updatedPayment;
@@ -404,9 +442,8 @@ export class SettlementsService {
       throw new ConflictException('Thanh toán không ở trạng thái ký quỹ để phân xử.');
     }
 
-    const totalAmount = Number(booking.total_price);
+    const totalAmount = Number(payment.amount);
     const customerRefundAmount = (totalAmount * customerRefundPercentage) / 100;
-    const providerReleaseAmount = totalAmount - customerRefundAmount;
 
     // 1. Release Toàn bộ Escrow cho Provider trước (chuyển từ pending -> balance)
     if (booking.provider_id) {
@@ -416,7 +453,7 @@ export class SettlementsService {
         if (providerWallet) {
           await this.walletsService.processTransaction(
             providerWallet.id,
-            totalAmount,
+            Number(payment.provider_amount), // Chỉ release phần thực sự đang bị giam của provider
             'ESCROW_RELEASE',
             bookingId,
             `Giải phóng toàn bộ ký quỹ Booking ${bookingId} để phân xử tranh chấp`,
@@ -424,10 +461,12 @@ export class SettlementsService {
           );
 
           // 2. Trừ phần tiền phạt (Customer Refund) khỏi ví Provider (DEBIT)
-          if (customerRefundAmount > 0) {
+          // Tối đa chỉ trừ bằng đúng provider_amount (hoặc xử lý linh hoạt hơn tuỳ quy định)
+          const penaltyAmount = Math.min(customerRefundAmount, Number(payment.provider_amount));
+          if (penaltyAmount > 0) {
             await this.walletsService.processTransaction(
               providerWallet.id,
-              customerRefundAmount,
+              penaltyAmount,
               'DEBIT',
               bookingId,
               `Khấu trừ ${customerRefundPercentage}% tiền hoàn cho khách. Lý do: ${reason}`,

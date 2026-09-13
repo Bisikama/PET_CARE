@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SettlementsService } from './settlements.service';
 import { PrismaService } from '../../../../database/prisma.service';
 import { WalletsService } from '../../../wallets/application/use-cases/wallets.service';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 
 describe('SettlementsService', () => {
@@ -32,11 +33,16 @@ describe('SettlementsService', () => {
       processTransaction: jest.fn(),
     };
 
+    const mockConfig = {
+      get: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SettlementsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: WalletsService, useValue: mockWallets },
+        { provide: ConfigService, useValue: mockConfig },
       ],
     }).compile();
 

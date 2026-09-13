@@ -221,6 +221,16 @@ export class PaymentsService {
         if (rspCode === '00') {
           confirmedPayment = payment;
 
+          // Lấy cấu hình phí hoa hồng (COMMISSION_RATE) từ .env trước, sau đó fallback DB, mặc định 10%
+          const envCommission = this.configService.get<string>('COMMISSION_RATE');
+          let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+          if (isNaN(commissionRate)) {
+            const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+            commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+          }
+          const platformFee = Math.round(Number(payment.amount) * commissionRate);
+          const providerAmount = Number(payment.amount) - platformFee;
+
           // Thanh toán THÀNH CÔNG
           // 1. Cập nhật trạng thái Payment sang Ký Quỹ
           await tx.payments.update({
@@ -229,6 +239,8 @@ export class PaymentsService {
               status: 'PAID_HELD_IN_ESCROW',
               paid_at: new Date(),
               idempotency_key: idempotencyKey,
+              platform_fee: platformFee,
+              provider_amount: providerAmount,
             },
           });
 
@@ -252,10 +264,10 @@ export class PaymentsService {
               if (providerWallet) {
                 await this.walletsService.processTransaction(
                   providerWallet.id,
-                  Number(payment.bookings.total_price), // Đảm bảo ghi nhận giá trị gốc
+                  providerAmount, // Chỉ ký quỹ phần tiền của Provider sau khi trừ phí
                   'ESCROW_HOLD',
                   payment.booking_id,
-                  'Ký quỹ thanh toán từ VNPay',
+                  'Ký quỹ thanh toán từ VNPay (đã trừ phí hoa hồng)',
                   tx,
                 );
               }
@@ -393,6 +405,16 @@ export class PaymentsService {
         }
       }
 
+      // Lấy cấu hình phí hoa hồng (COMMISSION_RATE) từ .env trước, sau đó fallback DB, mặc định 10%
+      const envCommission = this.configService.get<string>('COMMISSION_RATE');
+      let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+      if (isNaN(commissionRate)) {
+        const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+        commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+      }
+      const platformFee = Math.round(finalAmount * commissionRate);
+      const providerAmount = finalAmount - platformFee;
+
       // 2. Kiểm tra Ví Khách Hàng
       const customerWallet = await tx.wallets.findUnique({
         where: { user_id: customerId },
@@ -425,10 +447,10 @@ export class PaymentsService {
           if (providerWallet) {
             await this.walletsService.processTransaction(
               providerWallet.id,
-              finalAmount,
+              providerAmount, // Chỉ ký quỹ phần tiền của Provider
               'ESCROW_HOLD',
               bookingId,
-              `Ký quỹ thanh toán từ Ví Customer`,
+              `Ký quỹ thanh toán từ Ví Customer (đã trừ phí)`,
               tx,
             );
           }
@@ -453,6 +475,8 @@ export class PaymentsService {
           status: 'PAID_HELD_IN_ESCROW',
           transaction_code: `WALLET_${Date.now()}`,
           paid_at: new Date(),
+          platform_fee: platformFee,
+          provider_amount: providerAmount,
         },
       });
 

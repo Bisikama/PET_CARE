@@ -18,6 +18,7 @@ export class DisputesService {
   async openDispute(userId: string, bookingId: string, dto: OpenDisputeDto, files?: Express.Multer.File[]) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
+      include: { provider_profiles: true },
     });
 
     if (!booking) throw new NotFoundException('Booking not found');
@@ -30,7 +31,7 @@ export class DisputesService {
       throw new BadRequestException('Cannot open a dispute on a completed or cancelled booking');
     }
 
-    const accusedId = booking.customer_id === userId ? booking.provider_id : booking.customer_id;
+    const accusedId = booking.customer_id === userId ? booking.provider_profiles?.user_id : booking.customer_id;
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Create Complaint

@@ -312,4 +312,63 @@ export class WalletsService {
       limit: Number(limit),
     };
   }
+  /**
+   * Yêu cầu rút tiền trực tiếp dành cho Admin (Không qua chờ duyệt)
+   * @param adminId ID của Admin
+   * @param amount Số tiền muốn rút
+   * @param note Ghi chú
+   * @param bankDetails Thông tin ngân hàng
+   */
+  async adminDirectWithdraw(adminId: string, amount: number, note?: string, bankDetails?: any) {
+    if (amount <= 0) {
+      throw new BadRequestException('Số tiền rút phải lớn hơn 0');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallets.findUnique({
+        where: { user_id: adminId },
+      });
+
+      if (!wallet) {
+        throw new BadRequestException('Không tìm thấy ví của Admin');
+      }
+
+      if (wallet.balance.lessThan(amount)) {
+        throw new ConflictException('Số dư khả dụng không đủ để rút tiền');
+      }
+
+      // 1. Ghi nhận giao dịch trừ tiền (PAYOUT) trực tiếp
+      const description = note || 'Admin rút doanh thu hoa hồng về tài khoản ngân hàng';
+      const transaction = await this.processTransaction(
+        wallet.id,
+        amount,
+        'PAYOUT',
+        null,
+        description,
+        tx,
+      );
+
+      // 2. Lưu lịch sử kiểm toán (Audit Log)
+      await tx.audit_logs.create({
+        data: {
+          actor_id: adminId,
+          action: 'ADMIN_WITHDRAWAL',
+          target_type: 'WALLET',
+          target_id: wallet.id,
+          old_value: { balance: Number(wallet.balance) },
+          new_value: {
+            amount: amount,
+            bankDetails: bankDetails || null,
+          },
+          reason: description,
+        },
+      });
+
+      return {
+        success: true,
+        transaction,
+        message: 'Rút tiền thành công'
+      };
+    });
+  }
 }

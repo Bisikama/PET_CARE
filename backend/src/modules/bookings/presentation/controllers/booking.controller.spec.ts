@@ -49,6 +49,8 @@ describe('BookingsController', () => {
         { provide: CustomerConfirmBookingUseCase, useValue: mockUseCase },
         { provide: CustomerCancelBookingUseCase, useValue: mockUseCase },
         { provide: GetBookingByIdUseCase, useValue: mockUseCase },
+        { provide: GetActiveBookingUseCase, useValue: mockUseCase },
+        { provide: GetBookingsUseCase, useValue: mockUseCase },
         { provide: CreateReviewUseCase, useValue: mockUseCase },
         { provide: OpenDisputeUseCase, useValue: mockUseCase },
       ],
