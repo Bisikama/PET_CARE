@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Wallet And Earnings</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { 'colors': { 'on-tertiary-fixed-variant': '#633f00', 'secondary-fixed': '#9af5cc', 'outline': '#8d716a', 'inverse-primary': '#ffb4a3', 'surface-container-highest': '#eae1db', 'on-tertiary-container': '#482c00', 'on-primary-fixed-variant': '#8c1900', 'surface-variant': '#eae1db', 'error-container': '#ffdad6', 'on-secondary': '#ffffff', 'on-primary': '#ffffff', 'on-secondary-container': '#047352', 'tertiary': '#835500', 'surface-container-lowest': '#ffffff', 'on-primary-container': '#661000', 'on-error-container': '#93000a', 'primary': '#ae3115', 'error': '#ba1a1a', 'primary-fixed-dim': '#ffb4a3', 'surface': '#fff8f5', 'primary-fixed': '#ffdad2', 'tertiary-fixed-dim': '#ffb955', 'surface-tint': '#ae3115', 'surface-bright': '#fff8f5', 'primary-container': '#ff6b4a', 'surface-dim': '#e2d8d3', 'secondary-container': '#9af5cc', 'surface-container-high': '#f0e6e1', 'background': '#fff8f5', 'outline-variant': '#e1bfb8', 'on-error': '#ffffff', 'tertiary-container': '#d38b00', 'on-surface-variant': '#59413c', 'inverse-surface': '#342f2c', 'on-secondary-fixed-variant': '#005139', 'inverse-on-surface': '#f9efe9', 'on-tertiary': '#ffffff', 'on-tertiary-fixed': '#291800', 'on-primary-fixed': '#3d0600', 'on-secondary-fixed': '#002115', 'tertiary-fixed': '#ffddb4', 'secondary-fixed-dim': '#7fd8b1', 'on-background': '#1f1b18', 'on-surface': '#1f1b18', 'surface-container': '#f6ece6', 'surface-container-low': '#fcf2ec', 'secondary': '#006c4d' }, 'borderRadius': { 'DEFAULT': '1rem', 'lg': '2rem', 'xl': '3rem', 'full': '9999px' }, 'spacing': { 'space-6': '1.5rem', 'space-10': '2.5rem', 'space-4': '1rem', 'margin-mobile': '1rem', 'space-8': '2rem', 'margin-tablet': '2rem', 'space-12': '3rem', 'gutter-mobile': '1rem', 'space-3': '0.75rem', 'space-2': '0.5rem', 'gutter-tablet': '1.5rem', 'space-1': '0.25rem', 'space-5': '1.25rem' }, 'fontFamily': { 'headline-h3': ['Plus Jakarta Sans'], 'body-md-medium': ['Plus Jakarta Sans'], 'headline-h2': ['Plus Jakarta Sans'], 'body-lg-medium': ['Plus Jakarta Sans'], 'body-sm': ['Plus Jakarta Sans'], 'button': ['Plus Jakarta Sans'], 'headline-h4': ['Plus Jakarta Sans'], 'body-md': ['Plus Jakarta Sans'], 'display': ['Plus Jakarta Sans'], 'label': ['Plus Jakarta Sans'], 'body-lg': ['Plus Jakarta Sans'], 'caption': ['Plus Jakarta Sans'], 'headline-h1': ['Plus Jakarta Sans'], 'input': ['Plus Jakarta Sans'] }, 'fontSize': { 'headline-h3': ['20px', { 'lineHeight': '28px', 'letterSpacing': '-0.005em', 'fontWeight': '600' }], 'body-md-medium': ['14px', { 'lineHeight': '20px', 'fontWeight': '500' }], 'headline-h2': ['24px', { 'lineHeight': '32px', 'letterSpacing': '-0.01em', 'fontWeight': '600' }], 'body-lg-medium': ['16px', { 'lineHeight': '24px', 'fontWeight': '500' }], 'body-sm': ['13px', { 'lineHeight': '18px', 'fontWeight': '400' }], 'button': ['15px', { 'lineHeight': '20px', 'letterSpacing': '0.01em', 'fontWeight': '600' }], 'headline-h4': ['18px', { 'lineHeight': '24px', 'fontWeight': '600' }], 'body-md': ['14px', { 'lineHeight': '20px', 'fontWeight': '400' }], 'display': ['32px', { 'lineHeight': '40px', 'letterSpacing': '-0.02em', 'fontWeight': '700' }], 'label': ['11px', { 'lineHeight': '14px', 'letterSpacing': '0.04em', 'fontWeight': '600' }], 'body-lg': ['16px', { 'lineHeight': '24px', 'fontWeight': '400' }], 'caption': ['12px', { 'lineHeight': '16px', 'fontWeight': '500' }], 'headline-h1': ['28px', { 'lineHeight': '36px', 'letterSpacing': '-0.015em', 'fontWeight': '700' }], 'input': ['15px', { 'lineHeight': '20px', 'fontWeight': '400' }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="min-h-full bg-surface text-on-surface font-body-md text-body-md antialiased flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin-mobile flex items-center justify-between gap-space-2"><div class="flex items-center gap-space-2 min-w-0 flex-1"><img alt="Brand logo. - Primary color: #ff6b4a
+- Font: plusJakartaSans
+- Mode: light
+- Roundness: rounded-full
+" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1UHj22CEsrFWgB3LTwUsfT1BVZzyk-nMKrz-XLet-z5_ZxXO7KZ3OpYCQaOWBMgXrwktACbE_BPKguvRosn1d8g_zGbosgnZzH-xtwyIucEEsMrfhFJ4Oe0fHVKHujSGue4I8uNMlthO4XsUpjcDryX4jCqnHsM2W7P-Iyuy464gIi2_EC8F52lVAYfhdzuG2eEUWQwfDl1b2dfW9IE_z_cGdAv016ZaCKxQCYp8BEhLHlyHKI6OgvlYQ"/><div class="flex flex-col min-w-0"><span class="font-label text-label uppercase tracking-wider text-primary font-bold leading-none">PetCare Pro</span><span class="font-headline-h4 text-headline-h4 text-on-surface truncate leading-tight">Wallet And Earnings</span></div></div><div class="flex items-center gap-space-3 flex-shrink-0"><button class="min-h-[44px] px-space-3 py-space-1 bg-secondary-container rounded-full flex items-center gap-space-2 shadow-[0_1px_3px_rgba(26,22,19,0.06)] active:scale-95 transition-all" type="button"><span class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></span><span class="font-label text-label font-bold text-on-secondary-container uppercase">Online</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-[0_1px_3px_rgba(26,22,19,0.06)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full bg-surface pt-16 pb-28"><div class="flex flex-col w-full px-margin-mobile gap-space-4">
+<!-- Top Utilities Sub-bar (No duplicate H1, respects shell) -->
+<div class="flex items-center justify-between pt-space-2">
+<div class="flex items-center gap-space-2">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</div>
+<span class="font-headline-h4 text-headline-h4 text-on-surface">Provider Balance</span>
+</div>
+<div class="flex items-center gap-space-2">
+<button aria-label="Currency settings: USD" class="flex items-center gap-space-1 px-space-3 py-space-1 rounded-full bg-surface-container text-on-surface-variant font-label text-label uppercase tracking-wider active:scale-95 transition-transform" type="button">
+<span class="font-bold">USD ($)</span>
+<span class="material-symbols-outlined text-[16px]">tune</span>
+</button>
+<button aria-label="Help and Payout Policy Center" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-[18px]">help</span>
+</button>
+</div>
+</div>
+<!-- Primary Balance Overview Bento Card -->
+<div class="relative overflow-hidden rounded-lg bg-inverse-surface text-inverse-on-surface p-space-5 shadow-xl">
+<!-- Ambient organic backdrop accents -->
+<div class="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-primary/20 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-secondary/25 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-space-4">
+<!-- Status Pill & Guarantee Badge -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2 px-space-3 py-space-1 rounded-full bg-surface-container-lowest/10 backdrop-blur-md">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
+<span class="font-label text-label text-secondary-fixed uppercase tracking-wider">Ready for Transfer</span>
+</div>
+<div class="flex items-center gap-space-1 text-on-surface-variant/80 font-caption text-caption">
+<span class="material-symbols-outlined text-[14px] text-secondary-fixed" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span>Insured Escrow</span>
+</div>
+</div>
+<!-- Balance Figures Grid -->
+<div class="grid grid-cols-1 gap-space-3">
+<div>
+<span class="font-caption text-caption text-inverse-on-surface/70 uppercase tracking-wider block">Available for Payout</span>
+<div class="flex items-baseline gap-space-2 mt-space-1">
+<span class="font-display text-display font-bold tracking-tight text-surface-container-lowest">$378.00</span>
+<span class="font-label text-label px-space-2 py-0.5 rounded-full bg-secondary/30 text-secondary-fixed">Instant eligible</span>
+</div>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest/5 backdrop-blur-sm flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-tertiary-fixed text-[20px]">hourglass_top</span>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm font-medium text-inverse-on-surface/90">Pending Escrow Clearance</span>
+<span class="font-caption text-caption text-inverse-on-surface/60">Releases upon owner walk sign-off</span>
+</div>
+</div>
+<span class="font-headline-h4 text-headline-h4 text-tertiary-fixed font-bold">$60.50</span>
+</div>
+</div>
+<!-- Quick Action CTA -->
+<button class="w-full min-h-[48px] py-space-3 px-space-4 rounded-full bg-primary-container text-on-primary font-button text-button flex items-center justify-center gap-space-2 shadow-lg hover:brightness-105 active:scale-[0.98] transition-all" id="instantPayoutBtn" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span>Instant Withdrawal to Bank</span>
+</button>
+<!-- Linked destination preview note -->
+<p class="font-caption text-caption text-center text-inverse-on-surface/60">
+        Dispatches to <span class="text-inverse-on-surface font-semibold">Chase Checking ••••6842</span> in under 30 minutes
+      </p>
+</div>
+</div>
+<!-- Time Period Segmented Control Tabs -->
+<div class="flex items-center p-1 rounded-full bg-surface-container shadow-sm" role="tablist">
+<button aria-selected="false" class="flex-1 py-space-2 rounded-full font-label text-label uppercase tracking-wider text-on-surface-variant transition-colors hover:text-on-surface" role="tab" type="button">Daily</button>
+<button aria-selected="true" class="flex-1 py-space-2 rounded-full bg-surface-container-lowest text-primary font-bold font-label text-label uppercase tracking-wider shadow-sm transition-all" role="tab" type="button">Weekly</button>
+<button aria-selected="false" class="flex-1 py-space-2 rounded-full font-label text-label uppercase tracking-wider text-on-surface-variant transition-colors hover:text-on-surface" role="tab" type="button">Monthly</button>
+<button aria-selected="false" class="flex-1 py-space-2 rounded-full font-label text-label uppercase tracking-wider text-on-surface-variant transition-colors hover:text-on-surface" role="tab" type="button">Lifetime</button>
+</div>
+<!-- Earnings Analytics & Weekly Dynamic Bar Chart Card -->
+<div class="rounded-lg bg-surface-container-low p-space-5 shadow-sm flex flex-col gap-space-4">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label text-label uppercase tracking-wider text-on-surface-variant font-bold">Performance Breakdown</span>
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface font-bold">Net Earnings $413.00</h2>
+</div>
+<div class="w-10 h-10 rounded-full bg-secondary-container/60 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[22px]">insights</span>
+</div>
+</div>
+<!-- Weekly Interactive Bar Chart Visualization -->
+<div class="p-space-4 rounded bg-surface-container-lowest shadow-sm flex flex-col gap-space-3">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant">Daily Breakdown (Oct 16 - 22)</span>
+<span class="font-caption text-caption font-bold text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> +14.2% vs last week
+        </span>
+</div>
+<!-- Responsive SVG Bar Chart Component -->
+<div class="w-full pt-space-2">
+<svg aria-label="Bar chart showing earnings per day from Monday to Sunday" class="w-full h-32 overflow-visible" viewbox="0 0 320 130">
+<!-- Guide Gridlines -->
+<line stroke="#eae1db" stroke-dasharray="3 3" stroke-width="1" x1="0" x2="320" y1="20" y2="20"></line>
+<line stroke="#eae1db" stroke-dasharray="3 3" stroke-width="1" x1="0" x2="320" y1="60" y2="60"></line>
+<line stroke="#eae1db" stroke-width="1" x1="0" x2="320" y1="100" y2="100"></line>
+<!-- Monday $45 -->
+<rect fill="#eae1db" height="40" rx="6" width="24" x="12" y="60"></rect>
+<text fill="#59413c" font-family="Plus Jakarta Sans" font-size="11" text-anchor="middle" x="24" y="116">M</text>
+<!-- Tuesday $58 -->
+<rect fill="#eae1db" height="52" rx="6" width="24" x="56" y="48"></rect>
+<text fill="#59413c" font-family="Plus Jakarta Sans" font-size="11" text-anchor="middle" x="68" y="116">T</text>
+<!-- Wednesday $35 -->
+<rect fill="#eae1db" height="32" rx="6" width="24" x="100" y="68"></rect>
+<text fill="#59413c" font-family="Plus Jakarta Sans" font-size="11" text-anchor="middle" x="112" y="116">W</text>
+<!-- Thursday $72 -->
+<rect fill="#eae1db" height="64" rx="6" width="24" x="144" y="36"></rect>
+<text fill="#59413c" font-family="Plus Jakarta Sans" font-size="11" text-anchor="middle" x="156" y="116">T</text>
+<!-- Friday $48 -->
+<rect fill="#eae1db" height="42" rx="6" width="24" x="188" y="58"></rect>
+<text fill="#59413c" font-family="Plus Jakarta Sans" font-size="11" text-anchor="middle" x="200" y="116">F</text>
+<!-- Saturday Peak $112 (Highlighted in coral primary) -->
+<g>
+<rect fill="#ff6b4a" height="92" rx="6" width="26" x="232" y="8"></rect>
+<!-- Peak label bubble -->
+<rect fill="#1f1b18" height="16" rx="8" width="46" x="222" y="-12"></rect>
+<text fill="#ffffff" font-family="Plus Jakarta Sans" font-size="9.5" font-weight="700" text-anchor="middle" x="245" y="-1">$112</text>
+<text fill="#ae3115" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle" x="245" y="116">Sat</text>
+</g>
+<!-- Sunday $50 -->
+<rect fill="#eae1db" height="44" rx="6" width="24" x="278" y="56"></rect>
+<text fill="#59413c" font-family="Plus Jakarta Sans" font-size="11" text-anchor="middle" x="290" y="116">S</text>
+</svg>
+</div>
+</div>
+<!-- Ledger Metrics Bento Row -->
+<div class="grid grid-cols-3 gap-space-2 text-center">
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex flex-col justify-center">
+<span class="font-caption text-caption text-on-surface-variant">Gross Bookings</span>
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold mt-1">$420.00</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex flex-col justify-center">
+<span class="font-caption text-caption text-on-surface-variant">Platform Fee (10%)</span>
+<span class="font-body-md-medium text-body-md-medium text-error font-bold mt-1">-$42.00</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex flex-col justify-center">
+<span class="font-caption text-caption text-on-surface-variant">Tips (100% Yours)</span>
+<span class="font-body-md-medium text-body-md-medium text-secondary font-bold mt-1">+$35.00</span>
+</div>
+</div>
+</div>
+<!-- Linked Bank Accounts Card -->
+<div class="rounded-lg bg-surface-container-low p-space-5 shadow-sm flex flex-col gap-space-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-on-surface text-[20px]">account_balance</span>
+<h3 class="font-headline-h4 text-headline-h4 text-on-surface font-semibold">Deposit Accounts</h3>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">2 Linked</span>
+</div>
+<!-- Default Account -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-2">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold truncate">Chase Total Checking</span>
+<span class="px-space-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-label font-bold tracking-wider uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+              Default
+            </span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">•••• 6842 • Direct Deposit &amp; Instant</span>
+</div>
+</div>
+<button aria-label="Manage Chase Account" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Secondary Account -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-medium truncate">Wells Fargo Business</span>
+<span class="font-caption text-caption text-on-surface-variant">•••• 1190 • ACH Standard (2-3 days)</span>
+</div>
+</div>
+<button aria-label="Manage Wells Fargo Account" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Add Bank Action Button -->
+<button class="w-full min-h-[44px] py-space-2 px-space-4 rounded-full bg-surface-container text-on-surface font-button text-button flex items-center justify-center gap-space-2 hover:bg-surface-container-high active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">add</span>
+<span>Add New Bank Account</span>
+</button>
+</div>
+<!-- Recent Transaction Ledger & Breakdown -->
+<div class="rounded-lg bg-surface-container-low p-space-5 shadow-sm flex flex-col gap-space-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span>
+<h3 class="font-headline-h4 text-headline-h4 text-on-surface font-semibold">Activity &amp; Payouts</h3>
+</div>
+<button class="font-caption text-caption font-bold text-primary hover:underline" type="button">View All</button>
+</div>
+<div class="flex flex-col gap-space-2">
+<!-- Item 1: Walk Escrow Released (Copper) -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between gap-space-3">
+<div class="flex items-center gap-space-3 min-w-0">
+<img class="w-10 h-10 rounded-full object-cover flex-shrink-0" data-alt="Close up warm photo of a happy golden retriever named Copper with glossy fur outdoors in sunny park" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpxdFcgN5txmxTH6xbYCDCDcS9CXvLIl--MKNc4PACHKg6YFTA28WGdhIWgHGM8sqOAZPWAwzx-pZ-R3FHIG8v_JcmQaEtLvV4weN1lbBNp3qe2wHj-U5X5mdFE0XoFlgnsQh1t-1pjK3R6X22wETAJpXlq3-esG_OrWqplklQB0nADrEwPr0_NDbsdBwYR0gCcV0JdFMP78fynAeJcn7rstMnI0rywnSqjAtfkbrIjC42ovO51Inf"/>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold truncate">Walk Escrow Released • Copper</span>
+<span class="font-caption text-caption text-on-surface-variant">60 mins solo • Today, 03:45 PM</span>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-body-lg-medium text-body-lg-medium text-secondary font-bold">+$28.00</span>
+<span class="font-label text-label block text-secondary uppercase font-bold">Escrow Settled</span>
+</div>
+</div>
+<!-- Item 2: Customer Tip (Sarah J.) -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between gap-space-3">
+<div class="flex items-center gap-space-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold truncate">Customer Tip from Sarah J.</span>
+<span class="font-caption text-caption text-on-surface-variant">“Copper loved his run!” • Today, 03:45 PM</span>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-body-lg-medium text-body-lg-medium text-secondary font-bold">+$5.00</span>
+<span class="font-label text-label block text-on-surface-variant uppercase font-bold">100% to You</span>
+</div>
+</div>
+<!-- Item 3: Withdrawal to Chase Checking -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between gap-space-3">
+<div class="flex items-center gap-space-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">north_east</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold truncate">Instant Withdrawal • Chase</span>
+<span class="font-caption text-caption text-on-surface-variant">Checking ••••6842 • Oct 22, 10:15 AM</span>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-body-lg-medium text-body-lg-medium text-on-surface font-bold">-$240.00</span>
+<span class="font-label text-label block text-on-surface-variant uppercase font-bold">Completed</span>
+</div>
+</div>
+<!-- Item 4: Platform Escrow Service Fee -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between gap-space-3">
+<div class="flex items-center gap-space-3 min-w-0">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">percent</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold truncate">Platform Escrow Fee</span>
+<span class="font-caption text-caption text-on-surface-variant">Liability &amp; vet insurance • Oct 22</span>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-body-lg-medium text-body-lg-medium text-on-surface-variant font-medium">-$24.00</span>
+<span class="font-label text-label block text-on-surface-variant uppercase font-bold">10% Retained</span>
+</div>
+</div>
+<!-- Item 5: Overnight Sitting Payout (Milo) -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex items-center justify-between gap-space-3">
+<div class="flex items-center gap-space-3 min-w-0">
+<img class="w-10 h-10 rounded-full object-cover flex-shrink-0" data-alt="Playful French bulldog with expressive eyes resting peacefully on a clean natural linen pet bed indoors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDwvEh_6-lHeePPdQo3_Q7FzTQP3cRupbQTvOjsYrSyJbXC01fZDaBWpyh7uumtQ8X3V9EsMEyjo2LeNgDB5bxbJYq9EPSxWMtfHUVTH_lepRfOmeK6l8Gu6yjZ9wAakYXyQU8c_KM7WBwlwXogRWYXOA4Ke5BHCNic7YLTdamLVhJeTvIWkzfMpBiB8eRzX2TPHG0rhP46r5trQ4L_5kYqhixXPnUGrb4Zi4LkkiIVXLDc5g-04Sw"/>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-bold truncate">Overnight Sitting • Milo</span>
+<span class="font-caption text-caption text-on-surface-variant">2 nights confirmed • Oct 20</span>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-body-lg-medium text-body-lg-medium text-secondary font-bold">+$65.00</span>
+<span class="font-label text-label block text-secondary uppercase font-bold">Escrow Settled</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Policy & Institutional Trust Reassurance Box -->
+<div class="p-space-4 rounded-lg bg-surface-container-high/60 flex items-start gap-space-3 mb-space-2">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md-medium text-body-md-medium font-bold text-on-surface">PetCare Escrow Guarantee</span>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5 leading-relaxed">
+        PetCare Escrow guarantees 100% on-time payouts. Payouts are transferred automatically every Monday or available on-demand with instant transfer.
+      </p>
+</div>
+</div>
+</div>
+<!-- Micro-interaction script for Delight Feedback -->
+<script>
+  (function() {
+    const payoutBtn = document.getElementById('instantPayoutBtn');
+    if (payoutBtn) {
+      payoutBtn.addEventListener('click', function() {
+        const originalText = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">sync</span><span>Initiating Instant Transfer...</span>';
+        setTimeout(() => {
+          this.innerHTML = '<span class="material-symbols-outlined text-[20px]">check</span><span>$378.00 Transferred!</span>';
+          this.classList.remove('bg-primary-container');
+          this.classList.add('bg-secondary');
+          setTimeout(() => {
+            this.innerHTML = originalText;
+            this.classList.add('bg-primary-container');
+            this.classList.remove('bg-secondary');
+            this.disabled = false;
+          }, 2400);
+        }, 1100);
+      });
+    }
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(26,22,19,0.04)]" data-active-classes="text-primary font-bold"><div class="h-16 px-space-2 flex items-center justify-around"><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-space-1 text-on-surface-variant transition-colors hover:text-on-surface" data-path="provider-dashboard" href="#"><span class="material-symbols-outlined text-[24px]">home</span><span class="font-caption text-caption mt-space-1">Home</span></a><a class="relative flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-space-1 text-on-surface-variant transition-colors hover:text-on-surface" data-path="requests-and-jobs" href="#"><div class="relative flex items-center justify-center"><span class="material-symbols-outlined text-[24px]">event_available</span><span class="absolute -top-1 -right-2 bg-primary-container text-on-primary text-[10px] font-bold px-1.5 min-w-[16px] h-4 rounded-full flex items-center justify-center shadow-sm">3</span></div><span class="font-caption text-caption mt-space-1">Requests</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-space-1 text-on-surface-variant transition-colors hover:text-on-surface" data-path="schedule" href="#"><span class="material-symbols-outlined text-[24px]">calendar_today</span><span class="font-caption text-caption mt-space-1">Schedule</span></a><a aria-current="page" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-space-1 transition-colors text-primary font-bold" data-path="wallet-and-earnings" href="#"><span class="material-symbols-outlined text-[24px]">account_balance_wallet</span><span class="font-caption text-caption mt-space-1">Wallet</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] py-space-1 text-on-surface-variant transition-colors hover:text-on-surface" data-path="provider-profile" href="#"><span class="material-symbols-outlined text-[24px]">badge</span><span class="font-caption text-caption mt-space-1">Profile</span></a></div></nav></body></html>

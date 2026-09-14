@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Live Walk Tracker</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { 'colors': { 'on-tertiary-fixed-variant': '#633f00', 'secondary-fixed': '#9af5cc', 'outline': '#8d716a', 'inverse-primary': '#ffb4a3', 'surface-container-highest': '#eae1db', 'on-tertiary-container': '#482c00', 'on-primary-fixed-variant': '#8c1900', 'surface-variant': '#eae1db', 'error-container': '#ffdad6', 'on-secondary': '#ffffff', 'on-primary': '#ffffff', 'on-secondary-container': '#047352', 'tertiary': '#835500', 'surface-container-lowest': '#ffffff', 'on-primary-container': '#661000', 'on-error-container': '#93000a', 'primary': '#ae3115', 'error': '#ba1a1a', 'primary-fixed-dim': '#ffb4a3', 'surface': '#fff8f5', 'primary-fixed': '#ffdad2', 'tertiary-fixed-dim': '#ffb955', 'surface-tint': '#ae3115', 'surface-bright': '#fff8f5', 'primary-container': '#ff6b4a', 'surface-dim': '#e2d8d3', 'secondary-container': '#9af5cc', 'surface-container-high': '#f0e6e1', 'background': '#fff8f5', 'outline-variant': '#e1bfb8', 'on-error': '#ffffff', 'tertiary-container': '#d38b00', 'on-surface-variant': '#59413c', 'inverse-surface': '#342f2c', 'on-secondary-fixed-variant': '#005139', 'inverse-on-surface': '#f9efe9', 'on-tertiary': '#ffffff', 'on-tertiary-fixed': '#291800', 'on-primary-fixed': '#3d0600', 'on-secondary-fixed': '#002115', 'tertiary-fixed': '#ffddb4', 'secondary-fixed-dim': '#7fd8b1', 'on-background': '#1f1b18', 'on-surface': '#1f1b18', 'surface-container': '#f6ece6', 'surface-container-low': '#fcf2ec', 'secondary': '#006c4d' }, 'borderRadius': { 'DEFAULT': '1rem', 'lg': '2rem', 'xl': '3rem', 'full': '9999px' }, 'spacing': { 'space-6': '1.5rem', 'space-10': '2.5rem', 'space-4': '1rem', 'margin-mobile': '1rem', 'space-8': '2rem', 'margin-tablet': '2rem', 'space-12': '3rem', 'gutter-mobile': '1rem', 'space-3': '0.75rem', 'space-2': '0.5rem', 'gutter-tablet': '1.5rem', 'space-1': '0.25rem', 'space-5': '1.25rem' }, 'fontFamily': { 'headline-h3': ['Plus Jakarta Sans'], 'body-md-medium': ['Plus Jakarta Sans'], 'headline-h2': ['Plus Jakarta Sans'], 'body-lg-medium': ['Plus Jakarta Sans'], 'body-sm': ['Plus Jakarta Sans'], 'button': ['Plus Jakarta Sans'], 'headline-h4': ['Plus Jakarta Sans'], 'body-md': ['Plus Jakarta Sans'], 'display': ['Plus Jakarta Sans'], 'label': ['Plus Jakarta Sans'], 'body-lg': ['Plus Jakarta Sans'], 'caption': ['Plus Jakarta Sans'], 'headline-h1': ['Plus Jakarta Sans'], 'input': ['Plus Jakarta Sans'] }, 'fontSize': { 'headline-h3': ['20px', { 'lineHeight': '28px', 'letterSpacing': '-0.005em', 'fontWeight': '600' }], 'body-md-medium': ['14px', { 'lineHeight': '20px', 'fontWeight': '500' }], 'headline-h2': ['24px', { 'lineHeight': '32px', 'letterSpacing': '-0.01em', 'fontWeight': '600' }], 'body-lg-medium': ['16px', { 'lineHeight': '24px', 'fontWeight': '500' }], 'body-sm': ['13px', { 'lineHeight': '18px', 'fontWeight': '400' }], 'button': ['15px', { 'lineHeight': '20px', 'letterSpacing': '0.01em', 'fontWeight': '600' }], 'headline-h4': ['18px', { 'lineHeight': '24px', 'fontWeight': '600' }], 'body-md': ['14px', { 'lineHeight': '20px', 'fontWeight': '400' }], 'display': ['32px', { 'lineHeight': '40px', 'letterSpacing': '-0.02em', 'fontWeight': '700' }], 'label': ['11px', { 'lineHeight': '14px', 'letterSpacing': '0.04em', 'fontWeight': '600' }], 'body-lg': ['16px', { 'lineHeight': '24px', 'fontWeight': '400' }], 'caption': ['12px', { 'lineHeight': '16px', 'fontWeight': '500' }], 'headline-h1': ['28px', { 'lineHeight': '36px', 'letterSpacing': '-0.015em', 'fontWeight': '700' }], 'input': ['15px', { 'lineHeight': '20px', 'fontWeight': '400' }] } } } }</script></head><body class="min-h-full bg-surface text-on-surface font-body-md text-body-md antialiased flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin-mobile flex items-center justify-between gap-space-2"><div class="flex items-center gap-space-2 min-w-0 flex-1"><button class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-95 transition-all flex-shrink-0" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[22px]">arrow_back_ios_new</span></button><img alt="Brand logo. - Primary color: #ff6b4a
+- Font: plusJakartaSans
+- Mode: light
+- Roundness: rounded-full
+" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1UHj22CEsrFWgB3LTwUsfT1BVZzyk-nMKrz-XLet-z5_ZxXO7KZ3OpYCQaOWBMgXrwktACbE_BPKguvRosn1d8g_zGbosgnZzH-xtwyIucEEsMrfhFJ4Oe0fHVKHujSGue4I8uNMlthO4XsUpjcDryX4jCqnHsM2W7P-Iyuy464gIi2_EC8F52lVAYfhdzuG2eEUWQwfDl1b2dfW9IE_z_cGdAv016ZaCKxQCYp8BEhLHlyHKI6OgvlYQ"/><div class="flex flex-col min-w-0"><span class="font-label text-label uppercase tracking-wider text-primary font-bold leading-none">PetCare Pro</span><span class="font-headline-h4 text-headline-h4 text-on-surface truncate leading-tight">Live Walk Tracker</span></div></div><div class="flex items-center gap-space-2 flex-shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-[0_1px_3px_rgba(26,22,19,0.06)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full bg-surface pt-16 pb-safe"><div class="flex flex-col w-full pb-10 space-y-4">
+<!-- Live Status Bar & Timer Card -->
+<div class="bg-surface-container-low p-4 rounded-b-2xl shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-label text-label bg-surface-container-highest text-on-surface-variant px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">Job #WALK-8821</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label text-label font-bold">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+          LIVE ACTIVE
+        </span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-lowest px-3 py-1.5 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">timer</span>
+<span class="font-headline-4 text-headline-h4 text-secondary font-bold" id="live-timer">24:18</span>
+<span class="font-caption text-caption text-on-surface-variant">/ 60m</span>
+</div>
+</div>
+<!-- 6-Step Visual Progress Stepper -->
+<div class="pt-2">
+<div class="flex items-center justify-between relative px-1">
+<div class="absolute left-3 right-3 top-3.5 h-0.5 bg-surface-container-highest -z-0"></div>
+<div class="absolute left-3 top-3.5 h-0.5 bg-secondary -z-0 transition-all duration-500" style="width: 70%;"></div>
+<!-- 1. Confirmed -->
+<div class="flex flex-col items-center gap-1 relative z-10">
+<div class="w-7 h-7 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+<span class="font-label text-label text-secondary font-semibold">Confirmed</span>
+</div>
+<!-- 2. In Transit -->
+<div class="flex flex-col items-center gap-1 relative z-10">
+<div class="w-7 h-7 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+<span class="font-label text-label text-secondary font-semibold">Transit</span>
+</div>
+<!-- 3. Arrived -->
+<div class="flex flex-col items-center gap-1 relative z-10">
+<div class="w-7 h-7 rounded-full bg-secondary text-on-secondary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+<span class="font-label text-label text-secondary font-semibold">Arrived</span>
+</div>
+<!-- 4. In Progress -->
+<div class="flex flex-col items-center gap-1 relative z-10">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-md animate-pulse">
+<span class="material-symbols-outlined text-[16px]">directions_walk</span>
+</div>
+<span class="font-label text-label text-primary font-bold">Walking</span>
+</div>
+<!-- 5. Checklist -->
+<div class="flex flex-col items-center gap-1 relative z-10">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[16px]">fact_check</span>
+</div>
+<span class="font-label text-label text-on-surface font-semibold">Checklist</span>
+</div>
+<!-- 6. Completed -->
+<div class="flex flex-col items-center gap-1 relative z-10">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">flag</span>
+</div>
+<span class="font-label text-label text-on-surface-variant">Finish</span>
+</div>
+</div>
+</div>
+</div>
+<div class="px-margin-mobile flex flex-col gap-4">
+<!-- Customer & Pet Summary Card -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex flex-col gap-3.5">
+<div class="flex items-start gap-3">
+<div class="relative w-20 h-20 rounded-2xl overflow-hidden shadow-sm flex-shrink-0 bg-surface-container">
+<img alt="Copper smiling golden retriever" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UjWiLfz2gW_DsI1Y4obvNPyiYPXwby-pA9VbxVakLlFjnOtV4XPWrxVTzmnxTbrFsUqwTIqbub_u-W0EodpQ_U2AysAjJxu5M477T977g4cQTYwjX0e2sFqDYyF9OMLz2ELVjjYyM-xSBQjl_4ublPSNgPKIdHvpISg0GZ3nSVCFMy6J8WHOhRBA14-gf29vKMbSMsxEBJ9FpjskHWw5FSZlqlbFU1_nX4vwZBk_o9_0qznOqFv258HGM"/>
+<span class="absolute bottom-1 right-1 bg-secondary text-on-secondary p-0.5 rounded-full flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">pets</span>
+</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<div class="flex items-center gap-1.5 truncate">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface truncate">Copper</h2>
+<span class="font-label text-label bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full font-semibold">Friendly</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Golden Retriever • 28.4 kg • 2.5 yrs</p>
+<div class="mt-1.5 flex items-center gap-1 text-on-error-container bg-error-container/50 px-2 py-1 rounded-lg">
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+<span class="font-caption text-caption text-error font-medium truncate">Allergy: Strictly NO chicken treats</span>
+</div>
+</div>
+</div>
+<!-- Owner Details & Contact Strip -->
+<div class="bg-surface-container-low rounded-xl p-3 flex items-center justify-between gap-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-body-md-medium text-body-md-medium text-on-surface font-semibold truncate">Sarah Jenkins</span>
+<span class="material-symbols-outlined text-secondary text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant truncate">1420 9th Ave, Sunset SF</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 flex-shrink-0">
+<button class="w-10 h-10 rounded-full bg-surface-container-lowest text-secondary hover:bg-secondary hover:text-on-secondary active:scale-95 transition-all flex items-center justify-center shadow-sm" title="Call Owner">
+<span class="material-symbols-outlined text-[20px]">call</span>
+</button>
+<button class="relative w-10 h-10 rounded-full bg-primary-container text-on-primary hover:bg-primary active:scale-95 transition-all flex items-center justify-center shadow-sm" title="Chat with Sarah">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<span class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-secondary rounded-full border-2 border-surface-container-lowest"></span>
+</button>
+</div>
+</div>
+</div>
+<!-- Live GPS Walk Tracker Card -->
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm flex flex-col">
+<div class="p-3.5 pb-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[22px]">explore</span>
+<span class="font-headline-h4 text-headline-h4 text-on-surface">Live Route &amp; Metrics</span>
+</div>
+<div class="flex items-center gap-1.5 bg-secondary-container/60 text-on-secondary-container px-2 py-0.5 rounded-full font-label text-label">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          GPS Signal Strong
+        </div>
+</div>
+<!-- Simulated Map Canvas Container -->
+<div class="relative w-full h-44 bg-surface-container overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-location="Golden Gate Heights Park, San Francisco, CA" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAVFwe0BvoyJxE5yKRhz5Prmc2UFbF6IhCExKULZzDCXHHv39BQXxN5hKIAo0iuIPSSRvzq_JKzN2EA7t2oTrzeDB32HbIUuQ6XXVZVWmxa6GihuI2Q4weUifFIY8RhkTerhaFQZJ91pVhj0WpwDBHGqf77frtAo2PVG8mvKDpwTwDUakT0vl6fbJFrmh2fwV9VgTSCsJnBawZVwR9SY0vvdeS3_wZTR9LmR6yT2TWiWruW0c2e7Tyk')"></div>
+<!-- Overlay SVG Route Line -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" fill="none" viewbox="0 0 400 180">
+<path d="M 40 140 C 90 120, 110 70, 160 80 S 240 130, 290 85 S 340 60, 360 45" stroke="#006c4d" stroke-dasharray="2 0" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"></path>
+<!-- Origin Point -->
+<circle cx="40" cy="140" fill="#1f1b18" r="5" stroke="#ffffff" stroke-width="2"></circle>
+<!-- Active Walker Pin -->
+<circle cx="360" cy="45" fill="#ae3115" r="7" stroke="#ffffff" stroke-width="2"></circle>
+<circle class="animate-ping" cx="360" cy="45" fill="#ff6b4a" fill-opacity="0.3" r="14"></circle>
+</svg>
+<!-- Potty Marker 1: Pee -->
+<div class="absolute top-[82px] left-[155px] -translate-x-1/2 -translate-y-1/2 bg-surface-container-lowest text-tertiary px-1.5 py-0.5 rounded-full shadow-sm flex items-center gap-0.5 text-[10px] font-bold">
+<span class="material-symbols-outlined text-[13px] text-tertiary" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span>02:38</span>
+</div>
+<!-- Potty Marker 2: Poop -->
+<div class="absolute top-[75px] left-[285px] -translate-x-1/2 -translate-y-1/2 bg-surface-container-lowest text-on-surface px-1.5 py-0.5 rounded-full shadow-sm flex items-center gap-0.5 text-[10px] font-bold">
+<span class="material-symbols-outlined text-[13px] text-on-surface-variant">delete</span>
+<span>02:47</span>
+</div>
+<!-- Quick Log Action Bar inside Map -->
+<div class="absolute bottom-2.5 right-2.5 flex items-center gap-1.5">
+<button class="bg-surface-container-lowest/95 backdrop-blur-sm text-on-surface hover:bg-surface-container-highest active:scale-95 transition-all text-caption font-caption font-semibold px-2.5 py-1.5 rounded-full shadow-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-tertiary">water_drop</span>
+            + Pee
+          </button>
+<button class="bg-surface-container-lowest/95 backdrop-blur-sm text-on-surface hover:bg-surface-container-highest active:scale-95 transition-all text-caption font-caption font-semibold px-2.5 py-1.5 rounded-full shadow-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">delete</span>
+            + Poop
+          </button>
+</div>
+</div>
+<!-- Metric Grid Below Map -->
+<div class="grid grid-cols-4 p-3 bg-surface-container-lowest divide-x divide-transparent gap-1">
+<div class="flex flex-col items-center">
+<span class="font-caption text-caption text-on-surface-variant">Distance</span>
+<span class="font-headline-h4 text-headline-h4 text-on-surface font-bold">1.4 <span class="text-caption font-normal">mi</span></span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-caption text-caption text-on-surface-variant">Pace</span>
+<span class="font-headline-h4 text-headline-h4 text-on-surface font-bold">22' <span class="text-caption font-normal">/mi</span></span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-caption text-caption text-on-surface-variant">Pee Stops</span>
+<div class="flex items-center gap-0.5 text-on-surface font-headline-h4 text-headline-h4 font-bold">
+<span class="material-symbols-outlined text-tertiary text-[18px]" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span>1</span>
+</div>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-caption text-caption text-on-surface-variant">Poop Logs</span>
+<div class="flex items-center gap-0.5 text-on-surface font-headline-h4 text-headline-h4 font-bold">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">delete</span>
+<span>1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Care Checklist Card -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">checklist</span>
+<span class="font-headline-h4 text-headline-h4 text-on-surface">Service Checklist</span>
+</div>
+<span class="font-label text-label bg-surface-container text-on-surface-variant px-2.5 py-1 rounded-full font-bold">2 of 6 Done</span>
+</div>
+<div class="space-y-2.5">
+<!-- Task 1 (Done) -->
+<label class="flex items-start gap-3 p-2.5 bg-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container transition-all">
+<input checked="" class="mt-0.5 w-5 h-5 rounded-md text-secondary accent-secondary cursor-pointer" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface line-through opacity-75 block truncate">Leash secured &amp; front door locked safely</span>
+<span class="font-caption text-caption text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Verified at 02:32 PM
+            </span>
+</div>
+</label>
+<!-- Task 2 (Done) -->
+<label class="flex items-start gap-3 p-2.5 bg-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container transition-all">
+<input checked="" class="mt-0.5 w-5 h-5 rounded-md text-secondary accent-secondary cursor-pointer" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface line-through opacity-75 block truncate">30-min active exercise &amp; sniffing loop</span>
+<span class="font-caption text-caption text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Verified at 02:50 PM
+            </span>
+</div>
+</label>
+<!-- Task 3 (In Progress) -->
+<label class="flex items-start gap-3 p-2.5 bg-primary-fixed/30 rounded-xl cursor-pointer hover:bg-primary-fixed/50 transition-all">
+<input class="mt-0.5 w-5 h-5 rounded-md text-primary accent-primary cursor-pointer" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-primary font-semibold block truncate">Fresh water bowl refill &amp; hydration check</span>
+<span class="font-caption text-caption text-primary flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span> In Progress right now
+            </span>
+</div>
+</label>
+<!-- Task 4 (Pending) -->
+<label class="flex items-start gap-3 p-2.5 bg-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container transition-all">
+<input class="mt-0.5 w-5 h-5 rounded-md text-secondary accent-secondary cursor-pointer" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface block truncate">Administer joint supplement with treat</span>
+<span class="font-caption text-caption text-tertiary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">medication</span> Owner note: Use beef liver wrap
+            </span>
+</div>
+</label>
+<!-- Task 5 (Pending) -->
+<label class="flex items-start gap-3 p-2.5 bg-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container transition-all">
+<input class="mt-0.5 w-5 h-5 rounded-md text-secondary accent-secondary cursor-pointer" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface block truncate">Paw wipe down &amp; post-walk coat brushing</span>
+<span class="font-caption text-caption text-on-surface-variant mt-0.5 block">Towel in front porch bin</span>
+</div>
+</label>
+<!-- Task 6 (Pending) -->
+<label class="flex items-start gap-3 p-2.5 bg-surface-container-low rounded-xl cursor-pointer hover:bg-surface-container transition-all">
+<input class="mt-0.5 w-5 h-5 rounded-md text-secondary accent-secondary cursor-pointer" type="checkbox"/>
+<div class="flex-1 min-w-0">
+<span class="font-body-md-medium text-body-md-medium text-on-surface block truncate">Lock front deadbolt &amp; keybox return verification</span>
+<span class="font-caption text-caption text-on-surface-variant mt-0.5 block">Photo proof required at finish</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Live Media Upload Section -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">photo_camera</span>
+<span class="font-headline-h4 text-headline-h4 text-on-surface">Live Media for Owner</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant font-medium">3 sent to Sarah</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<!-- Thumbnail 1 -->
+<div class="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Playful golden retriever with yellow tennis ball in green grassy park, bright sunny afternoon, warm joyful tones, candid pet action photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSzrsHNO6Tpj1DtbBNf4nDedZFLM1fsGOhzyBU_rxdggaGPf2u_QjZP8SWgZZ80HFer18d_TB0NMfK3fhnr_m6pcVFjWoWaafIAHeVb7jEht4bQ5HVjgcqmI1JNF8jDdeF11llnenNuT1A_duBEeNBpblff71OJaQ_QdXOUKq1baDPJABO0kxQUnxI8-rJBG3edJwzZffZn-dIsjl7kAOOb9sKcno6vVzpK3LZ5YTPCsI5pgQV3R5s"/>
+<div class="absolute bottom-1 right-1 bg-surface-container-lowest/90 rounded-full p-0.5">
+<span class="material-symbols-outlined text-[10px] text-secondary font-bold">check</span>
+</div>
+</div>
+<!-- Thumbnail 2 -->
+<div class="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Golden retriever panting and smiling happily sitting beside clean water bowl, cheerful warm home entrance, soft sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJf8TUZIo5QkmEhpNuLXUERyNjeznkg5i0YPbA6jjZR_NgSRRQ6mkJ7aGlrdDHUxyBd0dUJTNdzU66jd33s4tnX55IDWHw07saIH5Ord3a6oI1RaoKEvWakKXD_pIP5HRJ8YCqW7Qk2XAMjZZhbFbWaNoxkObPGTDxW5oLwcnu6lQoqrjb8sFb_9xisijP7G49oIGiGOj6Xk_tADLjBFr1pN5BtVZSYFpYZH366YyXKgxwuJ0A2DXR"/>
+<div class="absolute bottom-1 right-1 bg-surface-container-lowest/90 rounded-full p-0.5">
+<span class="material-symbols-outlined text-[10px] text-secondary font-bold">check</span>
+</div>
+</div>
+<!-- Thumbnail 3 -->
+<div class="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up of golden retriever paws cleanly wiped on cozy welcome mat, warm domestic lifestyle pet photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD6QD3cWowo5W8LvHxxCtJczGQCkAgICPfUNnUwUhbfjkTSL3vVZGnUTK9zwqmwM4SWFbg8Wx2hLTlbKObnHnArr0v23FRwUw0q1V1DE0pltU7d9P4LVKtsBKO3cL5ChzTEWsp0LJvGG80_XawPu9Iq1UcSNUaDH8CVSIREYkc37mw6rOfqH4jlbbFDSBJwt3V9PYYwEH0Saig3BzpBf6N5mxqF_K6j-OHHGAIbl2dWbbQ8fbcLMFQ"/>
+<div class="absolute bottom-1 right-1 bg-surface-container-lowest/90 rounded-full p-0.5">
+<span class="material-symbols-outlined text-[10px] text-secondary font-bold">check</span>
+</div>
+</div>
+<!-- Add Media Button -->
+<button class="aspect-square rounded-xl bg-surface-container-high hover:bg-surface-container-highest active:scale-95 transition-all flex flex-col items-center justify-center text-primary gap-1">
+<span class="material-symbols-outlined text-[24px]">add_a_photo</span>
+<span class="font-label text-label font-bold text-on-surface-variant">+ Add</span>
+</button>
+</div>
+<div class="flex items-center gap-2 bg-secondary-container/30 px-3 py-2 rounded-xl text-on-secondary-container font-caption text-caption">
+<span class="material-symbols-outlined text-[16px] text-secondary">mark_chat_read</span>
+<span>Owner notified automatically with each upload</span>
+</div>
+</div>
+<!-- Provider Live Notes -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<label class="font-headline-h4 text-headline-h4 text-on-surface flex items-center gap-2" for="provider-notes">
+<span class="material-symbols-outlined text-primary text-[20px]">edit_note</span>
+          Sitter Visit Notes
+        </label>
+<span class="font-caption text-caption text-on-surface-variant">Auto-saving...</span>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-container-low rounded-xl p-3 font-body-md text-body-md text-on-surface focus:outline-none focus:bg-surface-container-lowest transition-all resize-none shadow-sm" id="provider-notes" placeholder="Write any behavioral notes, hydration status, or sweet moments for the owner summary..." rows="3">Copper drank plenty of water and loved chasing the tennis ball at the park! Kept clean from mud and his mood was fantastic throughout the walk.</textarea>
+</div>
+</div>
+<!-- Primary Action CTA -->
+<div class="pt-2 flex flex-col gap-2">
+<button class="w-full h-14 rounded-full bg-primary-container hover:bg-primary active:scale-[0.99] transition-all text-on-primary font-button text-button shadow-md flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[22px]">lock_open</span>
+<span>Complete Service &amp; Request Sign-off</span>
+</button>
+<p class="font-caption text-caption text-center text-on-surface-variant flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">shield</span>
+        Protected by PetCare 100% Satisfaction &amp; Safety Guarantee
+      </p>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Simple micro-interaction for active timer pulse
+    let totalSeconds = 24 * 60 + 18;
+    const timerElem = document.getElementById('live-timer');
+    if (timerElem) {
+      setInterval(function() {
+        totalSeconds++;
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        timerElem.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      }, 1000);
+    }
+  })();
+</script></main></body></html>

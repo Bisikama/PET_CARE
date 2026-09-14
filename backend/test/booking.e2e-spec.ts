@@ -184,7 +184,7 @@ describe('BookingController (e2e)', () => {
     const workingDay = await prisma.provider_working_days.create({
       data: {
         provider_id: providerId,
-        work_date: new Date('2026-07-01'),
+        work_date: new Date('2099-07-01'),
         working_mode: 'FULL_TIME',
       },
     });
@@ -234,7 +234,7 @@ describe('BookingController (e2e)', () => {
           petId,
           serviceId,
           addressId,
-          date: '2026-07-01',
+          date: '2099-07-01',
         })
         .expect(200);
 
@@ -272,21 +272,21 @@ describe('BookingController (e2e)', () => {
         customer_id: customerId,
         provider_id: providerId,
         provider_working_slot_id: providerWorkingSlotId,
-        status: 'PENDING_PROVIDER_ACCEPTANCE',
+        status: 'PENDING_PAYMENT',
       });
 
-      // Verify slot is locked
+      // Verify slot is locked with HELD_FOR_PAYMENT
       const updatedSlot = await prisma.provider_working_slots.findUnique({
         where: { id: providerWorkingSlotId },
       });
-      expect(updatedSlot?.status).toBe(availability_slot_status.RESERVED_FOR_PROVIDER_RESPONSE);
+      expect(updatedSlot?.status).toBe(availability_slot_status.HELD_FOR_PAYMENT);
     });
 
     it('prevents double booking when multiple customers book the same slot (Concurrency Lock)', async () => {
       // Re-set working slot to AVAILABLE
       await prisma.provider_working_slots.update({
         where: { id: providerWorkingSlotId },
-        data: { status: availability_slot_status.AVAILABLE, reserved_until: null },
+        data: { status: availability_slot_status.AVAILABLE, held_until: null, reserved_until: null },
       });
 
       // Send 5 concurrent requests
@@ -317,10 +317,15 @@ describe('BookingController (e2e)', () => {
       const pendingBooking = await prisma.bookings.findFirst({
         where: {
           provider_working_slot_id: providerWorkingSlotId,
-          status: 'PENDING_PROVIDER_ACCEPTANCE',
         },
       });
       expect(pendingBooking).not.toBeNull();
+
+      // Simulate successful payment transitioning booking to PENDING_PROVIDER_ACCEPTANCE
+      await prisma.bookings.update({
+        where: { id: pendingBooking!.id },
+        data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
+      });
 
       const response = await request(app.getHttpServer())
         .post(`/bookings/${pendingBooking!.id}/provider-accept`)
@@ -343,7 +348,7 @@ describe('BookingController (e2e)', () => {
       // Set slot back to AVAILABLE
       await prisma.provider_working_slots.update({
         where: { id: providerWorkingSlotId },
-        data: { status: availability_slot_status.AVAILABLE },
+        data: { status: availability_slot_status.AVAILABLE, held_until: null, reserved_until: null },
       });
 
       // Create a new booking
@@ -359,6 +364,12 @@ describe('BookingController (e2e)', () => {
         .expect(201);
 
       const newBookingId = createResponse.body.data.id;
+
+      // Simulate payment done so provider can reject
+      await prisma.bookings.update({
+        where: { id: newBookingId },
+        data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
+      });
 
       // Reject the booking
       const rejectResponse = await request(app.getHttpServer())
