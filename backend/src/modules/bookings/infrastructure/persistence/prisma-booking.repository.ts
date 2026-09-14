@@ -46,17 +46,29 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
 
     // Concurrency Lock: only allow booking/reservation if current status is AVAILABLE
     const whereCondition: any = { id: slotId };
-    if (status === 'RESERVED_FOR_PROVIDER_RESPONSE') {
+    if (status === 'RESERVED_FOR_PROVIDER_RESPONSE' || status === 'HELD_FOR_PAYMENT') {
       whereCondition.status = 'AVAILABLE';
+    }
+
+    const dataToUpdate: any = {
+      status,
+      updated_at: new Date(),
+    };
+
+    if (status === 'HELD_FOR_PAYMENT') {
+      dataToUpdate.held_until = reservedUntil;
+      dataToUpdate.reserved_until = null;
+    } else if (status === 'RESERVED_FOR_PROVIDER_RESPONSE') {
+      dataToUpdate.reserved_until = reservedUntil;
+      dataToUpdate.held_until = null;
+    } else {
+      dataToUpdate.held_until = null;
+      dataToUpdate.reserved_until = null;
     }
 
     const result = await client.provider_working_slots.updateMany({
       where: whereCondition,
-      data: {
-        status,
-        reserved_until: reservedUntil,
-        updated_at: new Date(),
-      },
+      data: dataToUpdate,
     });
     return result.count;
   }
