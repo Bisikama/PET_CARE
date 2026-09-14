@@ -3,7 +3,7 @@ import { useWalletStore } from '../stores/useWalletStore';
 import { walletService } from '../services/wallet.service';
 
 
-export const useWallet = () => {
+export const useWallet = (options?: { pollingIntervalMs?: number }) => {
   const { 
     wallet, 
     isLoading, 
@@ -14,25 +14,54 @@ export const useWallet = () => {
     setError 
   } = useWalletStore();
 
-  const fetchWallet = useCallback(async (force = false) => {
-    if (isWalletFetched && !force) return;
-    
+  const fetchWallet = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent && !isWalletFetched) {
+        setLoading(true);
+      }
       const data = await walletService.getMyWallet();
       setWallet(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch wallet');
+      if (!silent) {
+        setError(err.response?.data?.message || 'Failed to fetch wallet');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [isWalletFetched, setWallet, setLoading, setError]);
 
   useEffect(() => {
-    fetchWallet();
+    fetchWallet(false);
   }, [fetchWallet]);
 
-  return { wallet, isLoading, error, refreshWallet: () => fetchWallet(true) };
+  useEffect(() => {
+    const intervalMs = options?.pollingIntervalMs || 10000;
+
+    const intervalId = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchWallet(true);
+      }
+    }, intervalMs);
+
+    const handleFocus = () => {
+      fetchWallet(true);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, [fetchWallet, options?.pollingIntervalMs]);
+
+  return { wallet, isLoading, error, refreshWallet: () => fetchWallet(false) };
 };
 
 export const useWalletTransactions = () => {

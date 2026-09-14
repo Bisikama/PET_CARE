@@ -21,7 +21,10 @@ export const useBookingDetail = (bookingId?: string) => {
   }, [bookingId, fetchBookingDetail, fetchBookingChecklist]);
 
   const booking = bookingId ? bookingDetailsMap[bookingId] : null;
-  const checklist = bookingId ? checklistsMap[bookingId] || [] : [];
+  const rawChecklist: any = bookingId ? checklistsMap[bookingId] : [];
+  const checklist = Array.isArray(rawChecklist)
+    ? rawChecklist
+    : rawChecklist?.checklistItems || rawChecklist?.data?.checklistItems || [];
 
   const updateChecklistItem = async (itemId: string, data: any) => {
     if (!bookingId) return false;
@@ -51,9 +54,9 @@ export const useBookingDetail = (bookingId?: string) => {
     return true;
   };
 
-  const requestExtension = async (additionalMinutes: number, reason: string) => {
+  const requestExtension = async (minutes: number, reason: string) => {
     if (!bookingId) return false;
-    await bookingService.requestBookingExtension(bookingId, { additionalMinutes, reason });
+    await bookingService.requestBookingExtension(bookingId, { minutes, reason });
     await fetchBookingDetail(bookingId, true);
     return true;
   };

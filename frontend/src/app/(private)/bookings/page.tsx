@@ -37,7 +37,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Lịch sử đặt lịch */}
-      {view === 'list' && <CustomerBookingList />}
+      {view === 'list' && <CustomerBookingList onPayBooking={() => setView('new')} />}
 
       {/* Flow đặt lịch mới */}
       {view === 'new' && (

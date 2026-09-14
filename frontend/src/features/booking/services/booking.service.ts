@@ -87,7 +87,7 @@ export const bookingService = {
     return response.data;
   },
 
-  requestBookingExtension: async (bookingId: string, data: { additionalMinutes: number; reason: string }): Promise<any> => {
+  requestBookingExtension: async (bookingId: string, data: { minutes: number; reason: string }): Promise<any> => {
     const response = await axiosInstance.patch(`/bookings/${bookingId}/request-extension`, data);
     return response.data;
   },

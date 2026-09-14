@@ -7,34 +7,67 @@ import { CancelBookingPayload, CancelReason } from '../types';
 /**
  * Hook lấy danh sách bookings của customer hiện tại (có cache store)
  */
-export const useCustomerBookings = () => {
+export const useCustomerBookings = (options?: { pollingIntervalMs?: number }) => {
   const { bookings, isLoading, isFetched, setBookings, setLoading, setError } =
     useCustomerBookingStore();
 
   const fetchBookings = useCallback(
-    async (force = false) => {
-      if (isFetched && !force) return;
+    async (silent = false) => {
       try {
-        setLoading(true);
+        if (!silent && !isFetched) {
+          setLoading(true);
+        }
         const data = await bookingService.getMyBookings();
         setBookings(data);
       } catch (err: any) {
-        setError(err?.response?.data?.message || 'Không thể tải danh sách booking');
+        if (!silent) {
+          setError(err?.response?.data?.message || 'Không thể tải danh sách booking');
+        }
       } finally {
-        setLoading(false);
+        if (!silent) {
+          setLoading(false);
+        }
       }
     },
     [isFetched, setBookings, setLoading, setError],
   );
 
   useEffect(() => {
-    fetchBookings();
+    fetchBookings(false);
   }, [fetchBookings]);
+
+  // Background Auto-Polling & Window Focus Re-sync
+  useEffect(() => {
+    const intervalMs = options?.pollingIntervalMs || 8000;
+
+    // Silent background poll when tab is visible
+    const intervalId = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchBookings(true);
+      }
+    }, intervalMs);
+
+    // Silent sync on window focus
+    const handleFocus = () => {
+      fetchBookings(true);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, [fetchBookings, options?.pollingIntervalMs]);
 
   return {
     bookings,
     isLoading,
-    refreshBookings: () => fetchBookings(true),
+    refreshBookings: () => fetchBookings(false),
   };
 };
 
