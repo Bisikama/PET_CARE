@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"surface":"#fff8f5","on-secondary":"#ffffff","tertiary":"#835500","surface-dim":"#e2d8d3","error":"#ba1a1a","on-primary-fixed-variant":"#8c1900","tertiary-fixed":"#ffddb4","surface-container-low":"#fcf2ec","on-tertiary-container":"#482c00","secondary-container":"#9af5cc","surface-container-highest":"#eae1db","surface-container-high":"#f0e6e1","outline-variant":"#e1bfb8","background":"#fff8f5","primary-fixed":"#ffdad2","secondary-fixed-dim":"#7fd8b1","primary":"#ae3115","tertiary-container":"#d38b00","on-secondary-container":"#047352","primary-fixed-dim":"#ffb4a3","on-secondary-fixed-variant":"#005139","on-surface-variant":"#59413c","on-primary-container":"#661000","surface-tint":"#ae3115","tertiary-fixed-dim":"#ffb955","surface-bright":"#fff8f5","error-container":"#ffdad6","surface-variant":"#eae1db","secondary-fixed":"#9af5cc","primary-container":"#ff6b4a","on-primary":"#ffffff","secondary":"#006c4d","on-tertiary-fixed":"#291800","on-error":"#ffffff","on-primary-fixed":"#3d0600","on-error-container":"#93000a","inverse-primary":"#ffb4a3","inverse-on-surface":"#f9efe9","on-secondary-fixed":"#002115","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff","outline":"#8d716a","on-tertiary-fixed-variant":"#633f00","on-background":"#1f1b18","on-surface":"#1f1b18","surface-container":"#f6ece6","inverse-surface":"#342f2c"},"borderRadius":{"DEFAULT":"1rem","lg":"2rem","xl":"3rem","full":"9999px"},"spacing":{"space-6":"1.5rem","space-4":"1rem","space-5":"1.25rem","space-10":"2.5rem","space-8":"2rem","margin-mobile":"1rem","gutter-tablet":"1.5rem","gutter-mobile":"1rem","space-12":"3rem","space-3":"0.75rem","space-2":"0.5rem","space-1":"0.25rem","margin-tablet":"2rem"},"fontFamily":{"headline-h1":["Plus Jakarta Sans"],"input":["Plus Jakarta Sans"],"body-lg-medium":["Plus Jakarta Sans"],"headline-h4":["Plus Jakarta Sans"],"label":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"button":["Plus Jakarta Sans"],"display":["Plus Jakarta Sans"],"caption":["Plus Jakarta Sans"],"headline-h3":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-h2":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"body-md-medium":["Plus Jakarta Sans"]},"fontSize":{"headline-h1":["28px",{"lineHeight":"36px","letterSpacing":"-0.015em","fontWeight":"700"}],"input":["15px",{"lineHeight":"20px","fontWeight":"400"}],"body-lg-medium":["16px",{"lineHeight":"24px","fontWeight":"500"}],"headline-h4":["18px",{"lineHeight":"24px","fontWeight":"600"}],"label":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","fontWeight":"400"}],"button":["15px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"display":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"caption":["12px",{"lineHeight":"16px","fontWeight":"500"}],"headline-h3":["20px",{"lineHeight":"28px","letterSpacing":"-0.005em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-h2":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-md-medium":["14px",{"lineHeight":"20px","fontWeight":"500"}]}}}};</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-body-md text-on-surface flex flex-col antialiased"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-28 px-margin-mobile flex flex-col justify-between py-space-2"><div class="flex items-center justify-between gap-space-2"><div class="flex items-center gap-space-2"><img alt="PetCare Brand Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XZDk-2dAGbWKLJY9z9XtortBadKEVevGK3KgsxmOmgj-wBEAgfzxTEtJn661GMR_t8q1Bwb75xkxKbLSF3ule5R_9Y_-fyqJYbPQqTZUSllqIkinwf_dmqvdERN4f-CF9hnE2YHjD1Fd-G0CihFXVDdBQfoTDVDMULp8-O8RGcld0Yh1WuGSkYhLIxmqZJmAgzndByefW2gIcYtkRYc7FOr6VVUQ7Rvk5zd8zSF_S42SFENGoNs2cQeA"/><span class="font-headline-h4 text-headline-h4 text-on-surface tracking-tight">PetCare</span><span class="px-space-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-label uppercase">v1.0</span></div><div class="flex items-center gap-space-2"><span class="font-body-md-medium text-body-md-medium text-on-surface-variant hidden sm:inline">Overview</span><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="flex items-center gap-space-2 overflow-x-auto pb-space-1"><a class="px-space-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label uppercase shrink-0 transition-colors hover:bg-surface-container-highest" data-path="overview" href="#">Overview</a><a class="px-space-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label uppercase shrink-0 transition-colors hover:bg-surface-container-highest" data-path="tokens-guide" href="#">Tokens</a><a class="px-space-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label uppercase shrink-0 transition-colors hover:bg-surface-container-highest" data-path="components-library" href="#">Components</a><a class="px-space-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label uppercase shrink-0 transition-colors hover:bg-surface-container-highest" data-path="patterns-flows" href="#">Patterns</a><a class="px-space-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label uppercase shrink-0 transition-colors hover:bg-surface-container-highest" data-path="systems-architecture" href="#">Systems</a></div></div></header><main class="flex flex-col relative w-full px-margin-mobile pt-28 pb-28 bg-surface"><div class="flex flex-col w-full space-y-space-6">
+<!-- Interactive Pill Nav for Jump Links -->
+<section class="flex items-center gap-space-2 overflow-x-auto py-space-1 -mx-margin-mobile px-margin-mobile scrollbar-none">
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-brand">1. Brand</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-colors">2. Colors</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-typography">3. Typography</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-spacing">4. Spacing</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-elevation">5. Radius &amp; Shadows</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-icons">6. Icons</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-buttons">7. Buttons</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-forms">8. Forms</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-status">9. Status Matrix</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-trust">10. Trust Badges</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-media">11. Media</a>
+<a class="px-space-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label text-label shrink-0 transition-colors active:scale-95 shadow-sm" href="#section-maps">12. Maps</a>
+</section>
+<!-- 1. BRAND PERSONALITY & MISSION -->
+<section class="p-space-5 rounded-lg bg-surface-container shadow-sm flex flex-col space-y-space-4" id="section-brand">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 px-space-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label text-label uppercase tracking-wider">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+        v1.0 • React Native Ready
+      </span>
+<span class="font-label text-label text-on-surface-variant uppercase">Module 01</span>
+</div>
+<div>
+<h2 class="font-headline-h2 text-headline-h2 text-on-surface">PetCare Foundation</h2>
+<p class="font-body-lg-medium text-body-lg-medium text-primary mt-1">“Trusted care for your best friend”</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">
+        A human-centric, medical-grade trust platform disguised as an intuitive, delight-driven companion app for caring pet parents and certified sitters.
+      </p>
+</div>
+<div class="pt-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase tracking-wider block mb-space-2">Brand Personality Spectrum</span>
+<div class="flex flex-wrap gap-space-2">
+<span class="px-space-3 py-1 rounded-full bg-primary-container text-on-primary font-caption text-caption shadow-sm">Friendly</span>
+<span class="px-space-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-caption text-caption">Warm</span>
+<span class="px-space-3 py-1 rounded-full bg-surface-container-highest text-on-surface font-caption text-caption">Trustworthy</span>
+<span class="px-space-3 py-1 rounded-full bg-secondary text-on-secondary font-caption text-caption">Safe</span>
+<span class="px-space-3 py-1 rounded-full bg-surface-container-highest text-on-surface font-caption text-caption">Professional</span>
+<span class="px-space-3 py-1 rounded-full bg-surface-container-highest text-on-surface font-caption text-caption">Modern</span>
+<span class="px-space-3 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-caption text-caption">Premium yet Accessible</span>
+<span class="px-space-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-caption text-caption">Soft &amp; Approachable</span>
+</div>
+</div>
+</section>
+<!-- 2. COLOR SYSTEM & SEMANTIC TOKENS -->
+<section class="p-space-5 rounded-lg bg-surface-container-low shadow-sm flex flex-col space-y-space-4" id="section-colors">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">2. Color Architecture</h3>
+<span class="font-label text-label text-on-surface-variant uppercase">Harmonic Tokens</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Calibrated for WCAG 2.1 AA legibility on warm cream surfaces.</p>
+<!-- Swatches Grid -->
+<div class="grid grid-cols-2 gap-space-3">
+<!-- Primary -->
+<div class="p-space-3 rounded bg-primary text-on-primary shadow-sm flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<span class="font-label text-label">Primary Main</span>
+<span class="px-1.5 py-0.5 rounded bg-on-primary/20 text-on-primary text-[10px] font-bold">AAA</span>
+</div>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Warm Coral</span>
+<span class="font-caption text-caption opacity-90">#FF6B4A / primary-container</span>
+</div>
+</div>
+<div class="p-space-3 rounded bg-primary-fixed text-on-primary-fixed shadow-sm flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<span class="font-label text-label">Primary Light</span>
+<span class="px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-bold">AA</span>
+</div>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Soft Peach</span>
+<span class="font-caption text-caption opacity-90">#FFEAE4 / primary-fixed</span>
+</div>
+</div>
+<!-- Secondary -->
+<div class="p-space-3 rounded bg-secondary text-on-secondary shadow-sm flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<span class="font-label text-label">Secondary Main</span>
+<span class="px-1.5 py-0.5 rounded bg-on-secondary/20 text-on-secondary text-[10px] font-bold">AAA</span>
+</div>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Forest Mint</span>
+<span class="font-caption text-caption opacity-90">#2D8A68 / secondary</span>
+</div>
+</div>
+<div class="p-space-3 rounded bg-secondary-container text-on-secondary-container shadow-sm flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<span class="font-label text-label">Secondary Tint</span>
+<span class="px-1.5 py-0.5 rounded bg-secondary/20 text-secondary text-[10px] font-bold">AA</span>
+</div>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Sage Mist</span>
+<span class="font-caption text-caption opacity-90">#E6F5EF / secondary-container</span>
+</div>
+</div>
+<!-- Accent & Neutrals -->
+<div class="p-space-3 rounded bg-tertiary-container text-on-tertiary-container shadow-sm flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<span class="font-label text-label">Accent</span>
+<span class="px-1.5 py-0.5 rounded bg-tertiary/20 text-tertiary text-[10px] font-bold">AA</span>
+</div>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Honey Warm</span>
+<span class="font-caption text-caption opacity-90">#F5A623 / tertiary-container</span>
+</div>
+</div>
+<div class="p-space-3 rounded bg-surface-container-highest text-on-surface shadow-sm flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<span class="font-label text-label">Surface Cream</span>
+<span class="px-1.5 py-0.5 rounded bg-on-surface/10 text-on-surface text-[10px] font-bold">Base</span>
+</div>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Warm White</span>
+<span class="font-caption text-caption text-on-surface-variant">#FCFBF9 / container-high</span>
+</div>
+</div>
+</div>
+<!-- Semantic Tokens Bar -->
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm flex flex-col space-y-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase">Semantic Status Tokens</span>
+<div class="grid grid-cols-4 gap-space-2 text-center">
+<div class="p-space-2 rounded bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="font-label text-[10px] block mt-1">Success</span>
+</div>
+<div class="p-space-2 rounded bg-tertiary-fixed text-on-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span class="font-label text-[10px] block mt-1">Warning</span>
+</div>
+<div class="p-space-2 rounded bg-error-container text-on-error-container">
+<span class="material-symbols-outlined text-[18px]">error</span>
+<span class="font-label text-[10px] block mt-1">Error</span>
+</div>
+<div class="p-space-2 rounded bg-surface-container text-primary">
+<span class="material-symbols-outlined text-[18px]">info</span>
+<span class="font-label text-[10px] block mt-1">Info</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. TYPOGRAPHY SCALE -->
+<section class="p-space-5 rounded-lg bg-surface-container shadow-sm flex flex-col space-y-space-4" id="section-typography">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">3. Typography Scale</h3>
+<span class="font-label text-label text-primary font-bold">Plus Jakarta Sans</span>
+</div>
+<div class="space-y-space-3">
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Display • 32px / 40px Bold</span>
+</div>
+<span class="font-display text-display text-on-surface block">PetCare Trust</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Headline 1 • 28px / 36px Bold</span>
+</div>
+<span class="font-headline-h1 text-headline-h1 text-on-surface block">Certified Sitters</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Headline 2 • 24px / 32px SemiBold</span>
+</div>
+<span class="font-headline-h2 text-headline-h2 text-on-surface block">Book a Walk</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Headline 3 &amp; 4</span>
+</div>
+<p class="font-headline-h3 text-headline-h3 text-on-surface">H3: Pet Profile Details (20px)</p>
+<p class="font-headline-h4 text-headline-h4 text-on-surface-variant mt-1">H4: Recent Health Check (18px)</p>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm space-y-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase">Body, Buttons &amp; Functional UI</span>
+<p class="font-body-lg text-body-lg text-on-surface">Body Large (16/24): Friendly companion care with real-time GPS tracking.</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Body Regular (14/20): Verified Sitters undergo background checks and identity checks.</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Body Small (13/18): Includes medication delivery &amp; feeding updates.</p>
+<div class="flex flex-wrap items-center gap-space-3 pt-1">
+<span class="font-caption text-caption text-on-surface-variant">Caption (12px)</span>
+<span class="font-label text-label text-primary uppercase">Label Tag (11px)</span>
+<span class="font-button text-button text-secondary">Button (15px)</span>
+<span class="font-input text-input text-on-surface">Input (15px)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. SPACING & GRID SYSTEM -->
+<section class="p-space-5 rounded-lg bg-surface-container-low shadow-sm flex flex-col space-y-space-4" id="section-spacing">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">4. Spacing System (8pt Base)</h3>
+<span class="font-label text-label text-secondary">Screen: 390x844</span>
+</div>
+<!-- Visual Rulers -->
+<div class="space-y-space-2">
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">4px (xs)</span>
+<div class="h-4 bg-primary-container rounded-full" style="width: 4px;"></div>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">8px (sm)</span>
+<div class="h-4 bg-primary-container rounded-full" style="width: 8px;"></div>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">12px (md)</span>
+<div class="h-4 bg-primary-container rounded-full" style="width: 12px;"></div>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">16px (base)</span>
+<div class="h-4 bg-primary-container rounded-full" style="width: 16px;"></div>
+<span class="font-caption text-caption text-primary font-semibold">Standard Gutter &amp; Card Pad</span>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">24px (xl)</span>
+<div class="h-4 bg-secondary rounded-full" style="width: 24px;"></div>
+<span class="font-caption text-caption text-on-surface-variant">Section Gap</span>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">32px (2xl)</span>
+<div class="h-4 bg-secondary rounded-full" style="width: 32px;"></div>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="font-label text-label text-on-surface-variant w-16">48px (3xl)</span>
+<div class="h-4 bg-primary rounded-full" style="width: 48px;"></div>
+<span class="font-caption text-caption text-primary font-semibold">Min Touch Target</span>
+</div>
+</div>
+</section>
+<!-- 5. BORDER RADIUS & ELEVATION -->
+<section class="p-space-5 rounded-lg bg-surface-container shadow-sm flex flex-col space-y-space-4" id="section-elevation">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">5. Radius &amp; Elevation</h3>
+<span class="font-label text-label text-on-surface-variant">Depth System</span>
+</div>
+<!-- Radius Pills Showcase -->
+<div class="space-y-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase">Border Radius Spectrum</span>
+<div class="grid grid-cols-3 gap-space-2">
+<div class="p-space-2 bg-surface-container-highest rounded-[4px] text-center">
+<span class="font-caption text-caption">XS • 4px</span>
+</div>
+<div class="p-space-2 bg-surface-container-highest rounded-[8px] text-center">
+<span class="font-caption text-caption">SM • 8px</span>
+</div>
+<div class="p-space-2 bg-surface-container-highest rounded-[12px] text-center">
+<span class="font-caption text-caption">MD • 12px</span>
+</div>
+<div class="p-space-2 bg-surface-container-highest rounded-DEFAULT text-center">
+<span class="font-caption text-caption">LG • 16px</span>
+</div>
+<div class="p-space-2 bg-surface-container-highest rounded-lg text-center">
+<span class="font-caption text-caption">XL • 32px</span>
+</div>
+<div class="p-space-2 bg-surface-container-highest rounded-full text-center">
+<span class="font-caption text-caption">Pill • 9999px</span>
+</div>
+</div>
+</div>
+<!-- Shadows Showcase -->
+<div class="space-y-space-2 pt-2">
+<span class="font-label text-label text-on-surface-variant uppercase">Shadow Elevations (Warm Tint)</span>
+<div class="grid grid-cols-3 gap-space-3 text-center">
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-sm">
+<span class="font-label text-label block">Level 1</span>
+<span class="font-caption text-caption text-on-surface-variant text-[11px]">List Cards</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-md">
+<span class="font-label text-label block">Level 2</span>
+<span class="font-caption text-caption text-on-surface-variant text-[11px]">FAB / Modals</span>
+</div>
+<div class="p-space-3 rounded bg-surface-container-lowest shadow-xl">
+<span class="font-label text-label block">Level 3</span>
+<span class="font-caption text-caption text-on-surface-variant text-[11px]">Action Sheets</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. ICON SYSTEM -->
+<section class="p-space-5 rounded-lg bg-surface-container-low shadow-sm flex flex-col space-y-space-4" id="section-icons">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">6. Unified Iconography</h3>
+<span class="font-label text-label text-secondary">24x24 Soft Stroke</span>
+</div>
+<div class="grid grid-cols-6 gap-space-2 text-center">
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">home</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Home</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">search</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Search</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">calendar_month</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Calendar</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">schedule</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Clock</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">location_on</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Location</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">near_me</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Navigate</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[22px]">pets</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Paw</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[22px]">sound_detection_dog_barking</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Dog</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[22px]">cruelty_free</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Cat</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[22px]">person</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">User</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[22px]">badge</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Provider</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[22px]">star</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Star</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[22px]">favorite</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Heart</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[22px]">notifications</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Bell</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[22px]">chat</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Message</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[22px]">photo_camera</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Camera</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-on-surface text-[22px]">account_balance_wallet</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Wallet</span>
+</div>
+<div class="p-space-2 bg-surface-container rounded flex flex-col items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[22px]">verified_user</span>
+<span class="font-label text-[9px] mt-1 text-on-surface-variant">Shield</span>
+</div>
+</div>
+</section>
+<!-- 7. BUTTON SYSTEM -->
+<section class="p-space-5 rounded-lg bg-surface-container shadow-sm flex flex-col space-y-space-4" id="section-buttons">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">7. Button Architecture</h3>
+<span class="font-label text-label text-on-surface-variant">States Matrix</span>
+</div>
+<!-- Button Variations -->
+<div class="space-y-space-3">
+<!-- Primary -->
+<div class="space-y-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Primary Coral Button</span>
+<div class="flex items-center gap-space-2">
+<button class="h-12 px-space-5 rounded-full bg-primary-container text-on-primary font-button text-button shadow-sm flex items-center justify-center gap-2 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">pets</span>
+            Book Sitter
+          </button>
+<button class="h-12 px-space-4 rounded-full bg-primary-container/50 text-on-primary font-button text-button cursor-not-allowed">
+            Disabled
+          </button>
+<button class="h-12 w-12 rounded-full bg-primary-container text-on-primary flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+</button>
+</div>
+</div>
+<!-- Secondary & Outline -->
+<div class="space-y-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Secondary Sage &amp; Outline</span>
+<div class="flex items-center gap-space-2">
+<button class="h-12 px-space-4 rounded-full bg-secondary text-on-secondary font-button text-button active:scale-95 shadow-sm">
+            Save Changes
+          </button>
+<button class="h-12 px-space-4 rounded-full bg-surface-container-highest text-on-surface font-button text-button active:scale-95 shadow-sm">
+            Outline Secondary
+          </button>
+</div>
+</div>
+<!-- Ghost, Danger & Floating FAB -->
+<div class="space-y-1">
+<span class="font-label text-label text-on-surface-variant uppercase">Ghost, Danger &amp; FAB</span>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<button class="h-10 px-space-3 rounded-full text-primary font-button text-button hover:bg-surface-container-highest">
+              Skip Step
+            </button>
+<button class="h-10 px-space-3 rounded-full bg-error-container text-on-error-container font-button text-button">
+              Cancel Booking
+            </button>
+</div>
+<!-- FAB showcase -->
+<div class="w-14 h-14 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. FORM SYSTEM & INPUT CONTROLS -->
+<section class="p-space-5 rounded-lg bg-surface-container-low shadow-sm flex flex-col space-y-space-4" id="section-forms">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">8. Form System &amp; Inputs</h3>
+<span class="font-label text-label text-primary font-bold">Touch Optimized</span>
+</div>
+<div class="space-y-space-3">
+<!-- Floating Label Input -->
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm">
+<label class="font-label text-[11px] text-primary uppercase block">Pet Name (Focused)</label>
+<input class="w-full bg-transparent font-input text-input text-on-surface outline-none pt-1" type="text" value="Barnaby McFluff"/>
+</div>
+<!-- Phone Input with Country Code -->
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center gap-space-2">
+<div class="flex items-center gap-1 pr-2">
+<span class="text-[18px]">🇺🇸</span>
+<span class="font-body-md-medium text-body-md-medium text-on-surface">+1</span>
+</div>
+<div class="flex-1">
+<label class="font-label text-[10px] text-on-surface-variant uppercase block">Mobile Phone</label>
+<input class="w-full bg-transparent font-input text-input text-on-surface outline-none" type="tel" value="(555) 389-2041"/>
+</div>
+<span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+</div>
+<!-- Soft Rounded Search Input -->
+<div class="h-12 px-space-4 rounded-full bg-surface-container-highest flex items-center gap-space-2 shadow-inner">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+<input class="bg-transparent w-full font-input text-input text-on-surface placeholder:text-on-surface-variant outline-none" placeholder="Search sitters by zip or neighborhood..." type="text"/>
+</div>
+<!-- Dropdown Select -->
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label text-[10px] text-on-surface-variant uppercase block">Service Type</span>
+<span class="font-body-md-medium text-body-md-medium text-on-surface">Dog Walking (60 mins)</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</div>
+<!-- Date & Time Trigger -->
+<div class="grid grid-cols-2 gap-space-2">
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label text-[10px] text-on-surface-variant uppercase block">Date</span>
+<span class="font-body-sm text-body-sm text-on-surface">Oct 24, 2024</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
+</div>
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label text-[10px] text-on-surface-variant uppercase block">Start Time</span>
+<span class="font-body-sm text-body-sm text-on-surface">02:30 PM</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">schedule</span>
+</div>
+</div>
+<!-- 4-digit OTP Code Input -->
+<div class="space-y-1 pt-1">
+<span class="font-label text-label text-on-surface-variant uppercase">4-Digit Security OTP</span>
+<div class="flex justify-between gap-space-2">
+<div class="w-14 h-14 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center justify-center font-display text-display text-on-surface">5</div>
+<div class="w-14 h-14 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center justify-center font-display text-display text-on-surface">2</div>
+<div class="w-14 h-14 rounded-DEFAULT bg-primary-fixed text-on-primary-fixed shadow-md flex items-center justify-center font-display text-display animate-pulse">8</div>
+<div class="w-14 h-14 rounded-DEFAULT bg-surface-container-highest flex items-center justify-center font-display text-display text-on-surface-variant opacity-40">·</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. STATUS SYSTEM (5 Core Domain Workflows) -->
+<section class="p-space-5 rounded-lg bg-surface-container shadow-sm flex flex-col space-y-space-4" id="section-status">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">9. Multi-Badge Status Matrix</h3>
+<span class="font-label text-label text-on-surface-variant">5 Workflows</span>
+</div>
+<!-- Booking Workflow -->
+<div class="space-y-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase tracking-wider block">1. Booking Lifecycle</span>
+<div class="flex flex-wrap gap-space-1">
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">hourglass_empty</span> Pending</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">done_all</span> Confirmed</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">directions_walk</span> Traveling</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">pin_drop</span> Arrived</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-secondary text-on-secondary font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">play_circle</span> In Progress</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">task_alt</span> Completed</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">cancel</span> Cancelled</span>
+</div>
+</div>
+<!-- KYC Provider Workflow -->
+<div class="space-y-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase tracking-wider block">2. KYC &amp; Verification</span>
+<div class="flex flex-wrap gap-space-1">
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">edit</span> Draft</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">send</span> Submitted</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">manage_search</span> Under Review</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">verified</span> Verified</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">block</span> Rejected</span>
+</div>
+</div>
+<!-- Payment & Withdrawal -->
+<div class="space-y-space-2">
+<span class="font-label text-label text-on-surface-variant uppercase tracking-wider block">3. Financial Transactions</span>
+<div class="flex flex-wrap gap-space-1">
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">paid</span> Success $48.00</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">sync</span> Escrow Processing</span>
+<span class="inline-flex items-center gap-1 px-space-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label text-[10px]"><span class="material-symbols-outlined text-[12px]">replay</span> Refunded</span>
+</div>
+</div>
+</section>
+<!-- 10. PETCARE TRUST SYSTEM -->
+<section class="p-space-5 rounded-lg bg-surface-container-low shadow-sm flex flex-col space-y-space-4" id="section-trust">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">10. PetCare Trust Badges</h3>
+<span class="material-symbols-outlined text-secondary text-[24px]">verified</span>
+</div>
+<div class="space-y-space-2">
+<!-- Verified Provider -->
+<div class="p-space-3 rounded-DEFAULT bg-secondary-container text-on-secondary-container flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-[24px]">shield</span>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Verified Safe Provider</span>
+<span class="font-caption text-caption opacity-90">In-person vetted &amp; animal CPR certified</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<!-- Identity Verified -->
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-highest text-on-surface flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-primary text-[24px]">badge</span>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Identity Verified</span>
+<span class="font-caption text-caption text-on-surface-variant">Government ID &amp; Facial Match 100%</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-[18px]">check_circle</span>
+</div>
+<!-- Background Checked -->
+<div class="p-space-3 rounded-DEFAULT bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-[24px]">security</span>
+<div>
+<span class="font-body-md-medium text-body-md-medium block">Background Checked</span>
+<span class="font-caption text-caption opacity-90">Clean criminal records check updated yearly</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-[18px]">done</span>
+</div>
+<!-- Top Provider -->
+<div class="p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-tertiary text-[24px]">stars</span>
+<div>
+<span class="font-body-md-medium text-body-md-medium text-on-surface block">Top Provider • 4.98 Rating</span>
+<span class="font-caption text-caption text-on-surface-variant">Over 140+ five-star pet sitting stays</span>
+</div>
+</div>
+<span class="px-space-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label text-[10px]">ELITE</span>
+</div>
+</div>
+</section>
+<!-- 11. MEDIA SYSTEM & ASPECT RATIOS -->
+<section class="p-space-5 rounded-lg bg-surface-container shadow-sm flex flex-col space-y-space-4" id="section-media">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">11. Media Architecture</h3>
+<span class="font-label text-label text-on-surface-variant">Ratios &amp; Frames</span>
+</div>
+<!-- 1:1 Avatar & 4:3 Pet Showcase Card -->
+<div class="space-y-space-3">
+<!-- 1:1 Avatar row -->
+<div class="flex items-center gap-space-3 p-space-3 rounded-DEFAULT bg-surface-container-lowest shadow-sm">
+<div class="relative w-14 h-14 shrink-0">
+<img class="w-14 h-14 rounded-full object-cover shadow-sm" data-alt="Close up warm portrait of a friendly female certified pet sitter smiling softly with natural warm sunset backlighting in an airy minimalist room with soft beige tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfcGWiUtIl7Bu0K4X1Z5Bc0stNRV-SbAfKK78qQg7uokrt_EAiHgun0hIrkb9xHFFBG-zj8rdla3mfPLgAyoxr0s78jaEJzAuI3IG21aEahvYQQ7qWSZlIh6BY2Po3hDrZaCXnN93KCTicCeBLz2zDLgxVu4afsQ2650iTcRkw4UbCfUQxcIogUMMynB9gAUBO-fFyqeIjmC0D2AWcmuO26fB3ofOcxG3ynAp3Oivh9432Xf1gLJ53"/>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-secondary rounded-full"></span>
+</div>
+<div>
+<span class="font-label text-[10px] text-on-surface-variant uppercase block">1:1 Ratio Profile Avatar</span>
+<span class="font-body-md-medium text-body-md-medium text-on-surface">Elena Rostova • Live Online</span>
+</div>
+</div>
+<!-- 4:3 Pet Card -->
+<div class="rounded-DEFAULT bg-surface-container-lowest shadow-sm overflow-hidden">
+<div class="relative w-full aspect-[4/3]">
+<img class="w-full h-full object-cover" data-alt="Playful golden retriever sitting politely in a sunlit warm living room with earthy terracotta cushions and indoor plants looking happily towards camera" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIOEnBbi3JsyrknZ86ZnaqpFbAKflXDYgKW065Ylz9Dd2NlD39BCpRkrU5P-iijfrvz2KSeXCCvfdWewzAyxX6pDGYV0DBhjZ3Cbuasm6fZx0KPP_z8Iybbj66FmCdDRBJiflhgH3EMZn_FKHYFYg8D-e6J2L_VJY-QQzNNyDTMeeHX0c5jrZjaB41AOoTy93qAil7PSDF64ql-vvWHcoB-zDzystO28fOCdwyIrWORw80CVTdNXFC"/>
+<span class="absolute top-space-3 right-space-3 px-space-2 py-1 rounded-full bg-surface/90 backdrop-blur-sm text-on-surface font-label text-[10px]">
+            4:3 PET CARD
+          </span>
+</div>
+<div class="p-space-3 flex justify-between items-center">
+<div>
+<span class="font-headline-h4 text-headline-h4 text-on-surface">Copper</span>
+<span class="font-caption text-caption text-on-surface-variant block">Golden Retriever • 2 yrs</span>
+</div>
+<span class="px-space-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label text-label">Vaccinated</span>
+</div>
+</div>
+<!-- 16:9 Provider Portfolio Gallery -->
+<div class="rounded-DEFAULT bg-surface-container-lowest shadow-sm overflow-hidden">
+<div class="relative w-full aspect-[16/9]">
+<img class="w-full h-full object-cover" data-alt="Warm modern suburban backyard garden with lush green grass and clean wooden fencing where a small dog plays safely in the sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqfK4xQkO04QnHXWpWQRMgTA6th8xcNz8X5PQH1WWdOvYSSnungifZVMjuC_BigE7s5cDpmilZfaVDnb7uwUYF1g-o1YIJV0hNT62hVlAoztTlul-XwJGLQLX-7-v_Tpc1StX5X6piwRzITt6WlHF9c-ghhsXrlXpELRDXzXmUkN7W3RGLM5VFONU0NOdnWOT217_gqda00WR5cdhXBsRiqtyfPogrqEkl8y1hQR7sy2_cFp4kbKic"/>
+<div class="absolute bottom-space-2 right-space-2 px-space-2 py-0.5 rounded-full bg-on-surface/80 text-surface font-label text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">photo_library</span>
+<span>1/8 Photos (16:9)</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 12. MAP SYSTEM COMPONENTS -->
+<section class="p-space-5 rounded-lg bg-surface-container-low shadow-sm flex flex-col space-y-space-4" id="section-maps">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">12. Map System Engine</h3>
+<span class="font-label text-label text-primary font-bold">Realtime Live-Walk</span>
+</div>
+<!-- Map Canvas Representation -->
+<div class="relative w-full h-72 rounded-DEFAULT overflow-hidden shadow-inner bg-surface-container-highest">
+<div class="w-full h-full bg-cover bg-center" data-location="Brooklyn, New York" style=""></div>
+<!-- Soft Tint Overlay -->
+<div class="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+<!-- Service Radius Circle Overlay -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-secondary/15 pointer-events-none"></div>
+<!-- Selected Provider Marker -->
+<div class="absolute top-1/3 left-1/2 -translate-x-1/2 flex flex-col items-center">
+<div class="px-space-2 py-0.5 rounded-full bg-primary text-on-primary font-label text-[10px] shadow-md mb-1">
+          $28/hr
+        </div>
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-[20px]">pets</span>
+</div>
+</div>
+<!-- Current User Location (Blue Pulse) -->
+<div class="absolute bottom-1/4 left-1/3 flex items-center justify-center">
+<span class="relative flex h-5 w-5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-5 w-5 bg-secondary text-on-secondary items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-surface"></span>
+</span>
+</span>
+</div>
+<!-- Floating Travel Info Pill -->
+<div class="absolute bottom-space-3 inset-x-space-3 bg-surface/90 backdrop-blur-md p-space-3 rounded-full shadow-lg flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">directions_walk</span>
+</span>
+<div>
+<span class="font-body-md-medium text-body-md-medium text-on-surface block">Elena is 8 mins away</span>
+<span class="font-caption text-caption text-on-surface-variant">0.6 miles • Approaching safely</span>
+</div>
+</div>
+<button class="px-space-3 py-1.5 rounded-full bg-primary text-on-primary font-label text-label shadow-sm">
+          Live Call
+        </button>
+</div>
+</div>
+</section>
+<!-- Interactive Sandbox Feedback Footer Banner -->
+<div class="p-space-4 rounded-DEFAULT bg-surface-container-highest flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Tokens synced with Figma &amp; RN Library</span>
+</div>
+<span class="font-label text-label text-on-surface-variant uppercase">Ready for Handoff</span>
+</div>
+</div>
+<script>
+  // Micro-interaction: Light click vibration simulation for buttons
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(12);
+      }
+    });
+  });
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-body-md-medium"><div class="flex justify-around items-center h-16 px-space-2"><a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors text-primary font-body-md-medium" data-path="overview" href="#"><span class="material-symbols-outlined text-[22px]">space_dashboard</span><span class="font-label text-label">Docs</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface" data-path="tokens-guide" href="#"><span class="material-symbols-outlined text-[22px]">palette</span><span class="font-label text-label">Tokens</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface" data-path="components-library" href="#"><span class="material-symbols-outlined text-[22px]">widgets</span><span class="font-label text-label">Components</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface" data-path="patterns-flows" href="#"><span class="material-symbols-outlined text-[22px]">schema</span><span class="font-label text-label">Patterns</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] text-on-surface-variant transition-colors hover:text-on-surface" data-path="systems-architecture" href="#"><span class="material-symbols-outlined text-[22px]">code_blocks</span><span class="font-label text-label">Systems</span></a></div></nav></body></html>
