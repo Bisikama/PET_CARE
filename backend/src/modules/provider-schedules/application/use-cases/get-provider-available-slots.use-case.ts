@@ -81,6 +81,9 @@ export class GetProviderAvailableSlotsUseCase {
     const currentDate = new Date(startDate);
     currentDate.setHours(0, 0, 0, 0);
 
+    const now = new Date();
+    const todayKey = this.formatDateKey(now);
+
     while (currentDate <= endDate) {
       const dateKey = this.formatDateKey(currentDate);
       const existingWd = workingDaysMap.get(dateKey);
@@ -92,7 +95,19 @@ export class GetProviderAvailableSlotsUseCase {
         );
 
         const status = (pws?.status as availability_slot_status) || 'BLOCKED';
-        const isAvailable = status === availability_slot_status.AVAILABLE;
+        let isAvailable = status === availability_slot_status.AVAILABLE;
+
+        // Nếu ngày đang xét là ngày trong quá khứ hoặc hôm nay nhưng giờ bắt đầu <= giờ hiện tại
+        if (dateKey < todayKey) {
+          isAvailable = false;
+        } else if (dateKey === todayKey) {
+          const [startHour, startMinute] = ts.start_time.split(':').map(Number);
+          const slotStartTime = new Date(now);
+          slotStartTime.setHours(startHour, startMinute, 0, 0);
+          if (slotStartTime <= now) {
+            isAvailable = false;
+          }
+        }
 
         return {
           providerWorkingSlotId: pws?.id || null,

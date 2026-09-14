@@ -250,11 +250,22 @@ export class PaymentsService {
             },
           });
 
-          // 2. Chuyển trạng thái Booking sang Chờ Provider xác nhận
+          // 2. Chuyển trạng thái Booking sang Chờ Provider xác nhận & chuyển Slot sang RESERVED_FOR_PROVIDER_RESPONSE
           await tx.bookings.update({
             where: { id: payment.booking_id },
             data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
           });
+
+          if (payment.bookings?.provider_working_slot_id) {
+            await tx.provider_working_slots.update({
+              where: { id: payment.bookings.provider_working_slot_id },
+              data: {
+                status: 'RESERVED_FOR_PROVIDER_RESPONSE',
+                held_until: null,
+                reserved_until: new Date(Date.now() + 15 * 60 * 1000),
+              },
+            });
+          }
 
           // 3. Tiền vào ví Provider ở dạng Ký quỹ (Pending Balance)
           const providerId = payment.bookings?.provider_id;
@@ -486,11 +497,22 @@ export class PaymentsService {
         },
       });
 
-      // 6. Cập nhật Booking
+      // 6. Cập nhật Booking & chuyển Slot sang RESERVED_FOR_PROVIDER_RESPONSE
       await tx.bookings.update({
         where: { id: bookingId },
         data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
       });
+
+      if (booking.provider_working_slot_id) {
+        await tx.provider_working_slots.update({
+          where: { id: booking.provider_working_slot_id },
+          data: {
+            status: 'RESERVED_FOR_PROVIDER_RESPONSE',
+            held_until: null,
+            reserved_until: new Date(Date.now() + 15 * 60 * 1000),
+          },
+        });
+      }
 
       return {
         success: true,

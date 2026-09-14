@@ -66,14 +66,29 @@ export class SearchMatchingProvidersUseCase {
       const price = Number(service.price);
 
       // Extract matching slots
-      const slots =
-        provider.provider_working_days[0]?.provider_working_slots.map((pws: any) => ({
+      const searchDateStr = new Date(dto.date).toISOString().split('T')[0];
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+
+      const rawSlots = provider.provider_working_days[0]?.provider_working_slots || [];
+      const slots = rawSlots
+        .filter((pws: any) => {
+          if (searchDateStr < todayStr) return false;
+          if (searchDateStr === todayStr) {
+            const [startHour, startMinute] = pws.time_slots.start_time.split(':').map(Number);
+            const slotStartTime = new Date(now);
+            slotStartTime.setHours(startHour, startMinute, 0, 0);
+            return slotStartTime > now;
+          }
+          return true;
+        })
+        .map((pws: any) => ({
           providerWorkingSlotId: pws.id,
           slotId: pws.time_slots.id,
           name: pws.time_slots.name,
           startTime: pws.time_slots.start_time,
           endTime: pws.time_slots.end_time,
-        })) || [];
+        }));
 
       return {
         providerId: provider.id,
