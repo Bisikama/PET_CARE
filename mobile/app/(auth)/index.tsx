@@ -1,6 +1,6 @@
 import React from 'react';
-import { AuthScreen } from '@/features/auth';
+import { Redirect } from 'expo-router';
 
 export default function AuthIndexRoute() {
-  return <AuthScreen />;
+  return <Redirect href="/(auth)/login" />;
 }

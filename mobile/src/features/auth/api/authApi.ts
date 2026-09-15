@@ -7,6 +7,7 @@ import {
   ApiResponse,
   UserProfile,
   ResendOtpRequest,
+  ForgotPasswordRequest,
   ResetPasswordRequest,
   ChangePasswordRequest,
   GoogleLoginRequest,
@@ -40,6 +41,11 @@ export const authApi = {
 
   resendOtp: async (data: ResendOtpRequest): Promise<ApiResponse<null>> => {
     const response = await apiClient.post('/auth/resend-confirmation-otp', data);
+    return response.data;
+  },
+
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<ApiResponse<null>> => {
+    const response = await apiClient.post('/auth/forgot-password', data);
     return response.data;
   },
 

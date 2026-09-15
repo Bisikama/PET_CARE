@@ -228,6 +228,7 @@ model payments {
   released_at       DateTime?          @db.Timestamp(6)
   refunded_at       DateTime?          @db.Timestamp(6)
   created_at        DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
   idempotency_key   String?            @unique @db.VarChar(255)
   bookings          bookings           @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   users             User               @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
