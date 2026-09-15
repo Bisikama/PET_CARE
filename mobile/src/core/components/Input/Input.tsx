@@ -72,9 +72,8 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     const getBackgroundColor = () => {
       if (hasError) return theme.colors.semantic.errorContainer;
-      if (isFocused) return theme.colors.primary.container;
-      if (isDisabled) return theme.colors.surface.subdued;
-      return theme.colors.surface.default;
+      if (isDisabled) return theme.colors.border.subdued;
+      return theme.colors.surface.subdued;
     };
 
     return (

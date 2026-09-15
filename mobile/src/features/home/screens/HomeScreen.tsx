@@ -129,7 +129,7 @@ export default function HomeScreen() {
           onFilterPress={handleSearchPress}
         />
 
-        {/* 3. PawCare Promise Hero Banner */}
+        {/* 3. PetCare Promise Hero Banner */}
         <PromiseBanner onPress={handleSearchPress} />
 
         {/* 4. Active Upcoming Appointment */}
