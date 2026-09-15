@@ -1,7 +1,6 @@
 import React from 'react';
-import { DesignSystemPreview } from '@/core/theme/DesignSystemPreview';
+import { Redirect } from 'expo-router';
 
-export default function IndexScreen() {
-  // TEMPORARY: Render Design System Preview for visual QA.
-  return <DesignSystemPreview />;
+export default function CustomerIndex() {
+  return <Redirect href="/(customer)/(tabs)/home" />;
 }

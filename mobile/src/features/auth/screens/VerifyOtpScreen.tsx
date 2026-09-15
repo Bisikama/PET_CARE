@@ -22,7 +22,7 @@ export default function VerifyOtpScreen() {
   const { login } = useAuth();
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (countdown > 0) {
       timer = setTimeout(() => setCountdown(countdown - 1), 1000);
     }
@@ -42,6 +42,7 @@ export default function VerifyOtpScreen() {
       const res = await authApi.verifyOtp({ email, otp });
       if (res.success && res.data) {
         await login(res.data.accessToken, res.data.user);
+        router.replace('/(customer)/(tabs)/home');
       } else {
         setError(res.message || 'Mã OTP không hợp lệ');
       }
