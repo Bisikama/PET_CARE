@@ -1,1 +1,11 @@
-export * from './screens/HomeScreen';
+export { default as HomeScreen } from './screens/HomeScreen';
+export * from './types/home.types';
+export * from './components/GreetingHeader';
+export * from './components/HomeSearchBar';
+export * from './components/PromiseBanner';
+export * from './components/UpcomingAppointmentCard';
+export * from './components/CategoryGrid';
+export * from './components/SpecialPromoBanner';
+export * from './components/ProviderCard';
+export * from './components/TopRatedProviders';
+export * from './components/HomeBottomNav';

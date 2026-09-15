@@ -80,7 +80,7 @@ function MainLayout() {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       // Redirect to app
-      router.replace('/(customer)/home');
+      router.replace('/(customer)/(tabs)/home');
     }
   }, [isAuthenticated, isLoading, segments, router]);
 
