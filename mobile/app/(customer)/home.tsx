@@ -1,6 +1,6 @@
 import React from 'react';
-import HomeScreen from '../../src/features/home/screens/HomeScreen';
+import { Redirect } from 'expo-router';
 
-export default function Home() {
-  return <HomeScreen />;
+export default function CustomerHomeRedirect() {
+  return <Redirect href="/(customer)/(tabs)/home" />;
 }

@@ -19,3 +19,4 @@ export * from './SegmentedControl';
 export * from './Skeleton';
 export * from './StatusBadge';
 export * from './Toast';
+export * from './Navigation';
