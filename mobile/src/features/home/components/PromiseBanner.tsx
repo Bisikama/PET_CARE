@@ -21,7 +21,7 @@ export function PromiseBanner({ onPress }: PromiseBannerProps) {
         <View style={styles.content}>
           <View style={styles.badgeRow}>
             <ShieldCheck size={14} color={theme.colors.secondary.container} />
-            <Text style={styles.badgeText}>PAWCARE PROMISE</Text>
+            <Text style={styles.badgeText}>PetCare PROMISE</Text>
           </View>
           
           <Text style={styles.headline}>

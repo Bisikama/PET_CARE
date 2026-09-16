@@ -130,8 +130,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   box: {
-    width: 48,
-    height: 56,
+    flex: 1,
+    aspectRatio: 0.85,
+    marginHorizontal: 4,
     borderRadius: theme.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
