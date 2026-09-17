@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useScheduleStore } from '../store/schedule.store';
+import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { UpdateDayScheduleItem } from '../types';
-import { X, Calendar as CalendarIcon, Clock, Check } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock, Check, AlertTriangle, CheckCircle2, Search, Loader2 } from 'lucide-react';
 
 interface RegisterScheduleModalProps {
   isOpen: boolean;
@@ -19,6 +20,11 @@ export const RegisterScheduleModal: React.FC<RegisterScheduleModalProps> = ({
   const fetchTimeSlots = useScheduleStore(state => state.fetchTimeSlots);
   const updateSchedules = useScheduleStore(state => state.updateSchedules);
   const isUpdating = useScheduleStore(state => state.isUpdating);
+  const checkScheduleConflict = useScheduleStore(state => state.checkScheduleConflict);
+  const conflictResult = useScheduleStore(state => state.conflictResult);
+  const isCheckingConflict = useScheduleStore(state => state.isCheckingConflict);
+  const clearConflictResult = useScheduleStore(state => state.clearConflictResult);
+  const currentUser = useAuthStore(state => state.user);
 
   // State to manage the schedule form
   const [date, setDate] = useState<string>(
@@ -27,6 +33,7 @@ export const RegisterScheduleModal: React.FC<RegisterScheduleModalProps> = ({
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
   const [workingMode, setWorkingMode] = useState<'FULL_TIME' | 'PART_TIME'>('FULL_TIME');
   const [error, setError] = useState<string | null>(null);
+  const [conflictError, setConflictError] = useState<string | null>(null);
 
   const providerSchedules = useScheduleStore(state => state.providerSchedules);
 
@@ -53,12 +60,47 @@ export const RegisterScheduleModal: React.FC<RegisterScheduleModalProps> = ({
     }
   }, [isOpen, selectedDate, providerSchedules, fetchTimeSlots]);
 
+  // Clear conflict result on any change
+  useEffect(() => {
+    clearConflictResult();
+    setConflictError(null);
+  }, [date, selectedSlotIds, clearConflictResult]);
+
   if (!isOpen) return null;
 
   const handleToggleSlot = (slotId: string) => {
     setSelectedSlotIds((prev) =>
       prev.includes(slotId) ? prev.filter((id) => id !== slotId) : [...prev, slotId]
     );
+  };
+
+  const handleCheckConflict = async () => {
+    if (selectedSlotIds.length === 0) {
+      setConflictError('Vui lòng chọn ít nhất 1 khung giờ để kiểm tra.');
+      return;
+    }
+
+    setConflictError(null);
+    try {
+      // Pick the first and last selected time slot to build a time range
+      const sortedSlots = timeSlots
+        .filter(s => selectedSlotIds.includes(s.id))
+        .sort((a, b) => a.slot_order - b.slot_order);
+      
+      const firstSlot = sortedSlots[0];
+      const lastSlot = sortedSlots[sortedSlots.length - 1];
+
+      const startTime = `${date}T${firstSlot.start_time}`;
+      const endTime = `${date}T${lastSlot.end_time}`;
+
+      await checkScheduleConflict({
+        providerId: currentUser?.id || '',
+        startTime,
+        endTime,
+      });
+    } catch (err: any) {
+      setConflictError(err?.response?.data?.message || err?.message || 'Lỗi khi kiểm tra trùng lịch.');
+    }
   };
 
   const handleSelectAll = () => {
@@ -210,6 +252,47 @@ export const RegisterScheduleModal: React.FC<RegisterScheduleModalProps> = ({
                       </button>
                     );
                   })}
+                </div>
+              )}
+            </div>
+
+            {/* Conflict Check Section */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleCheckConflict}
+                disabled={isCheckingConflict || selectedSlotIds.length === 0}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isCheckingConflict ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                {isCheckingConflict ? 'Đang kiểm tra...' : 'Kiểm tra trùng lịch trước khi lưu'}
+              </button>
+
+              {conflictError && (
+                <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold border border-rose-100 flex items-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  {conflictError}
+                </div>
+              )}
+
+              {conflictResult && !conflictResult.hasConflict && (
+                <div className="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-100 flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  Không có trùng lịch! Bạn có thể lưu an toàn.
+                </div>
+              )}
+
+              {conflictResult && conflictResult.hasConflict && (
+                <div className="p-2.5 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold border border-amber-200 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <div>
+                    <p>⚠️ Phát hiện trùng lịch! Vui lòng chọn khung giờ khác.</p>
+                    {conflictResult.message && <p className="text-amber-600 mt-1">{conflictResult.message}</p>}
+                  </div>
                 </div>
               )}
             </div>

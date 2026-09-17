@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useProviderBooking } from '../hooks/useProviderBooking';
-import { ShieldAlert, Clock, Package, DollarSign, User, Phone, Mail, MapPin, Check, X, CheckCircle2, Lock } from 'lucide-react';
+import { ShieldAlert, Clock, Package, DollarSign, User, Phone, Mail, MapPin, Check, X, CheckCircle2, Lock, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BookingGPSCheckIn } from './BookingGPSCheckIn';
 import { BookingChecklist } from './BookingChecklist';
+import { ChatWindowModal } from '@/features/chat';
 
 interface BookingActionDetailProps {
   bookingId?: string | null;
@@ -11,6 +12,7 @@ interface BookingActionDetailProps {
 
 export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookingId }) => {
   const { bookingDetail, isLoading, error, fetchBookingDetail, fetchActiveBooking, acceptBooking, rejectBooking } = useProviderBooking(bookingId || undefined);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -85,9 +87,18 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
             Tiến Trình Chăm Sóc {petInfo ? `Bé ${petInfo.pet_name}` : 'Thú Cưng'}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Trạng thái:</span>
-          {getStatusBadge()}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowChatModal(true)}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4" />
+            Nhắn tin với Khách hàng
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Trạng thái:</span>
+            {getStatusBadge()}
+          </div>
         </div>
       </div>
 
@@ -319,6 +330,14 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
           </p>
         </div>
       )}
+
+      {/* Chat Window Modal */}
+      <ChatWindowModal
+        isOpen={showChatModal}
+        onClose={() => setShowChatModal(false)}
+        bookingId={bookingDetail?.id}
+        partnerName={bookingDetail?.address_snapshot?.receiverName}
+      />
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import axiosInstance from '@/lib/axios';
 import {
   CopyWeekScheduleInput,
+  CheckConflictInput,
+  CheckConflictResult,
   ProviderWorkingDayView,
   TimeSlotRecord,
   UpdateProviderScheduleInput,
@@ -44,6 +46,14 @@ export const scheduleService = {
    */
   copyWeekSchedule: async (data: CopyWeekScheduleInput): Promise<void> => {
     const response = await axiosInstance.post('/provider-schedules/copy-week', data);
+    return response.data;
+  },
+
+  /**
+   * Kiểm tra trùng lặp lịch trình trước khi đăng ký
+   */
+  checkConflict: async (data: CheckConflictInput): Promise<CheckConflictResult> => {
+    const response = await axiosInstance.post<CheckConflictResult>('/provider-schedules/check-conflict', data);
     return response.data;
   },
 };

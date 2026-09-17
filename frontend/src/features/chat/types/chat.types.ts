@@ -21,3 +21,7 @@ export interface SendMediaMessageDto {
   mediaUrl: string;
   caption?: string;
 }
+
+export interface SendTextMessageDto {
+  content: string;
+}

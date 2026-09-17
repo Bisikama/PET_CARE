@@ -16,7 +16,7 @@ import {
   Coins, 
   X
 } from 'lucide-react';
-import { Promotion, CreatePromotionInput } from '../types';
+import { Promotion, CreatePromotionInput, UpdatePromotionLimitsInput } from '../types';
 import { promotionsService } from '../services/promotions.service';
 import { Portal } from '@/components/ui/Portal';
 
@@ -56,6 +56,23 @@ export function AdminPromotionsManager() {
     discountType: 'PERCENT',
     formData: {},
     submitting: false,
+  });
+
+  // Limits Modal state
+  const [limitsModal, setLimitsModal] = React.useState<{
+    show: boolean;
+    promotion: Promotion | null;
+    usageLimit: string;
+    maxUsagePerUser: string;
+    submitting: boolean;
+    error: string | null;
+  }>({
+    show: false,
+    promotion: null,
+    usageLimit: '',
+    maxUsagePerUser: '',
+    submitting: false,
+    error: null,
   });
 
   const fetchPromotions = React.useCallback(async () => {
@@ -194,6 +211,46 @@ export function AdminPromotionsManager() {
     }
   };
 
+  const handleOpenLimitsModal = (promo: Promotion) => {
+    setLimitsModal({
+      show: true,
+      promotion: promo,
+      usageLimit: promo.usage_limit !== null ? String(promo.usage_limit) : '100',
+      maxUsagePerUser: '1',
+      submitting: false,
+      error: null,
+    });
+  };
+
+  const handleLimitsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!limitsModal.promotion) return;
+
+    const usageLimit = parseInt(limitsModal.usageLimit, 10);
+    const maxUsagePerUser = parseInt(limitsModal.maxUsagePerUser, 10);
+
+    if (isNaN(usageLimit) || usageLimit < 1 || isNaN(maxUsagePerUser) || maxUsagePerUser < 1) {
+      setLimitsModal(p => ({ ...p, error: 'Giá trị phải là số nguyên >= 1.' }));
+      return;
+    }
+
+    setLimitsModal(p => ({ ...p, submitting: true, error: null }));
+    try {
+      await promotionsService.updatePromotionLimits(limitsModal.promotion!.id, {
+        usageLimit,
+        maxUsagePerUser,
+      });
+      setLimitsModal(p => ({ ...p, show: false, submitting: false }));
+      await fetchPromotions();
+    } catch (err: any) {
+      setLimitsModal(p => ({
+        ...p,
+        submitting: false,
+        error: err?.response?.data?.message || err?.message || 'Không thể cập nhật giới hạn.',
+      }));
+    }
+  };
+
   const formatCurrency = (amount?: number | null) => {
     if (amount === null || amount === undefined) return '0đ';
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -321,13 +378,22 @@ export function AdminPromotionsManager() {
                         </button>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        <button
-                          onClick={() => handleOpenEditModal(p)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-indigo-500" />
-                          Cập nhật (PUT)
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenLimitsModal(p)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold rounded-xl transition-all cursor-pointer border border-amber-200"
+                          >
+                            <Coins className="w-3.5 h-3.5 text-amber-500" />
+                            Giới hạn (PUT limits)
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditModal(p)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-indigo-500" />
+                            Cập nhật (PUT)
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -601,6 +667,82 @@ export function AdminPromotionsManager() {
                     className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {editModal.submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Lưu thay đổi (PUT)'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* Update Limits Modal */}
+      {limitsModal.show && limitsModal.promotion && (
+        <Portal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 select-none">
+            <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={() => !limitsModal.submitting && setLimitsModal(p => ({ ...p, show: false }))} />
+            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 space-y-5 z-10 border border-slate-100">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Coins className="w-5 h-5 text-amber-500" />
+                  <h4 className="text-base font-extrabold text-slate-800">Cập nhật giới hạn: {limitsModal.promotion.code}</h4>
+                </div>
+                <button onClick={() => setLimitsModal(p => ({ ...p, show: false }))} className="text-slate-400 hover:text-slate-700">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 font-medium">
+                API: <code className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-mono text-[10px]">PUT /admin/promotions/{limitsModal.promotion.id}/limits</code>
+              </p>
+
+              {limitsModal.error && (
+                <div className="p-3 bg-rose-50 text-rose-700 text-xs font-semibold rounded-2xl border border-rose-100 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  {limitsModal.error}
+                </div>
+              )}
+
+              <form onSubmit={handleLimitsSubmit} className="space-y-4 text-xs font-medium">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-600 uppercase tracking-wider block">Tổng lượt sử dụng tối đa (usageLimit)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={limitsModal.usageLimit}
+                    onChange={(e) => setLimitsModal(p => ({ ...p, usageLimit: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold outline-none focus:bg-white focus:border-slate-800"
+                  />
+                  <p className="text-[10px] text-slate-400">Hiện tại: {limitsModal.promotion.usage_limit ?? '∞'} (đã dùng: {limitsModal.promotion.used_count})</p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-600 uppercase tracking-wider block">Lượt tối đa mỗi user (maxUsagePerUser)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={limitsModal.maxUsagePerUser}
+                    onChange={(e) => setLimitsModal(p => ({ ...p, maxUsagePerUser: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold outline-none focus:bg-white focus:border-slate-800"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setLimitsModal(p => ({ ...p, show: false }))}
+                    disabled={limitsModal.submitting}
+                    className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-2xl cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={limitsModal.submitting}
+                    className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {limitsModal.submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Lưu giới hạn (PUT limits)'}
                   </button>
                 </div>
               </form>

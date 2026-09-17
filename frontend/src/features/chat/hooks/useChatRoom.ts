@@ -16,18 +16,22 @@ export const useChatRoom = (roomId?: string | null) => {
     fetchRooms,
     fetchMessages,
     sendMediaMessage,
+    sendMessage,
   } = useChatStore();
 
   const currentRoomId = roomId || activeRoomId;
 
   useEffect(() => {
-    fetchRooms();
+    fetchRooms(true);
   }, [fetchRooms]);
 
   useEffect(() => {
-    if (currentRoomId) {
-      fetchMessages(currentRoomId);
-    }
+    if (!currentRoomId) return;
+    fetchMessages(currentRoomId, true);
+    const interval = setInterval(() => {
+      fetchMessages(currentRoomId, true);
+    }, 3000);
+    return () => clearInterval(interval);
   }, [currentRoomId, fetchMessages]);
 
   const messages = currentRoomId ? messagesByRoomId[currentRoomId] || [] : [];
@@ -44,6 +48,7 @@ export const useChatRoom = (roomId?: string | null) => {
     closeModal,
     setActiveRoomId,
     sendMediaMessage: (dto: any) => currentRoomId ? sendMediaMessage(currentRoomId, dto) : Promise.resolve(false),
+    sendMessage: (content: string, file?: File) => currentRoomId ? sendMessage(currentRoomId, content, file) : Promise.resolve(false),
     refetch: () => {
       fetchRooms(true);
       if (currentRoomId) fetchMessages(currentRoomId, true);
