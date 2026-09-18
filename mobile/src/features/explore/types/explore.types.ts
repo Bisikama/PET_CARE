@@ -19,3 +19,33 @@ export interface ProviderSearchResult {
   price_per_hour: number;
   services: string[];
 }
+
+export interface ExploreCategory {
+  id: string;
+  name: string;
+  iconName: string;
+}
+
+export interface QuickFilterOption {
+  id: string;
+  label: string;
+  iconName: string;
+  active?: boolean;
+}
+
+export interface ExploreProviderItem {
+  id: string;
+  name: string;
+  imageUrl: string;
+  isVerified: boolean;
+  rating: number;
+  reviewCount: number;
+  distanceKm: number;
+  statusText: string;
+  statusColor?: 'emerald' | 'amber' | 'navy';
+  description: string;
+  tags: string[];
+  startingPrice: number;
+  category: string;
+  isFavorite?: boolean;
+}

@@ -11,6 +11,9 @@ export default function CustomerLayout() {
       <Stack.Screen name="addresses" options={{ headerShown: false }} />
       <Stack.Screen name="become-provider" options={{ headerShown: false }} />
       <Stack.Screen name="explore" options={{ headerShown: false }} />
+      <Stack.Screen name="services" options={{ headerShown: false }} />
+      <Stack.Screen name="providers" options={{ headerShown: false }} />
+      <Stack.Screen name="bookings" options={{ headerShown: false }} />
       <Stack.Screen name="provider/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="service/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="service/[id]/details" options={{ headerShown: false }} />
