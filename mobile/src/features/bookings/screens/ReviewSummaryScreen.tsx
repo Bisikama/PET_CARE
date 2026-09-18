@@ -125,8 +125,19 @@ export default function ReviewSummaryScreen() {
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      setIsSuccessModalVisible(true);
-    }, 1000);
+      router.push({
+        pathname: '/(customer)/bookings/payment',
+        params: {
+          bookingCode: 'BK-2026-9812',
+          serviceTitle,
+          providerName,
+          petName,
+          totalPrice: String(finalTotal),
+          dateSlotText,
+          paymentMethod,
+        },
+      });
+    }, 600);
   };
 
   return (

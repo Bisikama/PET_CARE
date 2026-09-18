@@ -2,6 +2,7 @@ export { default as SelectPetScreen } from './screens/SelectPetScreen';
 export { default as ScheduleTimeScreen } from './screens/ScheduleTimeScreen';
 export { default as SelectProviderScreen } from './screens/SelectProviderScreen';
 export { default as ReviewSummaryScreen } from './screens/ReviewSummaryScreen';
+export { default as PaymentGatewayScreen } from './screens/PaymentGatewayScreen';
 
 export * from './components/BookingStepHeader';
 export * from './components/BookingStepper';
@@ -24,4 +25,8 @@ export * from './components/ReviewPaymentMethodSelector';
 export * from './components/ReviewNotesInput';
 export * from './components/ReviewTrustPolicyCard';
 export * from './components/BookingSuccessModal';
+export * from './components/PaymentEscrowCard';
+export * from './components/PaymentCreditCardForm';
+export * from './components/PaymentVietQrModal';
+export * from './components/PaymentSecurityFooter';
 export * from './types/booking.types';
