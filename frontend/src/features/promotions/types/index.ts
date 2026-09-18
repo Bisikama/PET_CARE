@@ -51,3 +51,21 @@ export interface ValidatePromotionResult {
   discountAmount: number;
   finalPrice: number;
 }
+
+export interface ApplyPromotionInput {
+  promoCode: string;
+  orderValue: number;
+}
+
+export interface ApplyPromotionResult {
+  promotionId: string;
+  code: string;
+  discountAmount: number;
+  finalPrice: number;
+  message?: string;
+}
+
+export interface UpdatePromotionLimitsInput {
+  usageLimit: number;
+  maxUsagePerUser: number;
+}

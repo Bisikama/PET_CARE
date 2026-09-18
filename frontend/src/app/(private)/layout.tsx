@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -44,7 +44,9 @@ export default function PrivateLayout({
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar cố định bên trái */}
-      <AppSidebar />
+      <Suspense fallback={<div className="w-64 bg-slate-950 h-screen shrink-0" />}>
+        <AppSidebar />
+      </Suspense>
 
       {/* Vùng nội dung chính bên phải */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -54,7 +56,9 @@ export default function PrivateLayout({
         {/* Nội dung trang động cuộn độc lập */}
         <main className="flex-1 overflow-y-auto p-6 md:p-8">
           <div className="max-w-6xl mx-auto">
-            {children}
+            <Suspense fallback={<div className="p-8 text-center text-slate-500 font-medium">Đang tải trang...</div>}>
+              {children}
+            </Suspense>
           </div>
         </main>
       </div>

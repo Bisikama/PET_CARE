@@ -1,9 +1,14 @@
 import axiosInstance from '@/lib/axios';
-import { LoginResponse, User } from '../types';
+import { LoginResponse, User, GoogleLoginInput } from '../types';
 
 export const authService = {
   login: async (credentials: Record<string, any>): Promise<LoginResponse> => {
     const response = await axiosInstance.post<LoginResponse>('/auth/login', credentials);
+    return response.data;
+  },
+
+  loginWithGoogle: async (data: GoogleLoginInput): Promise<LoginResponse> => {
+    const response = await axiosInstance.post<LoginResponse>('/auth/google/id-token', data);
     return response.data;
   },
 

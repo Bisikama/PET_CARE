@@ -6,6 +6,8 @@ import {
   RefreshControl,
   StatusBar,
   Alert,
+  Text,
+  TouchableOpacity
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/core/components/Screen';
@@ -17,58 +19,73 @@ import { PromiseBanner } from '../components/PromiseBanner';
 import { UpcomingAppointmentCard } from '../components/UpcomingAppointmentCard';
 import { CategoryGrid } from '../components/CategoryGrid';
 import { SpecialPromoBanner } from '../components/SpecialPromoBanner';
-import { TopRatedProviders } from '../components/TopRatedProviders';
 import { HomeProvider } from '../types/home.types';
+import { servicesApi, ServiceCategory } from '@/infrastructure/api/services.api';
+import { bookingsApi } from '@/infrastructure/api/bookings.api';
+import { UpcomingAppointment } from '../types/home.types';
 
-const initialProviders: HomeProvider[] = [
-  {
-    id: 'prov-01',
-    name: 'Happy Paws Care',
-    image:
-      'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
-    isVerified: true,
-    rating: 4.9,
-    reviewCount: 320,
-    distanceKm: 1.2,
-    startingPrice: 200000,
-    tags: ['Full Grooming', 'Dental Care', 'Spa Bath'],
-    isFavorite: true,
-  },
-  {
-    id: 'prov-02',
-    name: 'Furry Haven Studio',
-    image:
-      'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=400&q=80',
-    isVerified: true,
-    rating: 4.8,
-    reviewCount: 185,
-    distanceKm: 2.4,
-    startingPrice: 180000,
-    tags: ['Cat Boarding', 'Organic Bath'],
-    isFavorite: false,
-  },
-];
+
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [providers, setProviders] = useState<HomeProvider[]>(initialProviders);
+  
+  const [services, setServices] = useState<ServiceCategory[]>([]);
+  const [activeBooking, setActiveBooking] = useState<UpcomingAppointment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = useCallback(() => {
+  const fetchData = async () => {
+    try {
+      const [fetchedServices, fetchedActiveBooking] = await Promise.all([
+        servicesApi.getAllServices(),
+        bookingsApi.getActiveBooking()
+      ]);
+      setServices(fetchedServices);
+      
+      if (fetchedActiveBooking) {
+        const startDate = new Date(fetchedActiveBooking.estimated_start_at);
+        const providerUser = fetchedActiveBooking.provider_profiles?.users;
+        const petInfo = fetchedActiveBooking.booking_pets?.[0]?.pets;
+        const serviceInfo = fetchedActiveBooking.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services;
+
+        setActiveBooking({
+          id: fetchedActiveBooking.id,
+          providerName: providerUser?.fullName || 'Provider',
+          providerImage: providerUser?.avatarUrl || '',
+          isVerified: fetchedActiveBooking.provider_profiles?.is_verified || false,
+          serviceTitle: serviceInfo?.title || 'Dịch vụ',
+          petName: petInfo?.name || 'Thú cưng',
+          petBreed: petInfo?.breed || '',
+          date: startDate.toLocaleDateString('vi-VN', { day: '2-digit', month: 'short' }),
+          time: startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          locationType: fetchedActiveBooking.location_type === 'AT_SALON' ? 'Tại Salon' : 'Tại nhà',
+          status: fetchedActiveBooking.status as any,
+        });
+      } else {
+        setActiveBooking(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch home data:', error);
+      Alert.alert('Lỗi', 'Không thể tải dữ liệu trang chủ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 800);
+    await fetchData();
+    setRefreshing(false);
   }, []);
 
   const handleToggleFavorite = (providerId: string) => {
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.id === providerId ? { ...p, isFavorite: !p.isFavorite } : p
-      )
-    );
+    // Tạm thời chưa có API
   };
 
   const handleSelectCategory = (categoryId: string) => {
@@ -139,18 +156,22 @@ export default function HomeScreen() {
           onFilterPress={handleSearchPress}
         />
 
-        {/* 3. PawCare Promise Hero Banner */}
+        {/* 3. PetCare Promise Hero Banner */}
         <PromiseBanner onPress={handleSearchPress} />
 
         {/* 4. Active Upcoming Appointment */}
-        <UpcomingAppointmentCard
-          onViewBooking={handleViewBooking}
-          onDirections={handleDirections}
-          onSeeAll={() => Alert.alert('Lịch hẹn', 'Xem tất cả lịch hẹn')}
-        />
+        {activeBooking && (
+          <UpcomingAppointmentCard
+            appointment={activeBooking}
+            onViewBooking={handleViewBooking}
+            onDirections={handleDirections}
+            onSeeAll={() => Alert.alert('Lịch hẹn', 'Xem tất cả lịch hẹn')}
+          />
+        )}
 
         {/* 5. 8-Grid Service Categories */}
         <CategoryGrid
+          services={services}
           onSelectCategory={handleSelectCategory}
           onSeeAll={() => router.push('/(customer)/(tabs)/explore')}
         />
@@ -160,14 +181,37 @@ export default function HomeScreen() {
           onExplore={() => router.push('/(customer)/(tabs)/explore')}
         />
 
-        {/* 7. Top Rated Providers */}
-        <TopRatedProviders
-          providers={providers}
-          onExplore={() => router.push('/(customer)/(tabs)/explore')}
-          onProviderPress={(id) => handleBook(id)}
-          onBook={handleBook}
-          onToggleFavorite={handleToggleFavorite}
-        />
+        {/* 7. Nearby Providers Banner / Link */}
+        <View style={{ paddingHorizontal: theme.spacing[4], marginTop: theme.spacing[4] }}>
+          <View style={{
+            backgroundColor: theme.colors.surface.mid,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing[4],
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[theme.typography.h4, { color: theme.colors.text.primary }]}>Đối tác gần bạn</Text>
+              <Text style={[theme.typography.bodyMd, { color: theme.colors.text.secondary, marginTop: 4 }]}>
+                Khám phá các spa và chuyên viên được đánh giá cao ở gần bạn.
+              </Text>
+            </View>
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: theme.colors.primary.default,
+                paddingHorizontal: theme.spacing[4],
+                paddingVertical: theme.spacing[2],
+                borderRadius: theme.radius.full,
+                marginLeft: theme.spacing[3]
+              }}
+              onPress={() => router.push('/(customer)/providers/nearby')}
+            >
+              <Text style={[theme.typography.bodyMd, { color: 'white', fontWeight: '600' }]}>Xem ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </Screen>
   );

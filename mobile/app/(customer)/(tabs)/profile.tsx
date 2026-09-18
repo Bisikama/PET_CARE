@@ -8,6 +8,7 @@ import {
   Lock,
   LogOut,
   ChevronRight,
+  Briefcase,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
@@ -60,6 +61,20 @@ export default function ProfileRoute() {
                 <MapPin size={20} color={theme.colors.primary.navy} />
               </View>
               <Text style={styles.menuTitle}>Địa chỉ giao nhận</Text>
+            </View>
+            <ChevronRight size={18} color={theme.colors.text.muted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => router.push('/(customer)/become-provider')}
+          >
+            <View style={styles.menuLeft}>
+              <View style={styles.iconBox}>
+                <Briefcase size={20} color={theme.colors.primary.navy} />
+              </View>
+              <Text style={styles.menuTitle}>Trở thành Đối tác</Text>
             </View>
             <ChevronRight size={18} color={theme.colors.text.muted} />
           </TouchableOpacity>

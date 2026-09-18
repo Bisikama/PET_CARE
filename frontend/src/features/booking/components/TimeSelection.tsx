@@ -108,33 +108,7 @@ export function TimeSelection() {
       alert('Vui lòng chọn 1 khung giờ làm việc khả dụng.');
       return;
     }
-    
-    if (createdBookingId) {
-      setStep(8);
-      return;
-    }
-
-    setIsCreatingBooking(true);
-    try {
-      const createdBooking = await bookingService.createBooking({
-        petId: selectedPetId,
-        providerWorkingSlotId: selectedSlotId,
-        addressId: selectedAddressId,
-        serviceId: selectedServiceId,
-        customerNote: notes || '',
-      });
-
-      const actualBookingId = createdBooking?.data?.booking?.id || createdBooking?.data?.id || createdBooking?.booking?.id || createdBooking?.id;
-      if (actualBookingId) {
-        setCreatedBookingId(actualBookingId);
-        setHoldTimer(10 * 60); // 10 minutes temporary hold countdown
-      }
-    } catch (error: any) {
-      console.error('Failed to create booking:', error);
-      alert(error?.response?.data?.message || 'Không thể tạo đơn đặt lịch. Khung giờ có thể đã được người khác giữ.');
-    } finally {
-      setIsCreatingBooking(false);
-    }
+    setStep(8);
   };
 
   return (
@@ -301,22 +275,10 @@ export function TimeSelection() {
           disabled={!selectedSlotId || isCreatingBooking}
           className="flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all cursor-pointer shadow-md"
         >
-          {isCreatingBooking ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Đang giữ chỗ...
-            </>
-          ) : createdBookingId ? (
-            <>
-              Xem chi tiết đơn & thanh toán
-              <ChevronRight className="w-4 h-4" />
-            </>
-          ) : (
-            <>
-              Đặt lịch & Giữ chỗ
-              <ChevronRight className="w-4 h-4" />
-            </>
-          )}
+          <>
+            Tiếp tục xem Hóa đơn & Khuyến mãi
+            <ChevronRight className="w-4 h-4" />
+          </>
         </button>
       </div>
     </div>

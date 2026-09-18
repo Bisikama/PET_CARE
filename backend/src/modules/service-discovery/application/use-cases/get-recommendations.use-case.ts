@@ -9,8 +9,8 @@ export class GetRecommendationsUseCase {
     // Recommend top 5 providers by rating
     const providers = await this.prisma.provider_profiles.findMany({
       where: {
-        status: 'ACTIVE' as any,
-        kyc_status: 'VERIFIED' as any,
+        status: 'APPROVED',
+        kyc_status: 'APPROVED',
       },
       orderBy: {
         rating_avg: 'desc',

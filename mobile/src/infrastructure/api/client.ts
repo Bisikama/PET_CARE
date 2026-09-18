@@ -1,10 +1,19 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+import { getMappedErrorMessage } from './errorMapping';
 
-// Set base URL from env or fallback to local IP for simulator
-// Important: For Android emulator, use 10.0.2.2. For iOS simulator or web, localhost works,
-// but for a physical device you need your actual local IP.
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.100:3000'; // Replace with actual default
+// Auto-detect the local development server IP (helps with physical devices & Expo Go)
+let devHost = '10.0.2.2'; // Fallback for Android Emulator
+if (__DEV__) {
+  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.packagerOpts?.hostType;
+  if (hostUri && typeof hostUri === 'string') {
+    devHost = hostUri.split(':')[0]; // Extracts the IP, drops the :8081 port
+  }
+}
+
+// Use env variable if provided, otherwise use the auto-detected IP + port 3000
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${devHost}:3000/api`;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -123,13 +132,17 @@ apiClient.interceptors.response.use(
     }
 
     // Normalize error format based on PetCare Contract
+    const originalMessage = (data as any)?.message;
+    const mappedMessage = getMappedErrorMessage(status, originalMessage);
+
     const normalizedError = {
       success: false,
       statusCode: status,
-      message: (data as any)?.message || error.message,
+      message: mappedMessage,
       error: (data as any)?.error || null,
       timestamp: (data as any)?.timestamp || new Date().toISOString(),
       path: (data as any)?.path || originalRequest.url,
+      originalMessage: originalMessage,
     };
 
     return Promise.reject(normalizedError);

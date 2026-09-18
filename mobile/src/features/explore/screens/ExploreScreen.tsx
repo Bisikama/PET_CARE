@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronDown, SlidersHorizontal } from 'lucide-react-native';
+import { ChevronDown } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { EmptyState } from '@/core/components/EmptyState';
 import { theme } from '@/core/theme';
@@ -250,7 +250,7 @@ export default function ExploreScreen() {
               onFilterPress={() => Alert.alert('Bộ lọc nâng cao', 'Tính năng lọc theo khoảng giá & khu vực')}
             />
 
-            {/* 3. Category Chips (All, Grooming, Walking, Sitting, Training, Veterinary, Pet Hotel) */}
+            {/* 3. Category Chips */}
             <CategoryChips
               selectedCategory={selectedCategory}
               onSelectCategory={setSelectedCategory}

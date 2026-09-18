@@ -55,3 +55,19 @@ export interface CopyWeekScheduleInput {
   sourceWeekStart: string; // YYYY-MM-DD (Monday)
   targetWeekStart: string; // YYYY-MM-DD (Monday)
 }
+
+export interface CheckConflictInput {
+  providerId: string;
+  startTime: string; // ISO-8601
+  endTime: string;   // ISO-8601
+}
+
+export interface CheckConflictResult {
+  hasConflict: boolean;
+  conflictingSchedules?: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  message?: string;
+}

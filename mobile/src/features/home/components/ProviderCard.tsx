@@ -2,22 +2,25 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Star, Heart, CheckCircle2 } from 'lucide-react-native';
 import { theme } from '@/core/theme';
-import { HomeProvider } from '../types/home.types';
+import { RecommendedProvider } from '@/infrastructure/api/services.api';
 
 interface ProviderCardProps {
-  provider: HomeProvider;
+  provider: any; // Accept RecommendedProvider | DiscoveredProviderOutput
   onPress?: (providerId: string) => void;
-  onBook?: (providerId: string) => void;
   onToggleFavorite?: (providerId: string) => void;
 }
 
 export function ProviderCard({
   provider,
   onPress,
-  onBook,
   onToggleFavorite,
 }: ProviderCardProps) {
-  const formattedPrice = new Intl.NumberFormat('vi-VN').format(provider.startingPrice);
+  // In a real app, distance and price might be fetched differently or omitted in recommendations.
+  const [isFavorite, setIsFavorite] = React.useState(false);
+
+  const rating = provider.rating !== undefined ? provider.rating : (provider.ratingAvg || 0);
+  const reviewsCount = provider.totalReviews !== undefined ? provider.totalReviews : (provider.totalCompletedBookings || 0);
+  const address = provider.baseAddress;
 
   return (
     <TouchableOpacity
@@ -28,20 +31,21 @@ export function ProviderCard({
       <View style={styles.topRow}>
         {/* Provider Thumbnail + Favorite button */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: provider.image }} style={styles.image} />
+          <Image source={provider.avatarUrl ? { uri: provider.avatarUrl } : require('../../../../assets/images/logo.png')} style={styles.image} />
           <TouchableOpacity
             style={styles.favoriteButton}
             activeOpacity={0.8}
             onPress={(e) => {
               e.stopPropagation();
+              setIsFavorite(!isFavorite);
               onToggleFavorite?.(provider.id);
             }}
             accessibilityLabel="Favorite"
           >
             <Heart
               size={16}
-              color={provider.isFavorite ? theme.colors.semantic.error : theme.colors.border.outline}
-              fill={provider.isFavorite ? theme.colors.semantic.error : 'transparent'}
+              color={isFavorite ? theme.colors.semantic.error : theme.colors.border.outlineVariant}
+              fill={isFavorite ? theme.colors.semantic.error : 'transparent'}
             />
           </TouchableOpacity>
         </View>
@@ -51,54 +55,34 @@ export function ProviderCard({
           <View>
             <View style={styles.nameRow}>
               <Text style={styles.name} numberOfLines={1}>
-                {provider.name}
+                {provider.fullName}
               </Text>
-              {provider.isVerified && (
-                <CheckCircle2 size={15} color={theme.colors.tertiary.default} />
-              )}
+              <CheckCircle2 size={15} color={theme.colors.tertiary.default} />
             </View>
 
             <View style={styles.ratingRow}>
               <View style={styles.ratingPill}>
                 <Star size={13} color={theme.colors.secondary.default} fill={theme.colors.secondary.container} />
-                <Text style={styles.ratingText}>{provider.rating.toFixed(1)}</Text>
+                <Text style={styles.ratingText}>{Number(rating).toFixed(1)}</Text>
               </View>
-              <Text style={styles.reviewCountText}>({provider.reviewCount})</Text>
-              <Text style={styles.dotSeparator}>•</Text>
-              <Text style={styles.distanceText}>{provider.distanceKm} km</Text>
+              <Text style={styles.reviewCountText}>({reviewsCount})</Text>
+              {address && (
+                <>
+                  <Text style={styles.dotSeparator}>•</Text>
+                  <Text style={styles.distanceText} numberOfLines={1}>{address}</Text>
+                </>
+              )}
             </View>
-          </View>
-
-          {/* Pricing & Booking CTA */}
-          <View style={styles.priceRow}>
-            <View>
-              <Text style={styles.fromLabel}>From </Text>
-              <Text style={styles.priceValue}>{formattedPrice}₫</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.bookButton}
-              activeOpacity={0.8}
-              onPress={(e) => {
-                e.stopPropagation();
-                onBook?.(provider.id);
-              }}
-            >
-              <Text style={styles.bookButtonText}>Book</Text>
-            </TouchableOpacity>
+            
+            {provider.price !== undefined && (
+              <View style={styles.priceRow}>
+                <Text style={styles.fromLabel}>Từ</Text>
+                <Text style={styles.priceValue}>{new Intl.NumberFormat('vi-VN').format(provider.price)} đ</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
-
-      {/* Mini Tags */}
-      {provider.tags && provider.tags.length > 0 && (
-        <View style={styles.tagsContainer}>
-          {provider.tags.map((tag, idx) => (
-            <View key={idx} style={styles.tagPill}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      )}
     </TouchableOpacity>
   );
 }

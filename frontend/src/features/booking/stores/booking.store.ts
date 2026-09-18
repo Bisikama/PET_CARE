@@ -6,6 +6,8 @@ interface BookingStore extends BookingStepState {
   checklistsMap: Record<string, any[]>;
   calculatedPrice: any | null;
   matchingProviders: any[];
+  appliedDiscount: number;
+  appliedPromoCode: string | null;
   isLoading: boolean;
   isSubmitting: boolean;
   error: string | null;
@@ -16,6 +18,7 @@ interface BookingStore extends BookingStepState {
   setSelectedProviderId: (id: string | null) => void;
   setSelectedSlotId: (id: string | null) => void;
   setCreatedBookingId: (id: string | null) => void;
+  setAppliedDiscount: (discount: number, promoCode?: string | null) => void;
   setStep: (step: number) => void;
   resetBooking: () => void;
   fetchBookingDetail: (id: string, force?: boolean) => Promise<any>;
@@ -39,6 +42,8 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
   checklistsMap: {},
   calculatedPrice: null,
   matchingProviders: [],
+  appliedDiscount: 0,
+  appliedPromoCode: null,
   isLoading: false,
   isSubmitting: false,
   error: null,
@@ -49,6 +54,7 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
   setSelectedProviderId: (id) => set({ selectedProviderId: id }),
   setSelectedSlotId: (id) => set({ selectedSlotId: id }),
   setCreatedBookingId: (id) => set({ createdBookingId: id }),
+  setAppliedDiscount: (discount, promoCode = null) => set({ appliedDiscount: discount, appliedPromoCode: promoCode }),
   setStep: (step) => set({ currentStep: step }),
   resetBooking: () => set({
     currentStep: 1,
@@ -63,6 +69,8 @@ export const useBookingStore = create<BookingStore>((set, get) => ({
     notes: undefined,
     calculatedPrice: null,
     matchingProviders: [],
+    appliedDiscount: 0,
+    appliedPromoCode: null,
   }),
 
   fetchBookingDetail: async (id: string, force = false) => {

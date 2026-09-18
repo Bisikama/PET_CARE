@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { GetBookingByIdUseCase } from './get-booking-by-id.use-case';
 import { BOOKING_REPOSITORY } from '../../booking.tokens';
@@ -36,7 +34,12 @@ describe('GetBookingByIdUseCase', () => {
   });
 
   it('should return booking if userId is the provider', async () => {
-    const mockBooking = { id: BOOKING_ID, customer_id: CUSTOMER_ID, provider_id: PROVIDER_ID };
+    const mockBooking = { 
+      id: BOOKING_ID, 
+      customer_id: CUSTOMER_ID, 
+      provider_id: PROVIDER_ID,
+      provider_profiles: { user_id: PROVIDER_ID }
+    };
     mockBookingRepo.findBookingById.mockResolvedValue(mockBooking);
 
     const result = await useCase.execute(PROVIDER_ID, BOOKING_ID);
@@ -44,7 +47,12 @@ describe('GetBookingByIdUseCase', () => {
   });
 
   it('🔴 should throw ForbiddenException for a third-party user (IDOR protection)', async () => {
-    const mockBooking = { id: BOOKING_ID, customer_id: CUSTOMER_ID, provider_id: PROVIDER_ID };
+    const mockBooking = { 
+      id: BOOKING_ID, 
+      customer_id: CUSTOMER_ID, 
+      provider_id: PROVIDER_ID,
+      provider_profiles: { user_id: PROVIDER_ID }
+    };
     mockBookingRepo.findBookingById.mockResolvedValue(mockBooking);
 
     await expect(useCase.execute('attacker-uuid', BOOKING_ID)).rejects.toThrow(ForbiddenException);
@@ -53,6 +61,8 @@ describe('GetBookingByIdUseCase', () => {
   it('should throw NotFoundException if booking does not exist', async () => {
     mockBookingRepo.findBookingById.mockResolvedValue(null);
 
-    await expect(useCase.execute(CUSTOMER_ID, 'non-existent-id')).rejects.toThrow(NotFoundException);
+    await expect(useCase.execute(CUSTOMER_ID, 'non-existent-id')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
