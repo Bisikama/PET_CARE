@@ -9,7 +9,7 @@ import { useWallet } from '@/features/wallets/hooks/useWallet';
 import { useRouter } from 'next/navigation';
 
 export function PaymentGateway() {
-  const { setStep, createdBookingId, resetBooking } = useBookingStore();
+  const { setStep, createdBookingId, resetBooking, appliedDiscount, appliedPromoCode } = useBookingStore();
   const { createCheckoutUrl, createMomoCheckoutUrl, checkoutWithWallet, loading, error } = usePayment();
   const { wallet } = useWallet();
   const router = useRouter();
@@ -41,19 +41,21 @@ export function PaymentGateway() {
     };
   }, [createdBookingId]);
 
+  const finalAmount = Math.max(0, (totalAmount || 250000) - appliedDiscount);
+
   const handleVNPayCheckout = () => {
     if (!createdBookingId) return;
-    createCheckoutUrl({ bookingId: createdBookingId });
+    createCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
   };
 
   const handleMoMoCheckout = () => {
     if (!createdBookingId) return;
-    createMomoCheckoutUrl({ bookingId: createdBookingId });
+    createMomoCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
   };
 
   const handleWalletCheckout = async () => {
     if (!createdBookingId) return;
-    const success = await checkoutWithWallet({ bookingId: createdBookingId });
+    const success = await checkoutWithWallet({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
     if (success) {
       resetBooking();
       router.push('/bookings');
@@ -92,7 +94,7 @@ export function PaymentGateway() {
         {/* Nạp ví Escrow row */}
         <div className="flex justify-between items-center border-b-2 border-slate-100 pb-5 mb-6">
           <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Nạp ví Escrow:</span>
-          <span className="text-2xl font-black text-slate-900 tracking-tight">{formatPrice(totalAmount)}</span>
+          <span className="text-2xl font-black text-slate-900 tracking-tight">{formatPrice(finalAmount)}</span>
         </div>
 
         {/* Buttons */}
@@ -131,7 +133,7 @@ export function PaymentGateway() {
 
           <button 
             onClick={handleWalletCheckout}
-            disabled={loading || !createdBookingId || !wallet || Number(wallet.balance) < totalAmount}
+            disabled={loading || !createdBookingId || !wallet || Number(wallet.balance) < finalAmount}
             className="w-full flex justify-between items-center bg-emerald-50 text-emerald-700 border border-emerald-200 p-5 rounded-2xl hover:bg-emerald-100 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 transition-all active:scale-[0.98] group"
           >
             <div className="flex items-center gap-3">
@@ -147,7 +149,7 @@ export function PaymentGateway() {
               <div className="w-5 h-5 border-2 border-emerald-700/20 border-t-emerald-700 rounded-full animate-spin"></div>
             ) : (
               <div className="flex items-center gap-2">
-                {wallet && Number(wallet.balance) < totalAmount && (
+                {wallet && Number(wallet.balance) < finalAmount && (
                   <span className="text-xs font-semibold text-rose-500">Không đủ số dư</span>
                 )}
                 <ChevronRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" />

@@ -4,18 +4,22 @@ import {
   ProviderWorkingDayView, 
   TimeSlotRecord, 
   UpdateProviderScheduleInput, 
-  CopyWeekScheduleInput 
+  CopyWeekScheduleInput,
+  CheckConflictInput,
+  CheckConflictResult 
 } from '../types';
 
 interface ScheduleState {
   // Data
   timeSlots: TimeSlotRecord[];
   providerSchedules: ProviderWorkingDayView[];
+  conflictResult: CheckConflictResult | null;
   
   // Loading states
   isLoadingSlots: boolean;
   isLoadingSchedules: boolean;
   isUpdating: boolean;
+  isCheckingConflict: boolean;
   
   // Errors
   error: string | null;
@@ -25,14 +29,18 @@ interface ScheduleState {
   fetchProviderSchedules: (startDate: string, endDate: string) => Promise<void>;
   updateSchedules: (data: UpdateProviderScheduleInput) => Promise<void>;
   copyWeekSchedule: (data: CopyWeekScheduleInput) => Promise<void>;
+  checkScheduleConflict: (data: CheckConflictInput) => Promise<CheckConflictResult>;
+  clearConflictResult: () => void;
 }
 
 export const useScheduleStore = create<ScheduleState>((set, get) => ({
   timeSlots: [],
   providerSchedules: [],
+  conflictResult: null,
   isLoadingSlots: false,
   isLoadingSchedules: false,
   isUpdating: false,
+  isCheckingConflict: false,
   error: null,
 
   fetchTimeSlots: async () => {
@@ -89,4 +97,18 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       set({ isUpdating: false });
     }
   },
+
+  checkScheduleConflict: async (data: CheckConflictInput) => {
+    set({ isCheckingConflict: true, error: null, conflictResult: null });
+    try {
+      const result = await scheduleService.checkConflict(data);
+      set({ conflictResult: result, isCheckingConflict: false });
+      return result;
+    } catch (err: any) {
+      set({ error: err.message || 'Lỗi khi kiểm tra trùng lịch', isCheckingConflict: false });
+      throw err;
+    }
+  },
+
+  clearConflictResult: () => set({ conflictResult: null }),
 }));

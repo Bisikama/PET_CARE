@@ -3,6 +3,8 @@ import axiosInstance from '@/lib/axios';
 export interface CheckoutRequest {
   bookingId: string;
   promotionCode?: string;
+  promoCode?: string;
+  amount?: number;
 }
 
 export interface CheckoutResponse {

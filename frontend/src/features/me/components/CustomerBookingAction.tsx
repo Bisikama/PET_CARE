@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, ShieldAlert, CheckCircle2, ChevronRight, Check, Star, AlertTriangle, FileWarning } from 'lucide-react';
+import { Clock, ShieldAlert, CheckCircle2, ChevronRight, Check, Star, AlertTriangle, FileWarning, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { meBookingService } from '../services/me-booking.service';
 import { ReviewModal, DisputeForm, IncidentModal } from '@/features/customer-care/components';
 import { Portal } from '@/components/ui/Portal';
+import { ChatWindowModal } from '@/features/chat';
 
 import { bookingService } from '@/features/booking/services/booking.service';
 
@@ -20,6 +21,7 @@ export const CustomerBookingAction: React.FC<CustomerBookingActionProps> = ({ bo
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -142,9 +144,16 @@ export const CustomerBookingAction: React.FC<CustomerBookingActionProps> = ({ bo
         {/* Support quick action buttons */}
         <div className="flex items-center gap-2">
           <Button
+            onClick={() => setShowChatModal(true)}
+            className="h-9 text-xs rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm flex items-center gap-1 cursor-pointer"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            Nhắn tin với Chuyên viên
+          </Button>
+          <Button
             variant="outline"
             onClick={() => setShowDisputeModal(true)}
-            className="h-9 text-xs rounded-xl border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 font-bold"
+            className="h-9 text-xs rounded-xl border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 font-bold cursor-pointer"
           >
             <FileWarning className="w-3.5 h-3.5 mr-1" />
             Mở khiếu nại
@@ -152,7 +161,7 @@ export const CustomerBookingAction: React.FC<CustomerBookingActionProps> = ({ bo
           <Button
             variant="outline"
             onClick={() => setShowIncidentModal(true)}
-            className="h-9 text-xs rounded-xl border-red-200 text-red-700 bg-red-50 hover:bg-red-100 font-bold"
+            className="h-9 text-xs rounded-xl border-red-200 text-red-700 bg-red-50 hover:bg-red-100 font-bold cursor-pointer"
           >
             <AlertTriangle className="w-3.5 h-3.5 mr-1" />
             Báo sự cố an toàn
@@ -300,6 +309,14 @@ export const CustomerBookingAction: React.FC<CustomerBookingActionProps> = ({ bo
         onSuccess={() => {
           fetchBookingDetail();
         }}
+      />
+
+      {/* Chat Window Modal */}
+      <ChatWindowModal
+        isOpen={showChatModal}
+        onClose={() => setShowChatModal(false)}
+        bookingId={activeBookingId}
+        partnerName={provider?.fullName}
       />
     </div>
   );

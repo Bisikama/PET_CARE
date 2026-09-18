@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
-import { Heart, Mail, Plus, Shield, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity } from 'lucide-react';
+import { Heart, Mail, Plus, Shield, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity, MessageSquare } from 'lucide-react';
 import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore, CustomerBookingAction } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal, BookingActionDetail, useProviderBookingStore } from '@/features/provider';
@@ -16,11 +16,13 @@ import { ScheduleManager } from '@/features/schedule';
 import { EscrowManagement } from '@/features/settlement';
 import { AreaManager } from '@/features/areas';
 import { WalletOverview, TransactionHistory, BankAccountsManager } from '@/features/wallets';
+import { ChatWindowModal } from '@/features/chat';
 import { Globe, Trash2, PlusCircle, FileText, Eye } from 'lucide-react';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { openModal: openProfileModal } = useMeStore();
   const { openModal: openPetModal } = usePetStore();
   const { openModal: openProviderModal } = useProvider();
@@ -90,6 +92,11 @@ export default function DashboardPage() {
           <AdminPromotionsManager key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
+        ) : adminTab === 'chat' ? (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-800">Trò Chuyện & Nhắn Tin Hệ Thống</h2>
+            <ChatWindowModal isOpen={true} onClose={() => router.push('/dashboard?tab=dashboard')} />
+          </div>
         ) : adminTab === 'arbitration' ? (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Trọng Tài Tranh Chấp & Khiếu Nại</h2>
@@ -133,6 +140,18 @@ export default function DashboardPage() {
           {providerTab === 'active-cases' && (
             <div className="space-y-6">
                <BookingActionDetail bookingId={activeBookingId} />
+            </div>
+          )}
+
+          {providerTab === 'chat' && (
+            <div className="space-y-6">
+              <ChatWindowModal 
+                isOpen={true} 
+                onClose={() => {
+                  router.push('/dashboard?tab=active-cases');
+                  router.refresh();
+                }} 
+              />
             </div>
           )}
 
@@ -304,6 +323,20 @@ export default function DashboardPage() {
     );
   }
 
+  if (searchParams.get('tab') === 'chat') {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <ChatWindowModal 
+          isOpen={true} 
+          onClose={() => {
+            router.push('/dashboard');
+            router.refresh();
+          }} 
+        />
+      </div>
+    );
+  }
+
   if (searchParams.get('tab') === 'wallet') {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -420,5 +453,20 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center py-20 min-h-[400px]">
+          <div className="w-10 h-10 rounded-full border-4 border-teal-600 border-t-transparent animate-spin mb-3" />
+          <p className="text-sm font-semibold text-slate-500">Đang tải bảng điều khiển...</p>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </React.Suspense>
   );
 }
