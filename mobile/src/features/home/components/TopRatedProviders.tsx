@@ -2,14 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Star } from 'lucide-react-native';
 import { theme } from '@/core/theme';
-import { HomeProvider } from '../types/home.types';
+import { RecommendedProvider } from '@/infrastructure/api/services.api';
 import { ProviderCard } from './ProviderCard';
 
 interface TopRatedProvidersProps {
-  providers: HomeProvider[];
+  providers: RecommendedProvider[];
   onExplore?: () => void;
   onProviderPress?: (providerId: string) => void;
-  onBook?: (providerId: string) => void;
   onToggleFavorite?: (providerId: string) => void;
 }
 
@@ -17,7 +16,6 @@ export function TopRatedProviders({
   providers,
   onExplore,
   onProviderPress,
-  onBook,
   onToggleFavorite,
 }: TopRatedProvidersProps) {
   return (
@@ -44,7 +42,6 @@ export function TopRatedProviders({
             key={provider.id}
             provider={provider}
             onPress={onProviderPress}
-            onBook={onBook}
             onToggleFavorite={onToggleFavorite}
           />
         ))}

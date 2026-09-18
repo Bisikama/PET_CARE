@@ -19,27 +19,15 @@ interface UpcomingAppointmentCardProps {
   onSeeAll?: () => void;
 }
 
-const defaultAppointment: UpcomingAppointment = {
-  id: 'bk-01',
-  providerName: 'Happy Paws Care',
-  providerImage:
-    'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=200&q=80',
-  isVerified: true,
-  serviceTitle: 'Premium Grooming',
-  petName: 'Milo',
-  petBreed: 'Golden',
-  date: '20 Sep',
-  time: '10:30 AM',
-  locationType: 'Salon Visit',
-  status: 'confirmed',
-};
 
 export function UpcomingAppointmentCard({
-  appointment = defaultAppointment,
+  appointment,
   onViewBooking,
   onDirections,
   onSeeAll,
 }: UpcomingAppointmentCardProps) {
+  if (!appointment) return null;
+
   return (
     <View style={styles.container}>
       {/* Section Header */}
@@ -59,7 +47,7 @@ export function UpcomingAppointmentCard({
         <View style={styles.topInfoRow}>
           <View style={styles.providerInfo}>
             <Image
-              source={{ uri: appointment.providerImage }}
+              source={appointment.providerImage ? { uri: appointment.providerImage } : require('../../../../assets/images/logo.png')}
               style={styles.providerAvatar}
             />
             <View style={styles.providerTextContainer}>

@@ -14,22 +14,61 @@ import { theme } from '@/core/theme';
 import { ServiceCategory } from '../types/home.types';
 
 interface CategoryGridProps {
+  services?: ServiceCategory[];
   onSelectCategory?: (categoryId: string) => void;
   onSeeAll?: () => void;
 }
 
-const categories: (ServiceCategory & { IconComponent: any })[] = [
-  { id: 'grooming', name: 'Grooming', iconName: 'scissors', hasAccent: true, IconComponent: Scissors },
-  { id: 'bathing', name: 'Bathing', iconName: 'bath', hasAccent: true, IconComponent: Bath },
-  { id: 'sitting', name: 'Pet Sitting', iconName: 'home', hasAccent: true, IconComponent: HomeIcon },
-  { id: 'walking', name: 'Dog Walking', iconName: 'footprints', hasAccent: true, IconComponent: Footprints },
-  { id: 'training', name: 'Training', iconName: 'award', hasAccent: true, IconComponent: Award },
-  { id: 'veterinary', name: 'Veterinary', iconName: 'stethoscope', hasAccent: true, IconComponent: Stethoscope },
-  { id: 'hotel', name: 'Pet Hotel', iconName: 'hotel', hasAccent: true, IconComponent: Hotel },
-  { id: 'more', name: 'More', iconName: 'grid', hasAccent: false, IconComponent: LayoutGrid },
-];
+const defaultIcons: Record<string, any> = {
+  grooming: Scissors,
+  bathing: Bath,
+  sitting: HomeIcon,
+  walking: Footprints,
+  training: Award,
+  veterinary: Stethoscope,
+  hotel: Hotel,
+};
 
-export function CategoryGrid({ onSelectCategory, onSeeAll }: CategoryGridProps) {
+export function CategoryGrid({ services = [], onSelectCategory, onSeeAll }: CategoryGridProps) {
+  // Take up to 7 services, then add 'More'
+  const displayCategories = services.slice(0, 7).map(s => {
+    // Map based on category enum from backend
+    let iconKey = 'grooming';
+    const categoryUpper = s.category?.toUpperCase() || '';
+    if (categoryUpper === 'WALKING') iconKey = 'walking';
+    else if (categoryUpper === 'SITTING') iconKey = 'sitting';
+    else if (categoryUpper === 'GROOMING') iconKey = 'grooming';
+    else if (categoryUpper === 'VET') iconKey = 'veterinary';
+    else {
+      // Fallback heuristics based on name if category is null/unknown
+      const nameLower = s.name.toLowerCase();
+      if (nameLower.includes('bath') || nameLower.includes('tắm')) iconKey = 'bathing';
+      else if (nameLower.includes('sit') || nameLower.includes('giữ')) iconKey = 'sitting';
+      else if (nameLower.includes('walk') || nameLower.includes('dạo')) iconKey = 'walking';
+      else if (nameLower.includes('train')) iconKey = 'training';
+      else if (nameLower.includes('vet') || nameLower.includes('thú y')) iconKey = 'veterinary';
+      else if (nameLower.includes('hotel') || nameLower.includes('board')) iconKey = 'hotel';
+    }
+
+    return {
+      id: s.id,
+      name: s.name,
+      iconName: iconKey,
+      hasAccent: true,
+      IconComponent: defaultIcons[iconKey] || Scissors,
+    };
+  });
+
+  if (services.length > 7) {
+    displayCategories.push({
+      id: 'more',
+      name: 'More',
+      iconName: 'grid',
+      hasAccent: false,
+      IconComponent: LayoutGrid,
+    });
+  }
+
   return (
     <View style={styles.container}>
       {/* Section Header */}
@@ -40,43 +79,47 @@ export function CategoryGrid({ onSelectCategory, onSeeAll }: CategoryGridProps) 
         </TouchableOpacity>
       </View>
 
-      {/* Grid of 8 items (4 columns x 2 rows) */}
+      {/* Grid of items */}
       <View style={styles.grid}>
-        {categories.map((cat) => {
-          const Icon = cat.IconComponent;
-          const isMore = cat.id === 'more';
+        {displayCategories.length === 0 ? (
+          <Text style={{ color: theme.colors.text.secondary }}>No services available.</Text>
+        ) : (
+          displayCategories.map((cat) => {
+            const Icon = cat.IconComponent;
+            const isMore = cat.id === 'more';
 
-          return (
-            <TouchableOpacity
-              key={cat.id}
-              style={styles.card}
-              activeOpacity={0.75}
-              onPress={() => (isMore ? onSeeAll?.() : onSelectCategory?.(cat.id))}
-            >
-              <View
-                style={[
-                  styles.iconWrapper,
-                  isMore && { backgroundColor: theme.colors.surface.container },
-                ]}
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                style={styles.card}
+                activeOpacity={0.75}
+                onPress={() => (isMore ? onSeeAll?.() : onSelectCategory?.(cat.id))}
               >
-                <Icon
-                  size={24}
-                  color={isMore ? theme.colors.text.secondary : theme.colors.primary.navy}
-                />
-                {cat.hasAccent && <View style={styles.accentDot} />}
-              </View>
-              <Text
-                style={[
-                  styles.categoryName,
-                  isMore && { color: theme.colors.text.secondary },
-                ]}
-                numberOfLines={1}
-              >
-                {cat.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <View
+                  style={[
+                    styles.iconWrapper,
+                    isMore && { backgroundColor: theme.colors.surface.container },
+                  ]}
+                >
+                  <Icon
+                    size={24}
+                    color={isMore ? theme.colors.text.secondary : theme.colors.primary.navy}
+                  />
+                  {cat.hasAccent && <View style={styles.accentDot} />}
+                </View>
+                <Text
+                  style={[
+                    styles.categoryName,
+                    isMore && { color: theme.colors.text.secondary },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
     </View>
   );
