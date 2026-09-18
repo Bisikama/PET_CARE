@@ -55,7 +55,6 @@ export class ReleaseHeldSlotsCron {
                 where: { id: booking.payments.id },
                 data: {
                   status: 'VOIDED',
-                  updated_at: now,
                 },
               });
             }

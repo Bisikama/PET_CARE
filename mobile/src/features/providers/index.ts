@@ -1,0 +1,13 @@
+export { default as ProviderDetailScreen } from './screens/ProviderDetailScreen';
+export * from './components/ProviderProfileHeader';
+export * from './components/ProviderHeroCover';
+export * from './components/ProviderIdentityCard';
+export * from './components/ProviderTrustBadges';
+export * from './components/ProviderMetricsGrid';
+export * from './components/ProviderAboutSection';
+export * from './components/ProviderServicePricingMatrix';
+export * from './components/ProviderGallerySection';
+export * from './components/ProviderReviewsSection';
+export * from './components/ProviderWeeklySchedule';
+export * from './components/ProviderBottomCtaBar';
+export * from './types/provider.types';

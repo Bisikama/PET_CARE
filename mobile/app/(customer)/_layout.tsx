@@ -9,6 +9,9 @@ export default function CustomerLayout() {
       <Stack.Screen name="change-password" options={{ headerShown: false }} />
       <Stack.Screen name="pets" options={{ headerShown: false }} />
       <Stack.Screen name="addresses" options={{ headerShown: false }} />
+      <Stack.Screen name="services" options={{ headerShown: false }} />
+      <Stack.Screen name="providers" options={{ headerShown: false }} />
+      <Stack.Screen name="bookings" options={{ headerShown: false }} />
     </Stack>
   );
 }

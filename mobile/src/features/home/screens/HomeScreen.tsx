@@ -72,11 +72,14 @@ export default function HomeScreen() {
   };
 
   const handleSelectCategory = (categoryId: string) => {
-    router.push(`/(customer)/explore?category=${categoryId}`);
+    router.push({
+      pathname: '/(customer)/(tabs)/explore',
+      params: { category: categoryId },
+    });
   };
 
   const handleSearchPress = () => {
-    router.push('/(customer)/explore');
+    router.push('/(customer)/(tabs)/explore');
   };
 
   const handleViewBooking = (bookingId: string) => {
@@ -88,7 +91,14 @@ export default function HomeScreen() {
   };
 
   const handleBook = (providerId: string) => {
-    Alert.alert('Đặt lịch dịch vụ', `Bắt đầu đặt lịch với cơ sở ${providerId}`);
+    router.push({
+      pathname: '/(customer)/services/[id]',
+      params: {
+        id: providerId,
+        title: 'Premium Dog Grooming',
+        providerName: 'Happy Paws Care',
+      },
+    });
   };
 
   return (
@@ -142,12 +152,12 @@ export default function HomeScreen() {
         {/* 5. 8-Grid Service Categories */}
         <CategoryGrid
           onSelectCategory={handleSelectCategory}
-          onSeeAll={() => router.push('/(customer)/explore')}
+          onSeeAll={() => router.push('/(customer)/(tabs)/explore')}
         />
 
         {/* 6. Special Promo Banner */}
         <SpecialPromoBanner
-          onExplore={() => router.push('/(customer)/explore')}
+          onExplore={() => router.push('/(customer)/(tabs)/explore')}
         />
 
         {/* 7. Top Rated Providers */}

@@ -88,7 +88,6 @@ describe('ReleaseHeldSlotsCron', () => {
         where: { id: 'payment-1' },
         data: {
           status: 'VOIDED',
-          updated_at: expect.any(Date),
         },
       });
 
