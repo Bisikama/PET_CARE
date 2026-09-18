@@ -130,20 +130,27 @@ export default function SelectProviderScreen() {
     const selectedProvider = mockMatchedProviders.find(
       (p) => p.id === selectedProviderId
     );
-    Alert.alert(
-      'Xác nhận chuyên viên',
-      `Bạn đã chọn ${selectedProvider?.name || 'Happy Paws Care'}. Sẵn sàng tiếp tục sang Phase 4 (Payment & Review)?`,
-      [
-        { text: 'Quay lại', style: 'cancel' },
-        {
-          text: 'Tiếp tục',
-          onPress: () => {
-            // Sẵn sàng liên kết sang Phase 4
-            Alert.alert('Phase 4', 'Chuyển sang bước thanh toán & hoàn tất đặt lịch!');
-          },
-        },
-      ]
-    );
+    router.push({
+      pathname: '/(customer)/bookings/review-summary',
+      params: {
+        serviceId: params.serviceId || 'svc-01',
+        serviceTitle: params.serviceTitle || 'Premium Dog Grooming',
+        providerId: selectedProvider?.id || 'prov-01',
+        providerName: selectedProvider?.name || 'Happy Paws Care',
+        providerAvatar: selectedProvider?.avatarUrl,
+        providerRating: String(selectedProvider?.rating || 4.9),
+        petId: params.petId || 'pet-01',
+        petName: params.petName || 'Milo',
+        petBreed: params.petBreed || 'Golden Retriever',
+        petAvatarUrl: params.petAvatarUrl,
+        petWeight: '18 kg',
+        day: params.day || '20',
+        slotTime: params.slotTime || '10:30 AM',
+        basePrice: String(selectedProvider?.price || 350000),
+        selectedSizeId: params.selectedSizeId || 'size-lg',
+        selectedAddonIds: params.selectedAddonIds,
+      },
+    });
   };
 
   return (

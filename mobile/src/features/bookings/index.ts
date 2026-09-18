@@ -1,6 +1,8 @@
 export { default as SelectPetScreen } from './screens/SelectPetScreen';
 export { default as ScheduleTimeScreen } from './screens/ScheduleTimeScreen';
 export { default as SelectProviderScreen } from './screens/SelectProviderScreen';
+export { default as ReviewSummaryScreen } from './screens/ReviewSummaryScreen';
+
 export * from './components/BookingStepHeader';
 export * from './components/BookingStepper';
 export * from './components/BookingServiceContextCard';
@@ -15,4 +17,11 @@ export * from './components/BookingCriteriaSummaryCard';
 export * from './components/ProviderSortFilterBar';
 export * from './components/MatchedProviderCard';
 export * from './components/BookingSafetyBanner';
+export * from './components/ReviewServiceRecapCard';
+export * from './components/ReviewVoucherSection';
+export * from './components/ReviewPriceBreakdownCard';
+export * from './components/ReviewPaymentMethodSelector';
+export * from './components/ReviewNotesInput';
+export * from './components/ReviewTrustPolicyCard';
+export * from './components/BookingSuccessModal';
 export * from './types/booking.types';

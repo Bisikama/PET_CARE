@@ -64,3 +64,35 @@ export interface MatchedProviderItem {
   distanceKm?: number;
   isHomeVisit?: boolean;
 }
+
+export type PaymentMethodType = 'WALLET' | 'VNPAY' | 'MOMO' | 'CASH';
+
+export interface VoucherItem {
+  code: string;
+  title: string;
+  description: string;
+  discountType: 'FIXED' | 'PERCENT';
+  discountValue: number;
+  maxDiscount?: number;
+  minOrderValue: number;
+  expiryDate: string;
+}
+
+export interface BookingReviewParams {
+  serviceId?: string;
+  serviceTitle?: string;
+  providerId?: string;
+  providerName?: string;
+  providerAvatar?: string;
+  providerRating?: string;
+  petId?: string;
+  petName?: string;
+  petBreed?: string;
+  petAvatarUrl?: string;
+  petWeight?: string;
+  day?: string;
+  slotTime?: string;
+  basePrice?: string;
+  selectedSizeId?: string;
+  selectedAddonIds?: string;
+}
