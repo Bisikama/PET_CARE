@@ -38,37 +38,42 @@ export default function HomeScreen() {
 
   const fetchData = async () => {
     try {
-      const [fetchedServices, fetchedActiveBooking] = await Promise.all([
-        servicesApi.getAllServices(),
-        bookingsApi.getActiveBooking()
-      ]);
-      setServices(fetchedServices);
-      
-      if (fetchedActiveBooking) {
-        const startDate = new Date(fetchedActiveBooking.estimated_start_at);
-        const providerUser = fetchedActiveBooking.provider_profiles?.users;
-        const petInfo = fetchedActiveBooking.booking_pets?.[0]?.pets;
-        const serviceInfo = fetchedActiveBooking.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services;
+      try {
+        const fetchedServices = await servicesApi.getAllServices();
+        setServices(fetchedServices || []);
+      } catch (e) {
+        // fail silently or keep empty
+      }
 
-        setActiveBooking({
-          id: fetchedActiveBooking.id,
-          providerName: providerUser?.fullName || 'Provider',
-          providerImage: providerUser?.avatarUrl || '',
-          isVerified: fetchedActiveBooking.provider_profiles?.is_verified || false,
-          serviceTitle: serviceInfo?.title || 'Dịch vụ',
-          petName: petInfo?.name || 'Thú cưng',
-          petBreed: petInfo?.breed || '',
-          date: startDate.toLocaleDateString('vi-VN', { day: '2-digit', month: 'short' }),
-          time: startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          locationType: fetchedActiveBooking.location_type === 'AT_SALON' ? 'Tại Salon' : 'Tại nhà',
-          status: fetchedActiveBooking.status as any,
-        });
-      } else {
+      try {
+        const fetchedActiveBooking = await bookingsApi.getActiveBooking();
+        if (fetchedActiveBooking) {
+          const startDate = new Date(fetchedActiveBooking.estimated_start_at);
+          const providerUser = fetchedActiveBooking.provider_profiles?.users;
+          const petInfo = fetchedActiveBooking.booking_pets?.[0]?.pets;
+          const serviceInfo = fetchedActiveBooking.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services;
+
+          setActiveBooking({
+            id: fetchedActiveBooking.id,
+            providerName: providerUser?.fullName || 'Provider',
+            providerImage: providerUser?.avatarUrl || '',
+            isVerified: fetchedActiveBooking.provider_profiles?.is_verified || false,
+            serviceTitle: serviceInfo?.title || 'Dịch vụ',
+            petName: petInfo?.name || 'Thú cưng',
+            petBreed: petInfo?.breed || '',
+            date: startDate.toLocaleDateString('vi-VN', { day: '2-digit', month: 'short' }),
+            time: startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            locationType: fetchedActiveBooking.location_type === 'AT_SALON' ? 'Tại Salon' : 'Tại nhà',
+            status: fetchedActiveBooking.status as any,
+          });
+        } else {
+          setActiveBooking(null);
+        }
+      } catch (e) {
         setActiveBooking(null);
       }
     } catch (error) {
-      console.error('Failed to fetch home data:', error);
-      Alert.alert('Lỗi', 'Không thể tải dữ liệu trang chủ');
+      // ignore
     } finally {
       setIsLoading(false);
     }
@@ -184,7 +189,7 @@ export default function HomeScreen() {
         {/* 7. Nearby Providers Banner / Link */}
         <View style={{ paddingHorizontal: theme.spacing[4], marginTop: theme.spacing[4] }}>
           <View style={{
-            backgroundColor: theme.colors.surface.mid,
+            backgroundColor: theme.colors.surface.subdued,
             borderRadius: theme.radius.lg,
             padding: theme.spacing[4],
             flexDirection: 'row',

@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   typeCardSelected: {
     borderColor: theme.colors.primary.navy,
-    backgroundColor: theme.colors.primary.light,
+    backgroundColor: theme.colors.primary.surface,
   },
   typeIconBox: {
     width: 48,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[5],
   },
   inputLabel: {
-    ...theme.typography.bodySmMedium,
+    ...theme.typography.bodyMdMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing[2],
   },
@@ -306,6 +306,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     backgroundColor: theme.colors.surface.default,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
+    borderTopColor: theme.colors.border.subdued,
   },
 });

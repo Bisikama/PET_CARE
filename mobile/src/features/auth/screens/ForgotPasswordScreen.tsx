@@ -60,7 +60,7 @@ export default function ForgotPasswordScreen() {
         <View style={styles.centerLogoBox}>
           <Icon name="shield" size={32} color={theme.colors.primary.navy} />
           <View style={styles.innerPaw}>
-            <Icon name="paw-print" size={14} color={theme.colors.primary.navy} fill={theme.colors.primary.navy} />
+            <Icon name="paw-print" size={14} color={theme.colors.primary.navy} />
           </View>
           <View style={styles.logoBadge}>
             <Icon name="lock" size={8} color={theme.colors.primary.navy} />

@@ -127,7 +127,7 @@ export default function VerifyOtpScreen() {
             keyboardType="number-pad"
             error={error}
             textAlign="center"
-            style={{ fontSize: 24, letterSpacing: 8, fontWeight: 'bold', color: theme.colors.primary.navy }}
+            inputStyle={{ fontSize: 24, letterSpacing: 8, fontWeight: 'bold', color: theme.colors.primary.navy }}
           />
 
           <View style={styles.expiresBadge}>

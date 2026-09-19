@@ -145,7 +145,7 @@ export default function ProviderDetailsScreen({ providerId }: ProviderDetailsScr
         <TouchableOpacity 
           style={styles.actionButton}
           activeOpacity={0.8}
-          onPress={() => router.push('/(customer)/booking')}
+          onPress={() => router.push('/(customer)/bookings/select-pet')}
         >
           <Text style={styles.actionButtonText}>ĐẶT LỊCH NGAY</Text>
         </TouchableOpacity>
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border.subdued,
   },
   sectionTitle: {
-    ...theme.typography.h5,
+    ...theme.typography.h4,
     color: theme.colors.text.primary,
     fontWeight: '700',
     marginBottom: theme.spacing[4],

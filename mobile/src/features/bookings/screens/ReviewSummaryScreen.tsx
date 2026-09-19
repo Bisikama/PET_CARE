@@ -1,20 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   StatusBar,
-  Alert,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Check,
-  ChevronRight,
-  ShieldCheck,
-  Sparkles,
   ArrowRight,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
@@ -26,21 +22,21 @@ import { ReviewPriceBreakdownCard } from '../components/ReviewPriceBreakdownCard
 import { ReviewPaymentMethodSelector } from '../components/ReviewPaymentMethodSelector';
 import { ReviewNotesInput } from '../components/ReviewNotesInput';
 import { ReviewTrustPolicyCard } from '../components/ReviewTrustPolicyCard';
-import { BookingSuccessModal } from '../components/BookingSuccessModal';
 import {
   VoucherItem,
   PaymentMethodType,
-  BookingReviewParams,
 } from '../types/booking.types';
 import { formatCurrency } from '@/core/utils/currency';
+import { useBookingFlow } from '../context/BookingContext';
+import { bookingsApi } from '@/infrastructure/api/bookings.api';
 
 const mockVouchers: VoucherItem[] = [
   {
-    code: 'PETCARE50',
-    title: 'Giảm 50.000đ cho đơn đầu tiên',
+    code: 'PETLOVE20',
+    title: 'Giảm 20.000đ cho đơn đầu tiên',
     description: 'Áp dụng cho mọi dịch vụ từ 200.000đ',
     discountType: 'FIXED',
-    discountValue: 50000,
+    discountValue: 20000,
     minOrderValue: 200000,
     expiryDate: '30/09/2026',
   },
@@ -67,51 +63,102 @@ const mockVouchers: VoucherItem[] = [
 
 export default function ReviewSummaryScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<BookingReviewParams>();
+  const { draft, updateDraft } = useBookingFlow();
+  const params = useLocalSearchParams<Record<string, string>>();
 
-  // Extract query params with fallbacks
-  const serviceTitle = params.serviceTitle || 'Premium Dog Grooming & Spa';
-  const providerName = params.providerName || 'Happy Paws Care Studio';
+  // Extract from params or draft
+  const serviceId = params.serviceId || draft.serviceId || '';
+  const serviceTitle = params.serviceTitle || draft.serviceTitle || 'Chăm sóc thú cưng cao cấp';
+  const providerId = params.providerId || draft.providerId || '';
+  const providerName = params.providerName || draft.providerName || 'PetCare Partner';
   const providerAvatar =
     params.providerAvatar ||
+    draft.providerAvatar ||
     'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80';
-  const providerRating = Number(params.providerRating) || 4.9;
-  const petName = params.petName || 'Milo';
-  const petBreed = params.petBreed || 'Golden Retriever';
+  const providerRating = Number(params.providerRating) || draft.providerRating || 4.9;
+  const providerWorkingSlotId =
+    params.providerWorkingSlotId || draft.providerWorkingSlotId || '';
+
+  const petId = params.petId || draft.petId || '';
+  const petName = params.petName || draft.petName || 'Thú cưng';
+  const petBreed = params.petBreed || draft.petBreed || 'Chó cưng';
   const petAvatarUrl =
     params.petAvatarUrl ||
+    draft.petAvatarUrl ||
     'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80';
-  const petWeight = params.petWeight || '18 kg';
+  const petWeight = params.petWeight || (draft.petWeight ? `${draft.petWeight} kg` : '5 kg');
+  const addressId = params.addressId || draft.addressId || '';
+
   const day = params.day || '20';
-  const slotTime = params.slotTime || '10:30 AM';
-  const dateSlotText = `Thứ Bảy, ${day} Th9 2026 · ${slotTime}`;
+  const slotTime = params.slotTime || draft.timeSlot || '09:00 - 10:30';
+  const dateSlotText = `Ngày ${day} · ${slotTime}`;
 
   // Price base calculations
-  const rawBasePrice = Number(params.basePrice) || 350000;
-  const sizeSurcharge = params.selectedSizeId === 'size-lg' ? 60000 : 40000;
-  const addonsPrice = 50000;
+  const rawBasePrice = Number(params.basePrice) || draft.servicePrice || draft.basePrice || 250000;
+  const sizeSurcharge = params.selectedSizeId === 'size-lg' ? 60000 : 0;
+  const addonsPrice = 0;
   const platformFee = 15000; // Care & Insurance fee
 
   // State
   const [appliedVoucher, setAppliedVoucher] = useState<VoucherItem | null>(null);
-  const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('WALLET');
+  const [notes, setNotes] = useState(draft.customerNote || '');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(
+    draft.paymentMethod || 'WALLET'
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Price calculation
+  // Dynamic calculated pricing
+  const [serverPrice, setServerPrice] = useState<{
+    servicePrice: number;
+    travelFee: number;
+    distanceKm: number;
+    discountAmount: number;
+    finalPrice: number;
+  } | null>(null);
+
+  // Call calculate price endpoint if valid IDs exist
+  useEffect(() => {
+    const fetchServerQuote = async () => {
+      if (petId && serviceId && addressId && providerId) {
+        try {
+          setIsCalculating(true);
+          const quote = await bookingsApi.calculatePrice({
+            petId,
+            serviceId,
+            addressId,
+            providerId,
+            promoCode: appliedVoucher?.code,
+          });
+          setServerPrice(quote);
+        } catch (e) {
+          // Fallback to local calculation
+        } finally {
+          setIsCalculating(false);
+        }
+      }
+    };
+
+    fetchServerQuote();
+  }, [petId, serviceId, addressId, providerId, appliedVoucher]);
+
+  // Price calculation fallback
   const subtotal = rawBasePrice + sizeSurcharge + addonsPrice + platformFee;
 
   const discountAmount = useMemo(() => {
+    if (serverPrice) return serverPrice.discountAmount;
     if (!appliedVoucher) return 0;
     if (appliedVoucher.discountType === 'PERCENT') {
       const calc = Math.round((subtotal * appliedVoucher.discountValue) / 100);
       return appliedVoucher.maxDiscount ? Math.min(calc, appliedVoucher.maxDiscount) : calc;
     }
     return appliedVoucher.discountValue;
-  }, [appliedVoucher, subtotal]);
+  }, [appliedVoucher, subtotal, serverPrice]);
 
-  const finalTotal = Math.max(0, subtotal - discountAmount);
+  const finalTotal = useMemo(() => {
+    if (serverPrice) return serverPrice.finalPrice;
+    return Math.max(0, subtotal - discountAmount);
+  }, [serverPrice, subtotal, discountAmount]);
 
   const handleApplyVoucher = (voucher: VoucherItem) => {
     setAppliedVoucher(voucher);
@@ -122,22 +169,36 @@ export default function ReviewSummaryScreen() {
   };
 
   const handleConfirmBooking = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      router.push({
-        pathname: '/(customer)/bookings/payment',
-        params: {
-          bookingCode: 'BK-2026-9812',
-          serviceTitle,
-          providerName,
-          petName,
-          totalPrice: String(finalTotal),
-          dateSlotText,
-          paymentMethod,
-        },
-      });
-    }, 600);
+    // Update booking context draft
+    updateDraft({
+      customerNote: notes,
+      promoCode: appliedVoucher?.code,
+      discountAmount,
+      totalPrice: finalTotal,
+      servicePrice: rawBasePrice,
+      travelFee: serverPrice?.travelFee || 0,
+      distanceKm: serverPrice?.distanceKm || 0,
+      paymentMethod,
+    });
+
+    router.push({
+      pathname: '/(customer)/bookings/payment',
+      params: {
+        serviceId,
+        serviceTitle,
+        providerId,
+        providerName,
+        providerWorkingSlotId,
+        addressId,
+        petId,
+        petName,
+        totalPrice: String(finalTotal),
+        dateSlotText,
+        paymentMethod,
+        customerNote: notes,
+        promoCode: appliedVoucher?.code || '',
+      },
+    });
   };
 
   return (
@@ -206,7 +267,7 @@ export default function ReviewSummaryScreen() {
           <View style={styles.titleBanner}>
             <Text style={styles.screenTitle}>Kiểm tra thông tin đơn hẹn</Text>
             <Text style={styles.screenSubtitle}>
-              Vui lòng rà soát lại thông tin dịch vụ, thú cưng và chi phí trước khi hoàn tất.
+              Vui lòng rà soát lại thông tin dịch vụ, thú cưng và chi phí trước khi thanh toán.
             </Text>
           </View>
         </View>
@@ -244,7 +305,7 @@ export default function ReviewSummaryScreen() {
             basePrice={rawBasePrice}
             sizeSurcharge={sizeSurcharge}
             addonsPrice={addonsPrice}
-            platformFee={platformFee}
+            platformFee={serverPrice ? serverPrice.travelFee : platformFee}
             discountAmount={discountAmount}
             totalPrice={finalTotal}
             voucherCode={appliedVoucher?.code}
@@ -302,31 +363,12 @@ export default function ReviewSummaryScreen() {
             <ActivityIndicator size="small" color="white" />
           ) : (
             <>
-              <Text style={styles.confirmBtnText}>Xác nhận đặt lịch</Text>
+              <Text style={styles.confirmBtnText}>Tiến hành thanh toán</Text>
               <ArrowRight size={16} color="white" />
             </>
           )}
         </TouchableOpacity>
       </View>
-
-      {/* 10. Success Confirmation Modal */}
-      <BookingSuccessModal
-        visible={isSuccessModalVisible}
-        bookingCode="BK-2026-9812"
-        serviceTitle={serviceTitle}
-        providerName={providerName}
-        petName={petName}
-        dateSlotText={dateSlotText}
-        totalPrice={finalTotal}
-        onViewBooking={() => {
-          setIsSuccessModalVisible(false);
-          router.replace('/(customer)/(tabs)/bookings');
-        }}
-        onGoHome={() => {
-          setIsSuccessModalVisible(false);
-          router.replace('/(customer)/(tabs)');
-        }}
-      />
     </Screen>
   );
 }
@@ -339,7 +381,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120, // Space for fixed bottom bar
+    paddingBottom: 120,
   },
   trackerSection: {
     paddingHorizontal: theme.spacing[5],

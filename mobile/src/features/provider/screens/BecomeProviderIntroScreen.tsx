@@ -98,7 +98,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   headerContent: {
@@ -140,7 +144,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: theme.colors.primary.light,
+    backgroundColor: theme.colors.primary.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing[4],
@@ -161,7 +165,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing[5],
     backgroundColor: theme.colors.surface.default,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
+    borderTopColor: theme.colors.border.subdued,
     paddingBottom: 40,
   },
   startButton: {

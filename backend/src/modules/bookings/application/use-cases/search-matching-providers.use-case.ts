@@ -65,14 +65,29 @@ export class SearchMatchingProvidersUseCase {
       const service = provider.provider_services[0];
       const price = Number(service.price);
 
-      // Extract matching slots
+      // Extract matching slots for the target date
       const searchDateStr = new Date(dto.date).toISOString().split('T')[0];
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
 
-      const rawSlots = provider.provider_working_days[0]?.provider_working_slots || [];
+      // Find working day matching searchDateStr, or fallback to the closest working day
+      const targetWorkingDay =
+        provider.provider_working_days.find(
+          (pwd: any) =>
+            new Date(pwd.work_date).toISOString().split('T')[0] === searchDateStr,
+        ) || provider.provider_working_days[0];
+
+      let rawSlots = targetWorkingDay?.provider_working_slots || [];
+      if (rawSlots.length === 0) {
+        // Collect all available slots from all working days of this provider
+        rawSlots = provider.provider_working_days.flatMap(
+          (pwd: any) => pwd.provider_working_slots || [],
+        );
+      }
+
       const slots = rawSlots
         .filter((pws: any) => {
+          if (!pws.time_slots) return false;
           if (searchDateStr < todayStr) return false;
           if (searchDateStr === todayStr) {
             const [startHour, startMinute] = pws.time_slots.start_time.split(':').map(Number);
@@ -90,6 +105,14 @@ export class SearchMatchingProvidersUseCase {
           endTime: pws.time_slots.end_time,
         }));
 
+      // Enrich recommendation reasons
+      if (service.pet_species && service.min_weight !== undefined && service.max_weight !== undefined) {
+        const speciesText = service.pet_species.toLowerCase() === 'cat' ? 'mèo' : 'chó';
+        recommendationReasons.unshift(
+          `Chuyên chăm sóc ${speciesText} (${service.min_weight}–${service.max_weight} kg)`,
+        );
+      }
+
       return {
         providerId: provider.id,
         userId: provider.user_id,
@@ -98,6 +121,9 @@ export class SearchMatchingProvidersUseCase {
         ratingAvg: Number(provider.rating_avg),
         totalCompletedBookings: provider.total_completed_bookings,
         servicePrice: price,
+        minWeight: Number(service.min_weight),
+        maxWeight: Number(service.max_weight),
+        petSpecies: service.pet_species,
         slots: slots,
         recommendationReasons,
         score,

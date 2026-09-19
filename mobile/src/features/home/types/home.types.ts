@@ -1,7 +1,10 @@
 export interface ServiceCategory {
   id: string;
   name: string;
-  iconName: string;
+  category?: string | null;
+  basePrice?: number;
+  durationMinutes?: number;
+  iconName?: string;
   hasAccent?: boolean;
 }
 

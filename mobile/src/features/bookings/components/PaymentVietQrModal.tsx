@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     backgroundColor: theme.colors.surface.lowest,
-    borderTopLeftRadius: theme.radius['2xl'],
-    borderTopRightRadius: theme.radius['2xl'],
+    borderTopLeftRadius: theme.radius.xl,
+    borderTopRightRadius: theme.radius.xl,
     padding: theme.spacing[5],
     gap: theme.spacing[3],
     maxHeight: '90%',

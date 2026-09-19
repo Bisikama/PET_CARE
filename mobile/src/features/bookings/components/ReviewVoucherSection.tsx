@@ -84,7 +84,7 @@ export function ReviewVoucherSection({
         </View>
         {appliedVoucher && (
           <View style={styles.savingTag}>
-            <Sparkles size={11} color={theme.colors.feedback.success} />
+            <Sparkles size={11} color={theme.colors.semantic.success} />
             <Text style={styles.savingTagText}>
               Tiết kiệm {formatCurrency(discountAmount)}đ
             </Text>

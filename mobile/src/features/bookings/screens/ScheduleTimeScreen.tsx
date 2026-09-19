@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle2 } from 'lucide-react-native';
@@ -17,9 +16,11 @@ import { BookingCalendar } from '../components/BookingCalendar';
 import { TimeSlotGrid } from '../components/TimeSlotGrid';
 import { BookingSummaryCard } from '../components/BookingSummaryCard';
 import { BookingBottomActions } from '../components/BookingBottomActions';
+import { useBookingFlow } from '../context/BookingContext';
 
 export default function ScheduleTimeScreen() {
   const router = useRouter();
+  const { draft, updateDraft } = useBookingFlow();
   const params = useLocalSearchParams<{
     serviceId?: string;
     serviceTitle?: string;
@@ -29,37 +30,68 @@ export default function ScheduleTimeScreen() {
     selectedAddonIds?: string;
     petId?: string;
     petName?: string;
+    petBreed?: string;
     petAvatarUrl?: string;
+    petWeight?: string;
   }>();
 
-  const [selectedDay, setSelectedDay] = useState<number>(20);
-  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('10:30 AM');
+  const today = new Date();
+  const [selectedDay, setSelectedDay] = useState<number>(today.getDate());
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('09:00 - 10:30');
 
-  const petName = params.petName || 'Milo';
+  const petName = params.petName || draft.petName || 'Thú cưng';
   const petAvatar =
     params.petAvatarUrl ||
+    draft.petAvatarUrl ||
     'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80';
-  const providerName = params.providerName || 'Happy Paws Care';
+  const providerName = params.providerName || draft.providerName || 'PetCare Partner';
+  const serviceTitle = params.serviceTitle || draft.serviceTitle || 'Chăm sóc thú cưng';
 
-  // Format date text
+  // Compute selected full date string (YYYY-MM-DD)
+  const selectedDateStr = useMemo(() => {
+    const d = new Date();
+    // If selected day is in current month or next
+    const targetDate = new Date(d.getFullYear(), d.getMonth(), selectedDay);
+    const yyyy = targetDate.getFullYear();
+    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(targetDate.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, [selectedDay]);
+
+  const monthName = useMemo(() => {
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+    return `Tháng ${month}, ${year}`;
+  }, []);
+
   const dateSlotText = useMemo(() => {
-    return `Sat, ${selectedDay} Sep at ${selectedSlotTime}`;
+    return `Ngày ${selectedDay} · ${selectedSlotTime}`;
   }, [selectedDay, selectedSlotTime]);
 
   const handleContinue = () => {
+    updateDraft({
+      bookingDate: selectedDateStr,
+      timeSlot: selectedSlotTime,
+      slotStartTime: selectedSlotTime.split(' - ')[0] || selectedSlotTime,
+      slotEndTime: selectedSlotTime.split(' - ')[1] || '',
+    });
+
     router.push({
       pathname: '/(customer)/bookings/select-provider',
       params: {
-        serviceId: params.serviceId,
-        serviceTitle: params.serviceTitle,
+        serviceId: params.serviceId || draft.serviceId,
+        serviceTitle: serviceTitle,
         providerName: providerName,
-        price: params.price,
+        price: params.price || (draft.servicePrice ? String(draft.servicePrice) : undefined),
         selectedSizeId: params.selectedSizeId,
         selectedAddonIds: params.selectedAddonIds,
-        petId: params.petId,
+        petId: params.petId || draft.petId,
         petName: petName,
+        petBreed: params.petBreed || draft.petBreed,
         petAvatarUrl: petAvatar,
+        petWeight: params.petWeight || (draft.petWeight ? `${draft.petWeight} kg` : undefined),
         day: selectedDay.toString(),
+        date: selectedDateStr,
         slotTime: selectedSlotTime,
       },
     });
@@ -76,7 +108,7 @@ export default function ScheduleTimeScreen() {
 
       {/* 1. Top Header Navigation */}
       <BookingStepHeader
-        title="Select Date & Time"
+        title="Chọn ngày & khung giờ"
         onBack={() => router.back()}
       />
 
@@ -88,10 +120,10 @@ export default function ScheduleTimeScreen() {
         {/* 2. Stepper Progress Header */}
         <View style={styles.stepperSection}>
           <View style={styles.stepInfoRow}>
-            <Text style={styles.stepCountText}>STEP 2 OF 4</Text>
+            <Text style={styles.stepCountText}>BƯỚC 2 / 4</Text>
             <View style={styles.stepBadge}>
               <View style={styles.goldDot} />
-              <Text style={styles.stepBadgeText}>Scheduling</Text>
+              <Text style={styles.stepBadgeText}>Lịch làm việc</Text>
             </View>
           </View>
 
@@ -106,7 +138,7 @@ export default function ScheduleTimeScreen() {
                   color={theme.colors.tertiary.onContainer}
                   fill={theme.colors.surface.lowest}
                 />
-                <Text style={styles.stepLabelCompleted}>Pet</Text>
+                <Text style={styles.stepLabelCompleted}>Thú cưng</Text>
               </View>
             </View>
 
@@ -115,29 +147,29 @@ export default function ScheduleTimeScreen() {
               <View style={styles.barActive} />
               <View style={styles.stepLabelRow}>
                 <View style={styles.activeDot} />
-                <Text style={styles.stepLabelActive}>Date & Time</Text>
+                <Text style={styles.stepLabelActive}>Ngày & Giờ</Text>
               </View>
             </View>
 
             {/* Step 3: Details */}
             <View style={styles.stepCol}>
               <View style={styles.barInactive} />
-              <Text style={styles.stepLabelInactive}>Details</Text>
+              <Text style={styles.stepLabelInactive}>Đối tác</Text>
             </View>
 
             {/* Step 4: Payment */}
             <View style={styles.stepCol}>
               <View style={styles.barInactive} />
-              <Text style={styles.stepLabelInactive}>Payment</Text>
+              <Text style={styles.stepLabelInactive}>Thanh toán</Text>
             </View>
           </View>
 
           {/* Screen Title & Pet Preview Pill */}
           <View style={styles.titleRow}>
             <View style={styles.titleCol}>
-              <Text style={styles.screenTitle}>Choose a Date & Time</Text>
+              <Text style={styles.screenTitle}>Chọn Ngày & Khung Giờ</Text>
               <Text style={styles.screenSubtitle}>
-                Select your preferred slot for {petName}'s grooming
+                Khung giờ thuận tiện nhất để chuyên viên chăm sóc bé {petName}
               </Text>
             </View>
 
@@ -150,7 +182,7 @@ export default function ScheduleTimeScreen() {
 
         {/* 3. Monthly Calendar Picker */}
         <BookingCalendar
-          currentMonthName="September 2026"
+          currentMonthName={monthName}
           selectedDay={selectedDay}
           onSelectDay={setSelectedDay}
         />
@@ -165,7 +197,7 @@ export default function ScheduleTimeScreen() {
         {/* 5. Reservation Summary Card */}
         <BookingSummaryCard
           dateSlotText={dateSlotText}
-          durationText="60–90 min"
+          durationText="60–90 phút"
           providerName={providerName}
         />
       </ScrollView>
@@ -174,7 +206,7 @@ export default function ScheduleTimeScreen() {
       <BookingBottomActions
         onBack={() => router.back()}
         onNext={handleContinue}
-        nextLabel="Continue to Details"
+        nextLabel="Tiếp tục chọn Chuyên viên"
         disabled={!selectedSlotTime}
       />
     </Screen>
@@ -189,7 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 110, // Margin for sticky bottom actions
+    paddingBottom: 110,
   },
   stepperSection: {
     paddingHorizontal: theme.spacing[5],
@@ -296,6 +328,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     ...theme.typography.h2,
+    fontSize: 20,
     color: theme.colors.primary.navy,
     fontWeight: '700',
     letterSpacing: -0.4,

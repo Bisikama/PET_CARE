@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     backgroundColor: theme.colors.surface.lowest,
-    borderRadius: theme.radius['2xl'],
+    borderRadius: theme.radius.xl,
     padding: theme.spacing[5],
     alignItems: 'center',
     ...theme.shadows.lg,
