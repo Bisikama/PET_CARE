@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.colors.surface.containerHigh,
     paddingHorizontal: theme.spacing[3],
-    paddingVertical: theme.spacing[1.5],
+    paddingVertical: 6,
     borderRadius: theme.radius.full,
     gap: theme.spacing[2],
     marginBottom: theme.spacing[4],

@@ -1,14 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   StatusBar,
-  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, CheckCircle2 } from 'lucide-react-native';
+import { Check, MapPin, AlertCircle, RefreshCw } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { BookingStepHeader } from '../components/BookingStepHeader';
@@ -18,76 +19,13 @@ import { MatchedProviderCard } from '../components/MatchedProviderCard';
 import { BookingSafetyBanner } from '../components/BookingSafetyBanner';
 import { BookingBottomActions } from '../components/BookingBottomActions';
 import { MatchedProviderItem } from '../types/booking.types';
-
-const mockMatchedProviders: MatchedProviderItem[] = [
-  {
-    id: 'prov-01',
-    name: 'Happy Paws Care Studio',
-    avatarUrl:
-      'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
-    tagline: 'Certified Salon & Mobile Grooming',
-    isVerified: true,
-    rating: 4.9,
-    reviewCount: 320,
-    completedJobs: 1450,
-    compatibilityScore: 98,
-    isBestChoice: true,
-    matchReasons: [
-      'Experienced with Golden Retrievers & heavy coats',
-      'Accepts large dogs (25–40 kg) with non-slip hydraulic tables',
-      'Available at your requested time (10:30 AM)',
-      'Serves Thao Dien (1.2 km away · 5 min drive)',
-    ],
-    price: 250000,
-    priceSubtext: 'Premium Dog Grooming · Estimated',
-    earliestSlot: '10:30 AM',
-    distanceKm: 1.2,
-    isHomeVisit: true,
-  },
-  {
-    id: 'prov-02',
-    name: 'FurEver Friends Care & Spa',
-    avatarUrl:
-      'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=400&q=80',
-    tagline: 'Master Groomer & Gentle Handling Specialist',
-    isVerified: true,
-    rating: 4.8,
-    reviewCount: 195,
-    completedJobs: 820,
-    matchReasons: [
-      'Specializes in nervous pets (low-noise warm air dryers)',
-      'Accepts dogs 10–35 kg',
-      'Mobile grooming van arrives equipped at your home',
-    ],
-    price: 270000,
-    priceSubtext: 'Includes aromatherapy bath',
-    earliestSlot: '02:30 PM',
-    distanceKm: 2.5,
-    isHomeVisit: true,
-  },
-  {
-    id: 'prov-03',
-    name: 'Pawfect Grooming Studio',
-    avatarUrl:
-      'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=400&q=80',
-    tagline: 'Quick Care & Standard Grooming',
-    isVerified: true,
-    rating: 4.7,
-    reviewCount: 142,
-    completedJobs: 560,
-    matchReasons: [
-      'Serves District 2 (0.8 km away · Fast local walk-in)',
-      'Express 60-min turnaround service',
-    ],
-    price: 210000,
-    priceSubtext: 'Standard Care Package',
-    earliestSlot: '11:30 AM',
-    distanceKm: 0.8,
-  },
-];
+import { useBookingFlow } from '../context/BookingContext';
+import { addressApi } from '@/features/addresses/api/addressApi';
+import { bookingsApi } from '@/infrastructure/api/bookings.api';
 
 export default function SelectProviderScreen() {
   const router = useRouter();
+  const { draft, updateDraft } = useBookingFlow();
   const params = useLocalSearchParams<{
     serviceId?: string;
     serviceTitle?: string;
@@ -97,23 +35,137 @@ export default function SelectProviderScreen() {
     selectedAddonIds?: string;
     petId?: string;
     petName?: string;
+    petBreed?: string;
     petAvatarUrl?: string;
+    petWeight?: string;
     day?: string;
+    date?: string;
     slotTime?: string;
   }>();
 
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('prov-01');
+  const [providers, setProviders] = useState<MatchedProviderItem[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
   const [selectedFilterId, setSelectedFilterId] = useState<string>('best_match');
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>(draft.addressId || '');
+  const [selectedAddressLine, setSelectedAddressLine] = useState<string>(draft.addressLine || '');
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const petName = params.petName || 'Milo';
-  const serviceTitle = params.serviceTitle || 'Premium Dog Grooming';
-  const slotTime = params.slotTime || '10:30 AM';
+  const petName = params.petName || draft.petName || 'Thú cưng';
+  const petSpecies = draft.petSpecies || 'Dog';
+  const petWeight = params.petWeight || (draft.petWeight ? `${draft.petWeight} kg` : '5 kg');
+  const serviceTitle = params.serviceTitle || draft.serviceTitle || 'Chăm sóc thú cưng';
+  const slotTime = params.slotTime || draft.timeSlot || '09:00 - 10:30';
   const day = params.day || '20';
-  const dateSlotText = `Sat, ${day} Sep 2026 · ${slotTime}`;
+  const bookingDate = params.date || draft.bookingDate || new Date().toISOString().split('T')[0];
+  const dateSlotText = `Ngày ${day} · ${slotTime}`;
+
+  const fetchProviders = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      // 1. Fetch addresses
+      let activeAddressId = selectedAddressId || draft.addressId;
+      let activeAddressLine = selectedAddressLine || draft.addressLine;
+
+      if (!activeAddressId) {
+        try {
+          const addrRes = await addressApi.getAddresses();
+          const addrList = Array.isArray(addrRes?.data) ? addrRes.data : [];
+          setAddresses(addrList);
+
+          if (addrList.length > 0) {
+            const defaultAddr = addrList.find((a: any) => a.isDefault || a.is_default) || addrList[0];
+            activeAddressId = defaultAddr.id;
+            activeAddressLine = `${(defaultAddr as any).addressLine || (defaultAddr as any).address_line || ''}, ${
+              defaultAddr.district || ''
+            }, ${defaultAddr.city || ''}`;
+            setSelectedAddressId(activeAddressId);
+            setSelectedAddressLine(activeAddressLine);
+            updateDraft({
+              addressId: activeAddressId,
+              addressLine: activeAddressLine,
+            });
+          }
+        } catch (addrErr) {
+          // continue
+        }
+      }
+
+      // 2. Search matching providers from DB
+      const petId = params.petId || draft.petId;
+      const serviceId = params.serviceId || draft.serviceId;
+
+      if (petId && serviceId && activeAddressId) {
+        const matchedRes = await bookingsApi.searchMatchingProviders({
+          petId,
+          serviceId,
+          addressId: activeAddressId,
+          date: bookingDate,
+        });
+
+        if (Array.isArray(matchedRes) && matchedRes.length > 0) {
+          const mapped: MatchedProviderItem[] = matchedRes.map((p, idx) => ({
+            id: p.providerId,
+            name: p.fullName || `Chuyên viên ${idx + 1}`,
+            avatarUrl:
+              p.avatarUrl ||
+              'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
+            tagline: 'Chuyên viên đối tác PetCare',
+            isVerified: true,
+            rating: p.ratingAvg || 4.9,
+            reviewCount: (p.totalCompletedBookings || 5) * 2 + 10,
+            completedJobs: p.totalCompletedBookings || 10,
+            compatibilityScore: Math.round(p.score) || 98,
+            isBestChoice: idx === 0,
+            matchReasons:
+              p.recommendationReasons && p.recommendationReasons.length > 0
+                ? p.recommendationReasons
+                : [`Chuyên chăm sóc ${petSpecies === 'Cat' ? 'mèo' : 'chó'} (${petWeight})`],
+            price: p.servicePrice || draft.servicePrice || 250000,
+            priceSubtext: 'Giá dịch vụ theo loài & cân nặng',
+            earliestSlot: p.slots?.[0]
+              ? `${p.slots[0].startTime} - ${p.slots[0].endTime}`
+              : slotTime,
+            providerWorkingSlotId: p.slots?.[0]?.providerWorkingSlotId,
+          }));
+
+          setProviders(mapped);
+          setSelectedProviderId(mapped[0].id);
+
+          // Update draft with first matched provider info
+          updateDraft({
+            providerId: mapped[0].id,
+            providerName: mapped[0].name,
+            providerAvatar: mapped[0].avatarUrl,
+            providerRating: mapped[0].rating,
+            providerWorkingSlotId: mapped[0].providerWorkingSlotId,
+            servicePrice: mapped[0].price,
+          });
+        } else {
+          setProviders([]);
+          setSelectedProviderId('');
+        }
+      } else {
+        setProviders([]);
+      }
+    } catch (e: any) {
+      setErrorMessage(e?.message || 'Không thể tải danh sách chuyên viên');
+      setProviders([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProviders();
+  }, [bookingDate, params.petId, params.serviceId]);
 
   // Filtered providers
   const filteredProviders = useMemo(() => {
-    let list = [...mockMatchedProviders];
+    let list = [...providers];
     if (selectedFilterId === 'highest_rated') {
       list.sort((a, b) => b.rating - a.rating);
     } else if (selectedFilterId === 'lowest_price') {
@@ -124,26 +176,48 @@ export default function SelectProviderScreen() {
       list = list.filter((p) => p.isVerified);
     }
     return list;
-  }, [selectedFilterId]);
+  }, [providers, selectedFilterId]);
 
   const handleContinue = () => {
-    const selectedProvider = mockMatchedProviders.find(
-      (p) => p.id === selectedProviderId
-    );
-    Alert.alert(
-      'Xác nhận chuyên viên',
-      `Bạn đã chọn ${selectedProvider?.name || 'Happy Paws Care'}. Sẵn sàng tiếp tục sang Phase 4 (Payment & Review)?`,
-      [
-        { text: 'Quay lại', style: 'cancel' },
-        {
-          text: 'Tiếp tục',
-          onPress: () => {
-            // Sẵn sàng liên kết sang Phase 4
-            Alert.alert('Phase 4', 'Chuyển sang bước thanh toán & hoàn tất đặt lịch!');
-          },
-        },
-      ]
-    );
+    const selectedProvider = providers.find((p) => p.id === selectedProviderId) || providers[0];
+    if (!selectedProvider) return;
+
+    // Save selected provider and address into BookingContext
+    updateDraft({
+      providerId: selectedProvider.id,
+      providerName: selectedProvider.name,
+      providerAvatar: selectedProvider.avatarUrl,
+      providerRating: selectedProvider.rating,
+      providerWorkingSlotId: selectedProvider.providerWorkingSlotId || draft.providerWorkingSlotId,
+      addressId: selectedAddressId || draft.addressId,
+      addressLine: selectedAddressLine || draft.addressLine,
+      servicePrice: selectedProvider.price,
+    });
+
+    router.push({
+      pathname: '/(customer)/bookings/review-summary',
+      params: {
+        serviceId: params.serviceId || draft.serviceId || '',
+        serviceTitle: serviceTitle,
+        providerId: selectedProvider.id,
+        providerName: selectedProvider.name,
+        providerAvatar: selectedProvider.avatarUrl,
+        providerRating: String(selectedProvider.rating || 4.9),
+        providerWorkingSlotId: selectedProvider.providerWorkingSlotId || '',
+        addressId: selectedAddressId || '',
+        petId: params.petId || draft.petId || '',
+        petName: petName,
+        petBreed: params.petBreed || draft.petBreed || (petSpecies === 'Cat' ? 'Mèo' : 'Chó'),
+        petAvatarUrl: params.petAvatarUrl || draft.petAvatarUrl,
+        petWeight: petWeight,
+        day: day,
+        date: bookingDate,
+        slotTime: slotTime,
+        basePrice: String(selectedProvider.price),
+        selectedSizeId: params.selectedSizeId,
+        selectedAddonIds: params.selectedAddonIds,
+      },
+    });
   };
 
   return (
@@ -157,7 +231,7 @@ export default function SelectProviderScreen() {
 
       {/* 1. Header Navigation */}
       <BookingStepHeader
-        title="Choose Provider"
+        title="Chọn Chuyên viên"
         onBack={() => router.back()}
       />
 
@@ -174,7 +248,7 @@ export default function SelectProviderScreen() {
               <View style={styles.nodeCircleCompleted}>
                 <Check size={14} color={theme.colors.text.inverse} strokeWidth={3} />
               </View>
-              <Text style={styles.nodeLabel}>Pet</Text>
+              <Text style={styles.nodeLabel}>Thú cưng</Text>
             </View>
 
             <View style={styles.nodeLineCompleted} />
@@ -184,7 +258,7 @@ export default function SelectProviderScreen() {
               <View style={styles.nodeCircleCompleted}>
                 <Check size={14} color={theme.colors.text.inverse} strokeWidth={3} />
               </View>
-              <Text style={styles.nodeLabel}>Date & Time</Text>
+              <Text style={styles.nodeLabel}>Ngày & Giờ</Text>
             </View>
 
             <View style={styles.nodeLineActive} />
@@ -194,7 +268,7 @@ export default function SelectProviderScreen() {
               <View style={styles.nodeCircleActive}>
                 <Text style={styles.nodeNumberActive}>3</Text>
               </View>
-              <Text style={styles.nodeLabelActive}>Provider</Text>
+              <Text style={styles.nodeLabelActive}>Chuyên viên</Text>
             </View>
 
             <View style={styles.nodeLineInactive} />
@@ -204,25 +278,35 @@ export default function SelectProviderScreen() {
               <View style={styles.nodeCircleInactive}>
                 <Text style={styles.nodeNumberInactive}>4</Text>
               </View>
-              <Text style={styles.nodeLabelInactive}>Payment</Text>
+              <Text style={styles.nodeLabelInactive}>Thanh toán</Text>
             </View>
           </View>
 
           {/* Title and Step badge */}
           <View style={styles.titleRow}>
             <View style={styles.titleLeft}>
-              <Text style={styles.screenTitle}>Choose Provider</Text>
+              <Text style={styles.screenTitle}>Chuyên viên phù hợp</Text>
               <View style={styles.stepPill}>
-                <Text style={styles.stepPillText}>Step 3 of 4</Text>
+                <Text style={styles.stepPillText}>Bước 3 / 4</Text>
               </View>
             </View>
             <Text style={styles.screenSubtitle}>
-              Select the provider that best matches {petName}’s needs.
+              Chuyên viên nhận dịch vụ cho bé {petName} ({petSpecies === 'Cat' ? 'Mèo' : 'Chó'} · {petWeight})
             </Text>
           </View>
         </View>
 
-        {/* 3. Booking Criteria Summary Card */}
+        {/* 3. Address Preview */}
+        {selectedAddressLine ? (
+          <View style={styles.addressBar}>
+            <MapPin size={16} color={theme.colors.primary.navy} />
+            <Text style={styles.addressText} numberOfLines={1}>
+              Địa chỉ dịch vụ: {selectedAddressLine}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* 4. Booking Criteria Summary Card */}
         <BookingCriteriaSummaryCard
           petName={petName}
           serviceTitle={serviceTitle}
@@ -230,52 +314,97 @@ export default function SelectProviderScreen() {
           onEdit={() => router.back()}
         />
 
-        {/* 4. Quick Sort & Filter Bar */}
-        <ProviderSortFilterBar
-          selectedFilterId={selectedFilterId}
-          onSelectFilter={setSelectedFilterId}
-        />
+        {/* 5. Quick Sort & Filter Bar */}
+        {providers.length > 0 && (
+          <ProviderSortFilterBar
+            selectedFilterId={selectedFilterId}
+            onSelectFilter={setSelectedFilterId}
+          />
+        )}
 
-        {/* 5. Results Count Header */}
+        {/* 6. Results Header */}
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsCount}>
-            {filteredProviders.length} Recommended Providers
+            {providers.length > 0
+              ? `${filteredProviders.length} Chuyên viên từ cơ sở dữ liệu`
+              : 'Kết quả tìm kiếm đối tác'}
           </Text>
-          <Text style={styles.resultsSort}>Sorted by Best Match</Text>
+          {providers.length > 0 && (
+            <Text style={styles.resultsSort}>Kiểm tra loài & cân nặng</Text>
+          )}
         </View>
 
-        {/* 6. Matched Provider Cards List */}
+        {/* 7. Matched Provider Cards List */}
         <View style={styles.providersList}>
-          {filteredProviders.map((provider) => (
-            <MatchedProviderCard
-              key={provider.id}
-              provider={provider}
-              isSelected={selectedProviderId === provider.id}
-              petName={petName}
-              onSelect={() => setSelectedProviderId(provider.id)}
-              onViewDetails={() =>
-                router.push({
-                  pathname: '/(customer)/providers/[id]',
-                  params: {
-                    id: provider.id,
-                    name: provider.name,
-                  },
-                })
-              }
-            />
-          ))}
+          {isLoading ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="small" color={theme.colors.primary.navy} />
+              <Text style={styles.loadingText}>
+                Đang kiểm tra chuyên viên nhận {petSpecies === 'Cat' ? 'mèo' : 'chó'} ({petWeight})...
+              </Text>
+            </View>
+          ) : filteredProviders.length > 0 ? (
+            filteredProviders.map((provider) => (
+              <MatchedProviderCard
+                key={provider.id}
+                provider={provider}
+                isSelected={selectedProviderId === provider.id}
+                petName={petName}
+                onSelect={() => {
+                  setSelectedProviderId(provider.id);
+                  updateDraft({
+                    providerId: provider.id,
+                    providerName: provider.name,
+                    providerAvatar: provider.avatarUrl,
+                    providerRating: provider.rating,
+                    providerWorkingSlotId: provider.providerWorkingSlotId,
+                    servicePrice: provider.price,
+                  });
+                }}
+                onViewDetails={() =>
+                  router.push({
+                    pathname: '/(customer)/providers/[id]',
+                    params: {
+                      id: provider.id,
+                      name: provider.name,
+                    },
+                  })
+                }
+              />
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <AlertCircle size={32} color={theme.colors.semantic.warning} />
+              </View>
+              <Text style={styles.emptyTitle}>Chưa tìm thấy chuyên viên phù hợp</Text>
+              <Text style={styles.emptySubtitle}>
+                Hiện tại chưa có chuyên viên nào nhận {serviceTitle} cho loài{' '}
+                <Text style={styles.highlightText}>{petSpecies === 'Cat' ? 'Mèo' : 'Chó'}</Text> ở mức cân nặng{' '}
+                <Text style={styles.highlightText}>{petWeight}</Text>.
+              </Text>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={fetchProviders}
+                activeOpacity={0.8}
+              >
+                <RefreshCw size={16} color={theme.colors.primary.navy} />
+                <Text style={styles.retryBtnText}>Thử tìm kiếm lại</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        {/* 7. Safety Guarantee Banner */}
+        {/* 8. Safety Guarantee Banner */}
         <BookingSafetyBanner />
       </ScrollView>
 
-      {/* 8. Bottom Sticky Actions */}
+      {/* 9. Bottom Sticky Actions */}
       <BookingBottomActions
         onBack={() => router.back()}
         onNext={handleContinue}
-        nextLabel="Continue with Selected Provider"
-        disabled={!selectedProviderId}
+        nextLabel="Tiếp tục xem chi tiết đơn"
+        disabled={!selectedProviderId || providers.length === 0}
       />
     </Screen>
   );
@@ -289,7 +418,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 110, // Margin for sticky bottom actions
+    paddingBottom: 110,
   },
   trackerSection: {
     paddingHorizontal: theme.spacing[5],
@@ -394,7 +523,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     ...theme.typography.h2,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: theme.colors.primary.navy,
     letterSpacing: -0.4,
@@ -414,6 +543,26 @@ const styles = StyleSheet.create({
   screenSubtitle: {
     ...theme.typography.bodySm,
     color: theme.colors.text.secondary,
+  },
+  addressBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: theme.spacing[5],
+    marginTop: theme.spacing[3],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: theme.colors.surface.subdued,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border.subdued,
+  },
+  addressText: {
+    ...theme.typography.bodySm,
+    fontSize: 12,
+    color: theme.colors.primary.navy,
+    fontWeight: '600',
+    flex: 1,
   },
   resultsHeader: {
     flexDirection: 'row',
@@ -438,5 +587,68 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[5],
     gap: theme.spacing[3],
     paddingTop: theme.spacing[1],
+  },
+  loadingBox: {
+    padding: theme.spacing[8],
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    ...theme.typography.bodySm,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    backgroundColor: theme.colors.surface.lowest,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[6],
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border.subdued,
+    gap: theme.spacing[2],
+    marginVertical: theme.spacing[2],
+    ...theme.shadows.sm,
+  },
+  emptyIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    ...theme.typography.label,
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...theme.typography.bodySm,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  highlightText: {
+    fontWeight: '700',
+    color: theme.colors.primary.navy,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: theme.spacing[3],
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface.subdued,
+  },
+  retryBtnText: {
+    ...theme.typography.label,
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.primary.navy,
   },
 });

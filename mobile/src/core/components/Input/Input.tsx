@@ -4,6 +4,7 @@ import {
   TextInput,
   Text,
   StyleSheet,
+  TextStyle,
   ViewStyle,
   StyleProp,
   TextInputProps,
@@ -21,6 +22,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   onRightIconPress?: () => void;
   style?: StyleProp<ViewStyle>;
   containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
 }
 
 export const Input = forwardRef<TextInput, InputProps>(
@@ -34,6 +36,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       onRightIconPress,
       style,
       containerStyle,
+      inputStyle,
       editable = true,
       secureTextEntry,
       onFocus,
@@ -115,6 +118,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               styles.input,
               theme.typography.input,
               { color: isDisabled ? theme.colors.text.muted : theme.colors.text.primary },
+              inputStyle,
             ]}
             {...props}
           />

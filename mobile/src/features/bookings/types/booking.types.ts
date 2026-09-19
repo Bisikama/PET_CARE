@@ -1,29 +1,55 @@
 export interface BookingDraft {
   serviceId?: string;
   serviceTitle?: string;
-  providerId?: string;
-  providerName?: string;
-  totalPrice?: number;
+  serviceCategory?: string;
+  serviceDurationMinutes?: number;
+  basePrice?: number;
   selectedSizeId?: string;
   selectedAddonIds?: string[];
+  
   petId?: string;
   petName?: string;
+  petSpecies?: string;
+  petBreed?: string;
+  petAge?: number;
+  petWeight?: number;
+  petGender?: string;
   petAvatarUrl?: string;
-  bookingDate?: string;
-  timeSlot?: string;
-  location?: string;
-  notes?: string;
-  paymentMethod?: 'WALLET' | 'VNPAY' | 'CASH';
+
+  bookingDate?: string; // YYYY-MM-DD
+  timeSlot?: string;    // e.g. "10:30 AM" or "09:00 - 10:30"
+  timeSlotName?: string;
+  slotStartTime?: string;
+  slotEndTime?: string;
+
+  providerId?: string;
+  providerName?: string;
+  providerAvatar?: string;
+  providerRating?: number;
+  providerWorkingSlotId?: string;
+
+  addressId?: string;
+  addressLine?: string;
+  fullAddress?: string;
+
+  servicePrice?: number;
+  travelFee?: number;
+  distanceKm?: number;
+  discountAmount?: number;
+  totalPrice?: number;
+  promoCode?: string;
+  customerNote?: string;
+  paymentMethod?: PaymentMethodType;
 }
 
 export interface SelectablePet {
   id: string;
   name: string;
-  species: 'Dog' | 'Cat';
+  species: 'Dog' | 'Cat' | string;
   breed: string;
   age: number;
   weight: number;
-  gender: 'Male' | 'Female';
+  gender: 'Male' | 'Female' | string;
   avatarUrl: string;
   isVerified?: boolean;
   tierNote?: string;
@@ -63,4 +89,37 @@ export interface MatchedProviderItem {
   earliestSlot?: string;
   distanceKm?: number;
   isHomeVisit?: boolean;
+  providerWorkingSlotId?: string;
+}
+
+export type PaymentMethodType = 'WALLET' | 'VIETQR' | 'VNPAY' | 'MOMO' | 'CARD' | 'CASH';
+
+export interface VoucherItem {
+  code: string;
+  title: string;
+  description: string;
+  discountType: 'FIXED' | 'PERCENT';
+  discountValue: number;
+  maxDiscount?: number;
+  minOrderValue: number;
+  expiryDate: string;
+}
+
+export interface BookingReviewParams {
+  serviceId?: string;
+  serviceTitle?: string;
+  providerId?: string;
+  providerName?: string;
+  providerAvatar?: string;
+  providerRating?: string;
+  petId?: string;
+  petName?: string;
+  petBreed?: string;
+  petAvatarUrl?: string;
+  petWeight?: string;
+  day?: string;
+  slotTime?: string;
+  basePrice?: string;
+  selectedSizeId?: string;
+  selectedAddonIds?: string;
 }

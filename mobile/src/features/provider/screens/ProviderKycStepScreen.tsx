@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing[3],
   },
   infoBannerText: {
-    ...theme.typography.bodySmMedium,
+    ...theme.typography.bodyMdMedium,
     color: theme.colors.primary.navy,
     flex: 1,
   },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[5],
   },
   inputLabel: {
-    ...theme.typography.bodySmMedium,
+    ...theme.typography.bodyMdMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing[2],
   },
@@ -347,13 +347,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: theme.colors.primary.light,
+    backgroundColor: theme.colors.primary.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing[3],
   },
   uploadActionText: {
-    ...theme.typography.bodySmMedium,
+    ...theme.typography.bodyMdMedium,
     color: theme.colors.primary.navy,
   },
   uploadedImage: {
@@ -366,6 +366,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     backgroundColor: theme.colors.surface.default,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border.light,
+    borderTopColor: theme.colors.border.subdued,
   },
 });

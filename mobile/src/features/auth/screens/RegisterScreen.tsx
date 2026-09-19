@@ -149,7 +149,7 @@ export default function RegisterScreen() {
             <View style={styles.strengthHeader}>
               <Text style={styles.strengthTitle}>Strength rating</Text>
               <Text style={styles.strengthStatus}>
-                <Icon name="circle" size={8} color={theme.colors.semantic.success} fill={theme.colors.semantic.success} /> Strong password
+                <Icon name="circle" size={8} color={theme.colors.semantic.success} /> Strong password
               </Text>
             </View>
             
@@ -233,7 +233,7 @@ export default function RegisterScreen() {
             <Text style={styles.infoBannerSub}>Background checked & insured</Text>
           </View>
           <View style={styles.ratingBox}>
-            <Icon name="star" size={14} color={theme.colors.secondary.container} fill={theme.colors.secondary.container} />
+            <Icon name="star" size={14} color={theme.colors.secondary.container} />
             <Text style={styles.ratingText}>4.9/5</Text>
           </View>
         </View>

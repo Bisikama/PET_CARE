@@ -38,7 +38,7 @@ export default function PendingApprovalScreen() {
         <Text style={styles.title}>Account Under Review</Text>
         
         <Text style={styles.subtitle}>
-          Hi {user?.fullName || 'there'}, your application to become a provider is currently being reviewed by our team.
+          Hi {(user as any)?.fullName || (user as any)?.full_name || 'there'}, your application to become a provider is currently being reviewed by our team.
         </Text>
         
         <View style={styles.timeline}>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: theme.colors.primary.light,
+    backgroundColor: theme.colors.primary.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing[6],
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     top: 18,
     bottom: -2,
     width: 2,
-    backgroundColor: theme.colors.border.light,
+    backgroundColor: theme.colors.border.subdued,
   },
   timelineTextActive: {
     ...theme.typography.bodyMdMedium,
