@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   User,
@@ -25,15 +25,25 @@ export default function ProfileRoute() {
     ]);
   };
 
+  const avatar = user?.avatar_url || user?.avatarUrl;
+
   return (
     <Screen style={styles.screen} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <User size={36} color={theme.colors.primary.navy} />
+            {avatar ? (
+              <Image source={{ uri: avatar }} style={styles.avatarImage} />
+            ) : (
+              <Image 
+                source={require('../../../assets/images/logo.png')} 
+                style={styles.logoImage} 
+                resizeMode="contain" 
+              />
+            )}
           </View>
-          <Text style={styles.userName}>{user?.full_name || 'Sarah Nguyen'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'customer@petcare.com'}</Text>
+          <Text style={styles.userName}>{user?.full_name || user?.fullName || 'Người Dùng'}</Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
         <View style={styles.menuGroup}>
@@ -129,10 +139,23 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: theme.colors.surface.container,
+    backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing[3],
+    borderWidth: 2,
+    borderColor: theme.colors.border.subdued,
+    ...theme.shadows.sm,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logoImage: {
+    width: 50,
+    height: 50,
+    opacity: 0.9,
   },
   userName: {
     ...theme.typography.h3,

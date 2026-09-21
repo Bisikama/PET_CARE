@@ -12,7 +12,7 @@ export function BookingSafetyBanner() {
         </View>
 
         <Text style={styles.text}>
-          <Text style={styles.boldText}>PawCare Certified: </Text>
+          <Text style={styles.boldText}>PetCare Certified: </Text>
           All providers undergo background checks, tool sanitation audits & hands-on pet safety verification.
         </Text>
       </View>

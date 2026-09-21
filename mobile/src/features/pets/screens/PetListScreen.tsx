@@ -30,35 +30,7 @@ import { theme } from '@/core/theme';
 import { petApi } from '../api/petApi';
 import { Pet } from '../types/pet.types';
 
-// Fallback initial pet data if user has none or offline
-const fallbackPets: Pet[] = [
-  {
-    id: 'pet-fallback-1',
-    name: 'Milo',
-    species: 'Dog',
-    breed: 'Golden Retriever',
-    gender: 'Male',
-    age: 2,
-    weight: 18.5,
-    healthNote: 'Đã tiêm đủ mũi vaccine 7 bệnh, dị ứng nhẹ với sữa tắm cồn.',
-    behaviorNote: 'Rất ngoan, thích được chải lông và bơi lội.',
-    avatarUrl:
-      'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80',
-  },
-  {
-    id: 'pet-fallback-2',
-    name: 'Luna',
-    species: 'Cat',
-    breed: 'British Shorthair',
-    gender: 'Female',
-    age: 1,
-    weight: 4.2,
-    healthNote: 'Sức khỏe tốt, đã tẩy giun định kỳ.',
-    behaviorNote: 'Hơi nhát người lạ, thích ăn pate cá hồi.',
-    avatarUrl:
-      'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=300&q=80',
-  },
-];
+// Removed fallback pets to strictly use API data
 
 export default function PetListScreen() {
   const router = useRouter();
@@ -70,14 +42,13 @@ export default function PetListScreen() {
   const fetchPets = useCallback(async () => {
     try {
       const res = await petApi.getPets();
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
         setPets(res.data);
       } else {
-        // Fallback to sample pets if empty
-        setPets(fallbackPets);
+        setPets([]);
       }
     } catch (err: any) {
-      setPets(fallbackPets);
+      setPets([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -219,7 +190,12 @@ export default function PetListScreen() {
                 const behavior = pet.behaviorNote || pet.behavior_note;
 
                 return (
-                  <View key={pet.id} style={styles.petCard}>
+                  <TouchableOpacity 
+                    key={pet.id} 
+                    style={styles.petCard}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/(customer)/pets/${pet.id}`)}
+                  >
                     <View style={styles.petCardTop}>
                       {/* Avatar */}
                       <View style={styles.avatarWrap}>
@@ -325,7 +301,7 @@ export default function PetListScreen() {
                         )}
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>

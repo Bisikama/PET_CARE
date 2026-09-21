@@ -19,7 +19,7 @@ export function ProviderHeroCover({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Khám phá hồ sơ chuyên viên ${providerName} trên PawCare!`,
+        message: `Khám phá hồ sơ chuyên viên ${providerName} trên PetCare!`,
       });
     } catch (e) {
       // ignore

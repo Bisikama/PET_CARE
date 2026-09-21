@@ -25,7 +25,7 @@ export function ServiceHeroBanner({
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Khám phá dịch vụ ${serviceTitle} trên PawCare!`,
+        message: `Khám phá dịch vụ ${serviceTitle} trên PetCare!`,
       });
     } catch (error) {
       // ignore

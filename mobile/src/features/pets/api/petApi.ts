@@ -102,4 +102,33 @@ export const petApi = {
       return { success: false, data: [] };
     }
   },
+
+  createMedicalRecord: async (petId: string, data: Partial<MedicalRecord>): Promise<{ success: boolean; data?: MedicalRecord; message?: string }> => {
+    try {
+      const response = await apiClient.post(`/pets/${petId}/medical-records`, data);
+      const resData = response.data?.data || response.data;
+      return { success: true, data: resData };
+    } catch (error: any) {
+      return { success: false, message: error?.message || 'Không thể tạo sổ y tế' };
+    }
+  },
+
+  updateMedicalRecord: async (petId: string, recordId: string, data: Partial<MedicalRecord>): Promise<{ success: boolean; data?: MedicalRecord; message?: string }> => {
+    try {
+      const response = await apiClient.put(`/pets/medical-records/${recordId}`, data);
+      const resData = response.data?.data || response.data;
+      return { success: true, data: resData };
+    } catch (error: any) {
+      return { success: false, message: error?.message || 'Không thể cập nhật sổ y tế' };
+    }
+  },
+
+  deleteMedicalRecord: async (petId: string, recordId: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      await apiClient.delete(`/pets/medical-records/${recordId}`);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, message: error?.message || 'Không thể xóa sổ y tế' };
+    }
+  },
 };
