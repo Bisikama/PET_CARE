@@ -47,11 +47,6 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
-
-  const handleGoogleLogin = async () => {
-    alert("Tính năng Đăng nhập Google đang được phát triển.");
-  };
-
   return (
     <Screen style={styles.container} preset="scroll">
       {/* Header */}
@@ -120,10 +115,6 @@ export default function LoginScreen() {
               </View>
               <Text style={styles.rememberText}>Remember me</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-              <Text style={styles.forgotPassword}>Forgot Password?</Text>
-            </TouchableOpacity>
           </View>
 
           <Button 
@@ -134,19 +125,6 @@ export default function LoginScreen() {
             style={styles.signInButton}
             textStyle={styles.signInButtonText}
           />
-
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-            <View style={styles.line} />
-          </View>
-
-          <View style={styles.socialButtons}>
-            <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
-              <Icon name="mail" size={20} color={theme.colors.semantic.info} />
-              <Text style={styles.socialButtonText}>Google</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Footer info */}
@@ -290,48 +268,11 @@ const styles = StyleSheet.create({
     ...theme.typography.bodySm,
     color: theme.colors.text.secondary,
   },
-  forgotPassword: {
-    ...theme.typography.label,
-    color: theme.colors.primary.navy,
-  },
   signInButton: {
     backgroundColor: theme.colors.secondary.container,
     borderRadius: theme.radius.md,
   },
   signInButtonText: {
-    color: theme.colors.text.primary,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: theme.spacing[6],
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: theme.colors.border.subdued,
-  },
-  dividerText: {
-    ...theme.typography.label,
-    color: theme.colors.text.secondary,
-    paddingHorizontal: theme.spacing[4],
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: theme.spacing[4],
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.surface.subdued,
-    height: theme.dimensions.buttonHeight,
-    borderRadius: theme.radius.md,
-    gap: theme.spacing[2],
-  },
-  socialButtonText: {
-    ...theme.typography.label,
     color: theme.colors.text.primary,
   },
   encryptionInfo: {

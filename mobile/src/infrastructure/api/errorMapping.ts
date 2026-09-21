@@ -17,8 +17,24 @@ export const API_ERROR_MESSAGES: Record<number | string, string> = {
   'Conflict': 'Dữ liệu này đã tồn tại trên hệ thống.',
   'EMAIL_CONFIRMATION_PENDING': 'Tài khoản chưa được xác thực OTP.',
   'AUTH_OTP_INVALID_OR_EXPIRED': 'Mã OTP không hợp lệ hoặc đã hết hạn.',
-
-  // Default fallback
+  
+  // Custom Auth Backend Errors
+  'ACCOUNT_ALREADY_EXISTS': 'Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.',
+  'AUTH_INVALID_CREDENTIALS': 'Email hoặc mật khẩu không chính xác.',
+  'EMAIL_NOT_VERIFIED': 'Email của bạn chưa được xác thực.',
+  'ACCOUNT_LOCKED': 'Tài khoản của bạn đã bị khóa.',
+  'AUTH_LOCAL_PROFILE_CREATE_FAILED': 'Có lỗi xảy ra khi tạo hồ sơ. Vui lòng thử lại sau.',
+  'GOOGLE_ID_TOKEN_INVALID': 'Xác thực Google không thành công.',
+  'AUTH_PROVIDER_UNAVAILABLE': 'Dịch vụ xác thực hiện không khả dụng.',
+  'ACCOUNT_LOCKED_OR_MISSING': 'Tài khoản không tồn tại hoặc đã bị khóa.',
+  'ACCOUNT_IDENTITY_CONFLICT': 'Tài khoản này đã được liên kết với một phương thức đăng nhập khác.',
+  'ACCOUNT_AUTH_SETUP_INCOMPLETE': 'Thiết lập tài khoản chưa hoàn tất.',
+  'LEGACY_ACCOUNT_LINK_REQUIRED': 'Vui lòng liên kết tài khoản cũ của bạn.',
+  'AUTH_USER_CONTEXT_INVALID': 'Phiên đăng nhập không hợp lệ.',
+  'AUTH_ACCESS_DENIED': 'Bạn không có quyền thực hiện hành động này.',
+  'AUTH_PROFILE_OUT_OF_SYNC': 'Hồ sơ người dùng không đồng bộ.',
+  'AUTH_PASSWORD_CONFIRMATION_MISMATCH': 'Mật khẩu xác nhận không khớp.',
+  'USER_NOT_FOUND': 'Không tìm thấy người dùng.',
   'DEFAULT': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
 };
 
