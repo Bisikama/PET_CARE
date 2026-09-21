@@ -1,11 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable Helmet for security headers
+  app.use(helmet());
 
   // Enable CORS with credentials support (needed for cookies)
   const frontendOrigin = process.env.FRONTEND_URL
