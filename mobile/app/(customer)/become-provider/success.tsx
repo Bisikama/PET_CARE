@@ -1,2 +1,5 @@
-import ProviderSuccessScreen from '../../../src/features/provider/screens/ProviderSuccessScreen';
-export default ProviderSuccessScreen;
+import BecomeProviderSuccessScreen from '../../../src/features/provider/screens/BecomeProviderSuccessScreen';
+
+export default function BecomeProviderSuccessRoute() {
+  return <BecomeProviderSuccessScreen />;
+}

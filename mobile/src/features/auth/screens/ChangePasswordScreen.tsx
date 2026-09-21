@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../core/components/Button';
 import { Input } from '../../../core/components/Input';
 import { Screen } from '../../../core/components/Screen';
+import { ScreenHeader } from '../../../core/components/ScreenHeader';
 import { colors } from '../../../core/theme/colors';
 import { spacing } from '../../../core/theme/spacing';
 import { typography } from '../../../core/theme/typography';
@@ -55,9 +56,9 @@ export default function ChangePasswordScreen() {
 
   return (
     <Screen style={styles.container}>
+      <ScreenHeader title="Đổi mật khẩu" />
       <View style={styles.header}>
-        <Text style={[typography.h1, { color: colors.text.primary }]}>Đổi mật khẩu</Text>
-        <Text style={[typography.bodyLg, { color: colors.text.secondary, marginTop: spacing[1] }]}>
+        <Text style={[typography.bodyLg, { color: colors.text.secondary }]}>
           Vui lòng nhập mật khẩu cũ và mật khẩu mới
         </Text>
       </View>
@@ -101,12 +102,6 @@ export default function ChangePasswordScreen() {
           isLoading={loading}
           style={{ marginTop: spacing[4] }}
         />
-        
-        <Button label="Quay Lại"
-          onPress={() => router.back()}
-          variant="outline"
-          style={{ marginTop: spacing[2] }}
-        />
       </View>
     </Screen>
   );
@@ -114,13 +109,15 @@ export default function ChangePasswordScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing[6],
+    padding: 0,
   },
   header: {
+    paddingHorizontal: spacing[6],
     marginTop: spacing[4],
-    marginBottom: spacing[8],
+    marginBottom: spacing[6],
   },
   form: {
+    paddingHorizontal: spacing[6],
     gap: spacing[4],
   },
   successBox: {

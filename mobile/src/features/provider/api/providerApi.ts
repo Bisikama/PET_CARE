@@ -29,8 +29,8 @@ export const providerApi = {
     const formData = new FormData();
     formData.append('idNumber', data.idNumber);
     formData.append('fullName', data.fullName);
-    formData.append('dateOfBirth', data.dateOfBirth);
-    formData.append('nationality', data.nationality);
+    formData.append('dob', data.dob);
+    formData.append('issueDate', data.issueDate);
 
     formData.append('frontImage', frontImage as any);
     formData.append('backImage', backImage as any);
