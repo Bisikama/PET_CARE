@@ -36,7 +36,7 @@ import { GetActiveBookingUseCase } from '../../application/use-cases/get-active-
 import { GetBookingChecklistUseCase } from '../../application/use-cases/get-booking-checklist.use-case';
 import { StartBookingServiceUseCase } from '../../application/use-cases/start-booking-service.use-case';
 import { UpdateBookingChecklistItemUseCase } from '../../application/use-cases/update-booking-checklist-item.use-case';
-import { CompleteBookingUseCase } from '../../application/use-cases/complete-booking.use-case';
+import { } from '../../application/use-cases/complete-booking.use-case';
 import { UploadBookingEvidenceUseCase } from '../../application/use-cases/upload-booking-evidence.use-case';
 import { CustomerConfirmBookingUseCase } from '../../application/use-cases/customer-confirm-booking.use-case';
 import { CustomerCancelBookingUseCase } from '../../application/use-cases/customer-cancel-booking.use-case';
@@ -83,7 +83,7 @@ export class BookingsController {
     private readonly createReviewUseCase: CreateReviewUseCase,
     private readonly openDisputeUseCase: OpenDisputeUseCase,
     private readonly requestBookingExtensionUseCase: RequestBookingExtensionUseCase,
-  ) {}
+  ) { }
 
   @Post('calculate-price')
   @HttpCode(HttpStatus.OK)

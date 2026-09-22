@@ -207,4 +207,9 @@ export const bookingsApi = {
     });
     return data;
   },
+
+  getTimeSlots: async (): Promise<Array<{ id: string; name: string; start_time: string; end_time: string; slot_order: number }>> => {
+    const { data } = await apiClient.get('/time-slots');
+    return data;
+  },
 };

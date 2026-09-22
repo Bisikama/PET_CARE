@@ -17,8 +17,9 @@ export interface BookingDraft {
   petAvatarUrl?: string;
 
   bookingDate?: string; // YYYY-MM-DD
-  timeSlot?: string;    // e.g. "10:30 AM" or "09:00 - 10:30"
+  timeSlot?: string;    // e.g. "07:00 - 09:00"
   timeSlotName?: string;
+  slotId?: string;
   slotStartTime?: string;
   slotEndTime?: string;
 
@@ -62,6 +63,10 @@ export interface TimeSlotOption {
   period: string;
   isAvailable: boolean;
   isBooked?: boolean;
+  startTime?: string;
+  endTime?: string;
+  name?: string;
+  slotOrder?: number;
 }
 
 export interface CalendarDayItem {

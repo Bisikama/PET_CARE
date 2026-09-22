@@ -82,10 +82,11 @@ export default function ServiceDetailScreen() {
   const service = useMemo(() => {
     return {
       ...mockServiceDetail,
+      id: params.id || mockServiceDetail.id,
       title: params.title || mockServiceDetail.title,
       providerName: params.providerName || mockServiceDetail.providerName,
     };
-  }, [params.title, params.providerName]);
+  }, [params.id, params.title, params.providerName]);
 
   // Calculate live total price
   const totalPrice = useMemo(() => {

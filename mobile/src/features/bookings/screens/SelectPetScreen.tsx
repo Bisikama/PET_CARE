@@ -105,6 +105,10 @@ export default function SelectPetScreen() {
 
     // Save to context
     updateDraft({
+      serviceId: params.serviceId || draft.serviceId,
+      serviceTitle: serviceTitle || draft.serviceTitle,
+      servicePrice: parsedPrice || draft.servicePrice,
+      basePrice: parsedPrice || draft.basePrice,
       petId: selectedPet.id,
       petName: selectedPet.name,
       petSpecies: selectedPet.species,
