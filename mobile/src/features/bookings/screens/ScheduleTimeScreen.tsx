@@ -145,6 +145,7 @@ export default function ScheduleTimeScreen() {
         date: selectedDateStr,
         slotTime: selectedSlotTime,
         slotId: selectedSlotId,
+        addressId: draft.addressId,
       },
     });
   };

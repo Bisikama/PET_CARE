@@ -153,7 +153,7 @@ export const bookingsApi = {
   getActiveBooking: async (): Promise<ActiveBooking | null> => {
     try {
       const { data } = await apiClient.get('/bookings/active');
-      return data;
+      return data?.data !== undefined ? data.data : data;
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null;
@@ -168,48 +168,52 @@ export const bookingsApi = {
     status?: string;
   }): Promise<GetBookingsResponse> => {
     const { data } = await apiClient.get('/bookings', { params });
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   getBookingById: async (id: string): Promise<BookingListItem> => {
     const { data } = await apiClient.get(`/bookings/${id}`);
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   cancelBooking: async (id: string, reason?: string): Promise<{ success: boolean; message?: string }> => {
     const { data } = await apiClient.post(`/bookings/${id}/cancel`, { reason });
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   customerConfirm: async (id: string): Promise<{ success: boolean }> => {
     const { data } = await apiClient.post(`/bookings/${id}/customer-confirm`);
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   calculatePrice: async (dto: CalculatePriceRequest): Promise<CalculatePriceResponse> => {
     const { data } = await apiClient.post('/bookings/calculate-price', dto);
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   createBooking: async (dto: CreateBookingRequest): Promise<CreateBookingResponse> => {
     const { data } = await apiClient.post('/bookings', dto);
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   searchMatchingProviders: async (dto: SearchMatchingProvidersRequest): Promise<MatchedProviderResponse[]> => {
     const { data } = await apiClient.post('/booking-matching/search', dto);
-    return data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
   },
 
   getAvailableSlots: async (providerId: string, startDate?: string, endDate?: string): Promise<any> => {
     const { data } = await apiClient.get(`/provider-schedules/available-slots/${providerId}`, {
       params: { startDate, endDate },
     });
-    return data;
+    return data?.data !== undefined ? data.data : data;
   },
 
   getTimeSlots: async (): Promise<Array<{ id: string; name: string; start_time: string; end_time: string; slot_order: number }>> => {
     const { data } = await apiClient.get('/time-slots');
-    return data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
   },
 };

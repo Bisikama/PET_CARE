@@ -41,13 +41,14 @@ export default function SelectProviderScreen() {
     day?: string;
     date?: string;
     slotTime?: string;
+    addressId?: string;
   }>();
 
   const [providers, setProviders] = useState<MatchedProviderItem[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
   const [selectedFilterId, setSelectedFilterId] = useState<string>('best_match');
   const [addresses, setAddresses] = useState<any[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string>(draft.addressId || '');
+  const [selectedAddressId, setSelectedAddressId] = useState<string>(params.addressId || draft.addressId || '');
   const [selectedAddressLine, setSelectedAddressLine] = useState<string>(draft.addressLine || '');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export default function SelectProviderScreen() {
       setErrorMessage(null);
 
       // 1. Fetch addresses
-      let activeAddressId = selectedAddressId || draft.addressId;
+      let activeAddressId = params.addressId || selectedAddressId || draft.addressId;
       let activeAddressLine = selectedAddressLine || draft.addressLine;
 
       if (!activeAddressId) {
@@ -86,11 +87,11 @@ export default function SelectProviderScreen() {
             activeAddressLine = `${(defaultAddr as any).addressLine || (defaultAddr as any).address_line || ''}, ${
               defaultAddr.ward ? defaultAddr.ward + ', ' : ''
             }${defaultAddr.district || ''}, ${defaultAddr.city || ''}`;
-            setSelectedAddressId(activeAddressId);
-            setSelectedAddressLine(activeAddressLine);
+            setSelectedAddressId(activeAddressId || '');
+            setSelectedAddressLine(activeAddressLine || '');
             updateDraft({
-              addressId: activeAddressId,
-              addressLine: activeAddressLine,
+              addressId: activeAddressId || '',
+              addressLine: activeAddressLine || '',
             });
           }
         } catch (addrErr) {
@@ -103,15 +104,21 @@ export default function SelectProviderScreen() {
       const serviceId = params.serviceId || draft.serviceId;
 
       if (petId && serviceId && activeAddressId) {
-        const matchedRes = await bookingsApi.searchMatchingProviders({
+        const matchedRes: any = await bookingsApi.searchMatchingProviders({
           petId,
           serviceId,
           addressId: activeAddressId,
           date: bookingDate,
         });
 
-        if (Array.isArray(matchedRes) && matchedRes.length > 0) {
-          const mapped: MatchedProviderItem[] = matchedRes.map((p, idx) => ({
+        const list: any[] = Array.isArray(matchedRes)
+          ? matchedRes
+          : Array.isArray(matchedRes?.data)
+          ? matchedRes.data
+          : [];
+
+        if (list.length > 0) {
+          const mapped: MatchedProviderItem[] = list.map((p, idx) => ({
             id: p.providerId,
             name: p.fullName || `Chuyên viên ${idx + 1}`,
             avatarUrl:
@@ -152,11 +159,20 @@ export default function SelectProviderScreen() {
         } else {
           setProviders([]);
           setSelectedProviderId('');
+          setErrorMessage('Không tìm thấy chuyên viên phù hợp cho tiêu chí này. Hãy thử đổi ngày làm việc.');
         }
       } else {
         setProviders([]);
+        if (!activeAddressId) {
+          setErrorMessage('Chưa có địa chỉ. Vui lòng thêm hoặc chọn địa chỉ nhận dịch vụ.');
+        } else if (!petId) {
+          setErrorMessage('Chưa chọn thú cưng.');
+        } else if (!serviceId) {
+          setErrorMessage('Chưa chọn dịch vụ.');
+        }
       }
     } catch (e: any) {
+      console.error('Lỗi searchMatchingProviders:', e);
       setErrorMessage(e?.message || 'Không thể tải danh sách chuyên viên');
       setProviders([]);
     } finally {
@@ -166,7 +182,7 @@ export default function SelectProviderScreen() {
 
   useEffect(() => {
     fetchProviders();
-  }, [bookingDate, params.petId, params.serviceId]);
+  }, [bookingDate, params.petId, draft.petId, params.serviceId, draft.serviceId, selectedAddressId, draft.addressId]);
 
   // Filtered providers
   const filteredProviders = useMemo(() => {
