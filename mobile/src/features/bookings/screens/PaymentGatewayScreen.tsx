@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,34 +10,33 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import {
   ShieldCheck,
   Wallet,
-  CreditCard,
   QrCode,
   Smartphone,
-  Banknote,
   CheckCircle2,
   Circle,
   ArrowRight,
   Lock,
+  PlusCircle,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { BookingStepHeader } from '../components/BookingStepHeader';
 import { PaymentEscrowCard } from '../components/PaymentEscrowCard';
-import { PaymentCreditCardForm } from '../components/PaymentCreditCardForm';
-import { PaymentVietQrModal } from '../components/PaymentVietQrModal';
 import { PaymentSecurityFooter } from '../components/PaymentSecurityFooter';
 import { formatCurrency } from '@/core/utils/currency';
 import { useBookingFlow } from '../context/BookingContext';
 import { bookingsApi } from '@/infrastructure/api/bookings.api';
+import { paymentsApi } from '@/infrastructure/api/payments.api';
 
-type PaymentMethodKey = 'WALLET' | 'VIETQR' | 'MOMO' | 'CARD' | 'CASH';
+type PaymentMethodKey = 'WALLET' | 'VNPAY' | 'MOMO';
 
 export default function PaymentGatewayScreen() {
   const router = useRouter();
-  const { draft, resetDraft, updateDraft } = useBookingFlow();
+  const { draft, resetDraft } = useBookingFlow();
   const params = useLocalSearchParams<{
     serviceId?: string;
     serviceTitle?: string;
@@ -69,18 +68,42 @@ export default function PaymentGatewayScreen() {
 
   // Payment states
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodKey>(
-    (params.paymentMethod as PaymentMethodKey) || draft.paymentMethod || 'WALLET'
+    (params.paymentMethod as PaymentMethodKey) || 'WALLET'
   );
-  const [walletBalance, setWalletBalance] = useState(1250000);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isVietQrModalVisible, setIsVietQrModalVisible] = useState(false);
+  const [isToppingUp, setIsToppingUp] = useState(false);
 
-  // Card form states
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardHolder, setCardHolder] = useState('NGUYEN VAN A');
-  const [expiryDate, setExpiryDate] = useState('12/28');
-  const [cvv, setCvv] = useState('');
-  const [saveCard, setSaveCard] = useState(true);
+  // Fetch real wallet balance from backend
+  const fetchWallet = async () => {
+    try {
+      setIsLoadingWallet(true);
+      const w = await paymentsApi.getMyWallet();
+      setWalletBalance(w.balance);
+    } catch (e) {
+      console.log('Không lấy được số dư ví:', e);
+    } finally {
+      setIsLoadingWallet(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWallet();
+  }, []);
+
+  const handleTopup = async () => {
+    try {
+      setIsToppingUp(true);
+      await paymentsApi.topupWallet(1000000);
+      await fetchWallet();
+      Alert.alert('Thành công', 'Đã nạp 1.000.000 đ vào ví PetCare để thử nghiệm thanh toán!');
+    } catch (e: any) {
+      Alert.alert('Lỗi nạp tiền', e?.message || 'Không thể nạp tiền ví.');
+    } finally {
+      setIsToppingUp(false);
+    }
+  };
 
   const methods: {
     id: PaymentMethodKey;
@@ -93,15 +116,17 @@ export default function PaymentGatewayScreen() {
     {
       id: 'WALLET',
       title: 'Ví PetCare Wallet',
-      subtext: `Khả dụng: ${formatCurrency(walletBalance)} đ (Trừ tiền tự động)`,
+      subtext: isLoadingWallet
+        ? 'Đang tải số dư...'
+        : `Khả dụng: ${formatCurrency(walletBalance)} đ · Trừ tiền tự động 1-chạm`,
       icon: <Wallet size={20} color={theme.colors.secondary.onContainer} />,
       badge: 'Khuyên dùng',
       badgeColor: '#10B981',
     },
     {
-      id: 'VIETQR',
-      title: 'VietQR / App Ngân Hàng',
-      subtext: 'Quét mã QR chuyển khoản tự động xác nhận tức thì',
+      id: 'VNPAY',
+      title: 'Cổng VNPAY (Ngân hàng / VNPAY-QR)',
+      subtext: 'Thẻ ATM nội địa NCB, quét QR ngân hàng, Visa/Mastercard',
       icon: <QrCode size={20} color="#2563EB" />,
       badge: 'Phổ biến',
       badgeColor: '#2563EB',
@@ -109,20 +134,8 @@ export default function PaymentGatewayScreen() {
     {
       id: 'MOMO',
       title: 'Ví MoMo',
-      subtext: 'Thanh toán bảo mật một chạm qua ứng dụng MoMo',
+      subtext: 'Mở ứng dụng hoặc mã MoMo để thanh toán bảo mật',
       icon: <Smartphone size={20} color="#D946EF" />,
-    },
-    {
-      id: 'CARD',
-      title: 'Thẻ Quốc tế (Visa / MasterCard)',
-      subtext: 'Thanh toán trực tiếp bằng thẻ ghi nợ/tín dụng quốc tế',
-      icon: <CreditCard size={20} color="#F59E0B" />,
-    },
-    {
-      id: 'CASH',
-      title: 'Tiền mặt khi hoàn thành',
-      subtext: 'Thanh toán trực tiếp cho chuyên viên tại salon/nhà',
-      icon: <Banknote size={20} color="#16A34A" />,
     },
   ];
 
@@ -143,114 +156,105 @@ export default function PaymentGatewayScreen() {
   };
 
   const handlePay = async () => {
+    if (!petId || !serviceId || !addressId || !providerWorkingSlotId) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng hoàn tất các bước chọn thú cưng, địa chỉ và lịch trước khi thanh toán.');
+      return;
+    }
+
+    // 1. Kiểm tra số dư nếu chọn ví
     if (selectedMethod === 'WALLET' && walletBalance < totalAmount) {
       Alert.alert(
         'Số dư ví không đủ',
-        `Số dư hiện tại (${formatCurrency(
-          walletBalance
-        )}đ) không đủ để thanh toán ${formatCurrency(
+        `Số dư ví hiện tại là ${formatCurrency(walletBalance)} đ, không đủ thanh toán ${formatCurrency(
           totalAmount
-        )}đ. Vui lòng nạp thêm hoặc chọn phương thức khác.`
+        )} đ. Bạn có muốn nạp nhanh 1.000.000 đ vào ví để tiếp tục không?`,
+        [
+          { text: 'Đổi phương thức khác', style: 'cancel' },
+          {
+            text: 'Nạp nhanh 1.000.000đ',
+            onPress: async () => {
+              await handleTopup();
+            },
+          },
+        ]
       );
       return;
     }
 
-    if (selectedMethod === 'CARD') {
-      if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
-        Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ 16 số thẻ.');
-        return;
-      }
-      if (!cvv || cvv.length < 3) {
-        Alert.alert('Thông báo', 'Vui lòng nhập mã bảo mật CVV.');
-        return;
-      }
-    }
-
-    if (selectedMethod === 'VIETQR') {
-      setIsVietQrModalVisible(true);
-      return;
-    }
-
     setIsProcessing(true);
 
     try {
-      // If we have actual database IDs, attempt real API booking creation
-      if (petId && serviceId && addressId && providerWorkingSlotId) {
-        try {
-          const res = await bookingsApi.createBooking({
-            petId,
-            serviceId,
-            addressId,
-            providerWorkingSlotId,
-            customerNote,
-            promoCode,
-          });
+      // 2. Tạo đơn Booking trong database
+      const bookingRes: any = await bookingsApi.createBooking({
+        petId,
+        serviceId,
+        addressId,
+        providerWorkingSlotId,
+        customerNote,
+        promoCode,
+      });
 
-          const bookingCode = res?.booking?.booking_code || `BK-${Date.now().toString().slice(-6)}`;
-          if (selectedMethod === 'WALLET') {
-            setWalletBalance((prev) => prev - totalAmount);
-          }
-          completeAndNavigate(bookingCode, selectedMethod);
-          return;
-        } catch (apiError: any) {
-          // If conflict or specific error
-          const msg = apiError?.response?.data?.message || apiError?.message;
-          if (msg && typeof msg === 'string' && !msg.includes('Network Error')) {
-            // If real business error (e.g. slot conflict), notify user
-            Alert.alert('Đặt lịch chưa hoàn tất', msg);
-            setIsProcessing(false);
-            return;
-          }
-        }
+      const booking = bookingRes?.booking || bookingRes?.data?.booking || bookingRes;
+      const bookingId = booking?.id;
+      const bookingCode = booking?.booking_code || `BK-${Date.now().toString().slice(-6)}`;
+
+      if (!bookingId) {
+        throw new Error('Không tạo được mã đơn đặt lịch.');
       }
 
-      // Fallback graceful confirmation
-      setTimeout(() => {
-        setIsProcessing(false);
-        if (selectedMethod === 'WALLET') {
-          setWalletBalance((prev) => prev - totalAmount);
-        }
-        const generatedCode = `BK-${Date.now().toString().slice(-6)}`;
-        completeAndNavigate(generatedCode, selectedMethod);
-      }, 1000);
-    } catch (error) {
-      setIsProcessing(false);
-      const generatedCode = `BK-${Date.now().toString().slice(-6)}`;
-      completeAndNavigate(generatedCode, selectedMethod);
-    }
-  };
+      // 3. Xử lý thanh toán theo từng phương thức
+      if (selectedMethod === 'WALLET') {
+        // Gọi API checkout bằng ví
+        await paymentsApi.checkoutWithWallet({
+          bookingId,
+          promotionCode: promoCode,
+        });
 
-  const handleQrPaymentConfirmed = async () => {
-    setIsVietQrModalVisible(false);
-    setIsProcessing(true);
-
-    try {
-      if (petId && serviceId && addressId && providerWorkingSlotId) {
-        try {
-          const res = await bookingsApi.createBooking({
-            petId,
-            serviceId,
-            addressId,
-            providerWorkingSlotId,
-            customerNote,
-            promoCode,
-          });
-          const code = res?.booking?.booking_code || `BK-${Date.now().toString().slice(-6)}`;
-          completeAndNavigate(code, 'VIETQR');
-          return;
-        } catch (e) {
-          // fallback
-        }
+        setWalletBalance((prev) => Math.max(0, prev - totalAmount));
+        completeAndNavigate(bookingCode, 'WALLET');
+        return;
       }
-      setTimeout(() => {
-        setIsProcessing(false);
-        const code = `BK-${Date.now().toString().slice(-6)}`;
-        completeAndNavigate(code, 'VIETQR');
-      }, 800);
-    } catch (e) {
+
+      if (selectedMethod === 'VNPAY') {
+        // Lấy paymentUrl từ response createBooking hoặc gọi checkout VNPay
+        let paymentUrl = bookingRes?.paymentUrl || bookingRes?.data?.paymentUrl;
+        if (!paymentUrl) {
+          const vnpayRes = await paymentsApi.checkoutVNPay({
+            bookingId,
+            promotionCode: promoCode,
+          });
+          paymentUrl = vnpayRes?.paymentUrl;
+        }
+
+        if (paymentUrl) {
+          // Mở In-App Browser cổng VNPAY
+          await WebBrowser.openBrowserAsync(paymentUrl);
+        }
+        completeAndNavigate(bookingCode, 'VNPAY');
+        return;
+      }
+
+      if (selectedMethod === 'MOMO') {
+        const momoRes = await paymentsApi.checkoutMoMo({
+          bookingId,
+          promotionCode: promoCode,
+        });
+        const paymentUrl = momoRes?.paymentUrl;
+        if (paymentUrl) {
+          await WebBrowser.openBrowserAsync(paymentUrl);
+        }
+        completeAndNavigate(bookingCode, 'MOMO');
+        return;
+      }
+    } catch (apiError: any) {
+      console.error('Lỗi khi thanh toán booking:', apiError);
+      const msg =
+        apiError?.response?.data?.message ||
+        apiError?.message ||
+        'Đã xảy ra lỗi khi tạo đơn hoặc thanh toán. Vui lòng thử lại.';
+      Alert.alert('Thanh toán chưa hoàn tất', msg);
+    } finally {
       setIsProcessing(false);
-      const code = `BK-${Date.now().toString().slice(-6)}`;
-      completeAndNavigate(code, 'VIETQR');
     }
   };
 
@@ -331,7 +335,7 @@ export default function PaymentGatewayScreen() {
                             {
                               backgroundColor:
                                 method.badgeColor === '#10B981'
-                                   ? '#DCFCE7'
+                                  ? '#DCFCE7'
                                   : '#DBEAFE',
                             },
                           ]}
@@ -370,35 +374,29 @@ export default function PaymentGatewayScreen() {
               );
             })}
           </View>
+
+          {/* Quick Top-up Button for Testing Wallet */}
+          <TouchableOpacity
+            style={styles.topupCard}
+            onPress={handleTopup}
+            disabled={isToppingUp}
+            activeOpacity={0.7}
+          >
+            <View style={styles.topupLeft}>
+              <PlusCircle size={18} color="#059669" />
+              <Text style={styles.topupText}>Nạp thêm 1.000.000 đ vào ví PetCare (Thử nghiệm)</Text>
+            </View>
+            {isToppingUp && <ActivityIndicator size="small" color="#059669" />}
+          </TouchableOpacity>
         </View>
 
-        {/* 4. Sub-form for Credit Card (when CARD selected) */}
-        {selectedMethod === 'CARD' && (
-          <View style={styles.sectionWrap}>
-            <View style={styles.cardFormContainer}>
-              <PaymentCreditCardForm
-                cardNumber={cardNumber}
-                onChangeCardNumber={setCardNumber}
-                cardHolder={cardHolder}
-                onChangeCardHolder={setCardHolder}
-                expiryDate={expiryDate}
-                onChangeExpiryDate={setExpiryDate}
-                cvv={cvv}
-                onChangeCvv={setCvv}
-                saveCard={saveCard}
-                onToggleSaveCard={setSaveCard}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* 5. Security Trust Badges */}
+        {/* 4. Security Trust Badges */}
         <View style={styles.sectionWrap}>
           <PaymentSecurityFooter />
         </View>
       </ScrollView>
 
-      {/* 6. Bottom Sticky Action Bar */}
+      {/* 5. Bottom Sticky Action Bar */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomCol}>
           <Text style={styles.bottomLabel}>TỔNG THANH TOÁN</Text>
@@ -416,26 +414,17 @@ export default function PaymentGatewayScreen() {
           ) : (
             <>
               <Text style={styles.payButtonText}>
-                {selectedMethod === 'VIETQR'
-                  ? 'Hiện mã VietQR'
-                  : selectedMethod === 'CASH'
-                  ? 'Hoàn tất đặt lịch'
-                  : 'Xác nhận & Thanh toán'}
+                {selectedMethod === 'WALLET'
+                  ? 'Thanh toán bằng ví'
+                  : selectedMethod === 'VNPAY'
+                  ? 'Mở cổng VNPAY'
+                  : 'Thanh toán qua MoMo'}
               </Text>
               <ArrowRight size={16} color="white" />
             </>
           )}
         </TouchableOpacity>
       </View>
-
-      {/* 7. VietQR Modal */}
-      <PaymentVietQrModal
-        visible={isVietQrModalVisible}
-        amount={totalAmount}
-        bookingCode="BK-QR"
-        onClose={() => setIsVietQrModalVisible(false)}
-        onConfirmPaid={handleQrPaymentConfirmed}
-      />
     </Screen>
   );
 }
@@ -541,13 +530,27 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     lineHeight: 15,
   },
-  cardFormContainer: {
-    backgroundColor: theme.colors.surface.lowest,
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing[4],
+  topupCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDF4',
     borderWidth: 1,
-    borderColor: theme.colors.border.subdued,
-    ...theme.shadows.sm,
+    borderColor: '#BBF7D0',
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[3],
+    marginTop: 12,
+  },
+  topupLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  topupText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#15803D',
   },
   bottomBar: {
     position: 'absolute',
