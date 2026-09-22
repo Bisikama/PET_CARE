@@ -11,14 +11,14 @@ export interface CreateProviderProfileDto {
 }
 
 export interface UpdateProviderAddressDto {
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state?: string;
-  postalCode?: string;
-  country: string;
-  latitude: number;
-  longitude: number;
+  baseAddressLine: string;
+  baseWard?: string;
+  baseDistrict?: string;
+  baseCity?: string;
+  baseLatitude: number;
+  baseLongitude: number;
+  baseFormatted?: string;
+  serviceRadiusKm?: number;
 }
 
 export interface AddServiceAreaDto {
@@ -39,8 +39,8 @@ export interface RegisterCapabilityDto {
 export interface SubmitKycDto {
   idNumber: string;
   fullName: string;
-  dateOfBirth: string; // ISO date string
-  nationality: string;
+  dob: string;
+  issueDate: string;
 }
 
 export interface ProviderProfileResponse {

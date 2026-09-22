@@ -23,7 +23,7 @@ export function ExploreHeader({
         <View style={styles.logoIconWrapper}>
           <PawPrint size={18} color={theme.colors.primary.navy} />
         </View>
-        <Text style={styles.brandTitle}>PawCare</Text>
+        <Text style={styles.brandTitle}>PetCare</Text>
         <Text style={styles.pageSubtitle}>• Explore</Text>
       </View>
 

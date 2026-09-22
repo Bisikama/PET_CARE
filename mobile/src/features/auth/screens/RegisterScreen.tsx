@@ -55,11 +55,6 @@ export default function RegisterScreen() {
       setLoading(false);
     }
   };
-
-  const handleGoogleLogin = async () => {
-    alert("Tính năng Đăng ký bằng Google đang được phát triển.");
-  };
-
   // Check password strength
   const hasMinLength = password.length >= 8;
   const hasUppercase = /[A-Z]/.test(password);
@@ -208,19 +203,6 @@ export default function RegisterScreen() {
             style={styles.submitButton}
             textStyle={styles.submitButtonText}
           />
-
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>OR SIGN UP WITH</Text>
-            <View style={styles.line} />
-          </View>
-
-          <View style={styles.socialButtons}>
-            <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
-              <Icon name="mail" size={20} color={theme.colors.semantic.info} />
-              <Text style={styles.socialButtonText}>Google</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Info Banner */}
@@ -475,39 +457,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
   },
   submitButtonText: {
-    color: theme.colors.text.primary,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: theme.spacing[6],
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: theme.colors.border.subdued,
-  },
-  dividerText: {
-    ...theme.typography.label,
-    color: theme.colors.text.secondary,
-    paddingHorizontal: theme.spacing[4],
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: theme.spacing[4],
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.surface.subdued,
-    height: theme.dimensions.buttonHeight,
-    borderRadius: theme.radius.md,
-    gap: theme.spacing[2],
-  },
-  socialButtonText: {
-    ...theme.typography.label,
     color: theme.colors.text.primary,
   },
   infoBanner: {

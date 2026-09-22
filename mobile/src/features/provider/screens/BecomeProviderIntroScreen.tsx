@@ -1,81 +1,219 @@
 import React from 'react';
 import { View, StyleSheet, Text, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { CheckCircle2, TrendingUp, Calendar, Wallet, ShieldCheck, Star } from 'lucide-react-native';
 import { Screen } from '../../../core/components/Screen';
 import { Button } from '../../../core/components/Button';
-import { Icon } from '../../../core/components/Icon';
+import { ScreenHeader } from '../../../core/components/ScreenHeader';
 import { theme } from '../../../core/theme';
 
 export default function BecomeProviderIntroScreen() {
   const router = useRouter();
 
   const handleStart = () => {
-    router.push('/(customer)/become-provider/step-profile');
+    router.push('/(customer)/become-provider/form');
   };
-
-  const benefits = [
-    {
-      icon: 'briefcase',
-      title: 'Be Your Own Boss',
-      description: 'Choose your own schedule, services, and prices.',
-    },
-    {
-      icon: 'heart',
-      title: 'Do What You Love',
-      description: 'Spend your time caring for adorable pets and get paid for it.',
-    },
-    {
-      icon: 'shield',
-      title: 'PetCare Protection',
-      description: 'Every booking is covered by our premium insurance and support.',
-    },
-  ];
 
   return (
     <Screen style={styles.container}>
+      <ScreenHeader title="PETCARE PARTNER" rightIcon="help-circle" onRightPress={() => {}} />
+      
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=2669&auto=format&fit=crop' }} 
-            style={styles.heroImage}
-            resizeMode="cover"
-          />
-          <View style={styles.overlay} />
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Join PetCare</Text>
-            <Text style={styles.subtitle}>Turn your passion for pets into a rewarding business</Text>
+        
+        {/* Hero Card */}
+        <View style={styles.heroCard}>
+          <View style={styles.badgeContainer}>
+            <Star size={14} color={theme.colors.semantic.warning} />
+            <Text style={styles.badgeText}>Chương trình Đối tác PetCare</Text>
+          </View>
+          <Text style={styles.heroTitle}>Biến tình yêu thú cưng thành thu nhập bền vững</Text>
+          <Text style={styles.heroDesc}>
+            Gia nhập mạng lưới dịch vụ chăm sóc thú cưng uy tín hàng đầu. Kết nối tức thì với cộng đồng khách hàng cao cấp gần bạn.
+          </Text>
+          
+          <View style={styles.heroImageWrapper}>
+            <Image 
+              source={require('../../../../assets/images/banner.png')} 
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          </View>
+          <View style={styles.floatingStats}>
+            <View style={styles.pawIconBox}>
+              <Text style={{fontSize: 16}}>🐾</Text>
+            </View>
+            <View style={{flex: 1}}>
+              <Text style={styles.statBold}>50.000+ ba mẹ thú cưng</Text>
+              <Text style={styles.statSmall}>Đặt lịch mỗi tuần tại PetCare</Text>
+            </View>
+            <View style={styles.ratingBadge}>
+              <Star size={12} color="#F59E0B" fill="#F59E0B" />
+              <Text style={styles.ratingText}>4.9/5</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.content}>
-          <Text style={styles.sectionTitle}>Why become a PetCare Provider?</Text>
-          
-          <View style={styles.benefitsList}>
-            {benefits.map((item, index) => (
-              <View key={index} style={styles.benefitCard}>
-                <View style={styles.iconBox}>
-                  <Icon name={item.icon as any} size={24} color={theme.colors.primary.navy} />
-                </View>
-                <View style={styles.benefitText}>
-                  <Text style={styles.benefitTitle}>{item.title}</Text>
-                  <Text style={styles.benefitDesc}>{item.description}</Text>
-                </View>
-              </View>
-            ))}
+        {/* 3 Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>50k+</Text>
+            <Text style={styles.statLabel}>Khách hàng</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>35Tr</Text>
+            <Text style={styles.statLabel}>Thu nhập/tháng</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={[styles.statNumber, {color: theme.colors.semantic.success}]}>0đ</Text>
+            <Text style={styles.statLabel}>Phí nền tảng</Text>
           </View>
         </View>
+
+        {/* Benefits Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionSub}>ĐẶC QUYỀN ĐỐI TÁC</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Tại sao nên đồng hành?</Text>
+            <View style={styles.guaranteeBadge}>
+              <Text style={styles.guaranteeText}>● Đảm bảo 100%</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.benefitsList}>
+          <View style={styles.benefitCard}>
+            <View style={[styles.iconBox, {backgroundColor: '#FFFBEB'}]}>
+              <TrendingUp size={20} color="#D97706" />
+            </View>
+            <View style={styles.benefitText}>
+              <Text style={styles.benefitTitle}>Doanh thu vượt trội</Text>
+              <Text style={styles.benefitDesc}>Tiếp cận hàng ngàn chủ thú cưng ngay khu vực của bạn. Tăng doanh số đều đặn mà không tốn chi phí quảng cáo marketing.</Text>
+            </View>
+          </View>
+
+          <View style={styles.benefitCard}>
+            <View style={[styles.iconBox, {backgroundColor: '#EFF6FF'}]}>
+              <Calendar size={20} color="#2563EB" />
+            </View>
+            <View style={styles.benefitText}>
+              <Text style={styles.benefitTitle}>Tự chủ thời gian</Text>
+              <Text style={styles.benefitDesc}>Linh hoạt xếp lịch nhận đặt hẹn, bật/tắt nhận khách 1 chạm. Hoàn toàn chủ động quản lý thời gian và năng lực phục vụ.</Text>
+            </View>
+          </View>
+
+          <View style={styles.benefitCard}>
+            <View style={[styles.iconBox, {backgroundColor: '#ECFDF5'}]}>
+              <Wallet size={20} color="#059669" />
+            </View>
+            <View style={styles.benefitText}>
+              <Text style={styles.benefitTitle}>Thanh toán liền tay</Text>
+              <Text style={styles.benefitDesc}>Tiền về tài khoản ngay sau khi hoàn thành đơn. Đối soát tự động, hoa hồng rõ ràng và minh bạch từng chi tiết.</Text>
+            </View>
+          </View>
+
+          <View style={styles.benefitCard}>
+            <View style={[styles.iconBox, {backgroundColor: '#F5F3FF'}]}>
+              <ShieldCheck size={20} color="#7C3AED" />
+            </View>
+            <View style={styles.benefitText}>
+              <Text style={styles.benefitTitle}>Bảo trợ toàn diện</Text>
+              <Text style={styles.benefitDesc}>Gói bảo hiểm sự cố thú cưng tới 50 triệu đồng cùng đội ngũ chuyên viên PetCare hỗ trợ khẩn cấp 24/7.</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Process Section */}
+        <View style={[styles.sectionHeader, {marginTop: theme.spacing[8]}]}>
+          <Text style={styles.sectionSub}>QUY TRÌNH ĐƠN GIẢN</Text>
+          <Text style={styles.sectionTitle}>3 bước bắt đầu nhận đơn</Text>
+        </View>
+
+        <View style={styles.processList}>
+          {/* Timeline Line */}
+          <View style={styles.timelineLine} />
+          
+          <View style={styles.processItem}>
+            <View style={styles.stepCircle}>
+              <Text style={styles.stepNumber}>1</Text>
+            </View>
+            <View style={styles.processContent}>
+              <View style={styles.processHeader}>
+                <Text style={styles.processTitle}>Điền thông tin cơ bản</Text>
+                <View style={styles.timeTag}><Text style={styles.timeText}>~ 2 phút</Text></View>
+              </View>
+              <Text style={styles.processDesc}>Cung cấp thông tin salon hoặc chuyên môn cá nhân, khu vực và các dịch vụ bạn muốn cung cấp.</Text>
+            </View>
+          </View>
+
+          <View style={styles.processItem}>
+            <View style={styles.stepCircle}>
+              <Text style={styles.stepNumber}>2</Text>
+            </View>
+            <View style={styles.processContent}>
+              <View style={styles.processHeader}>
+                <Text style={styles.processTitle}>Xét duyệt hồ sơ online</Text>
+                <View style={[styles.timeTag, {backgroundColor: '#ECFDF5'}]}><Text style={[styles.timeText, {color: '#059669'}]}>~ 24h</Text></View>
+              </View>
+              <Text style={styles.processDesc}>Đội ngũ kiểm tra nhanh chứng chỉ tay nghề hoặc hình ảnh cơ sở vật chất đảm bảo quy chuẩn an toàn.</Text>
+            </View>
+          </View>
+
+          <View style={styles.processItem}>
+            <View style={[styles.stepCircle, {backgroundColor: '#F59E0B'}]}>
+              <Text style={styles.stepNumber}>3</Text>
+            </View>
+            <View style={styles.processContent}>
+              <View style={styles.processHeader}>
+                <Text style={styles.processTitle}>Nhận khách & sinh lời</Text>
+                <View style={[styles.timeTag, {backgroundColor: '#FEF3C7'}]}><Text style={[styles.timeText, {color: '#B45309'}]}>Sẵn sàng</Text></View>
+              </View>
+              <Text style={styles.processDesc}>Bật trạng thái nhận khách, đón nhận các lịch hẹn đầu tiên và nhận thu nhập ngay vào tài khoản.</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Testimonial */}
+        <View style={styles.testimonialCard}>
+          <View style={styles.starsRow}>
+            {[1,2,3,4,5].map(i => <Star key={i} size={16} color="#F59E0B" />)}
+            <Text style={styles.ratingScore}>5.0</Text>
+          </View>
+          <Text style={styles.quoteText}>
+            "Từ khi tham gia PetCare, doanh thu spa thú cưng của tôi tăng gấp đôi, khách hàng thân thiết tăng đều đặn mỗi tháng mà không cần lo chi phí tìm khách."
+          </Text>
+          <View style={styles.authorRow}>
+            <Image source={require('../../../../assets/images/logo.png')} style={styles.authorAvatar} />
+            <View>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                <Text style={styles.authorName}>Minh Trang</Text>
+                <CheckCircle2 size={14} color={theme.colors.semantic.success} />
+              </View>
+              <Text style={styles.authorTitle}>Chủ MinPaws Spa • Quận 7, TP.HCM</Text>
+            </View>
+          </View>
+          <Text style={styles.quoteIconBig}>”</Text>
+        </View>
+
+        <View style={styles.securityRow}>
+          <ShieldCheck size={16} color={theme.colors.semantic.success} />
+          <Text style={styles.securityText}>Cam kết bảo mật thông tin & Hỗ trợ trực tiếp 24/7</Text>
+        </View>
+
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* Sticky Bottom */}
+      <View style={styles.bottomBar}>
         <Button 
-          label="Get Started" 
+          label="Đăng ký trở thành Đối tác ngay" 
           onPress={handleStart} 
           rightIcon="arrow-right"
-          style={styles.startButton}
+          style={styles.ctaButton}
+          labelStyle={styles.ctaButtonText}
         />
-        <Text style={styles.termsText}>
-          By tapping "Get Started", you agree to PetCare's Provider Terms of Service.
-        </Text>
+        <View style={styles.loginRow}>
+          <Text style={styles.loginText}>Đã có tài khoản đối tác? </Text>
+          <Text style={styles.loginLink}>Đăng nhập</Text>
+        </View>
       </View>
     </Screen>
   );
@@ -83,97 +221,367 @@ export default function BecomeProviderIntroScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: theme.colors.background.default,
+    backgroundColor: '#F8FAFC', // light background like image
   },
   scrollContent: {
-    paddingBottom: theme.spacing[8],
+    padding: theme.spacing[4],
+    paddingBottom: 120, // space for sticky button
   },
-  imageContainer: {
+  heroCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 24,
+    padding: 20,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 16,
+    gap: 6,
+  },
+  badgeText: {
+    color: '#FCD34D',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  heroTitle: {
+    ...theme.typography.h1,
+    color: 'white',
+    fontSize: 24,
+    lineHeight: 32,
+    marginBottom: 12,
+  },
+  heroDesc: {
+    ...theme.typography.bodyMd,
+    color: '#94A3B8',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  heroImageWrapper: {
     width: '100%',
-    height: 300,
-    position: 'relative',
+    height: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#334155',
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  floatingStats: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: -24,
+    marginHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  headerContent: {
-    position: 'absolute',
-    bottom: theme.spacing[6],
-    left: theme.spacing[5],
-    right: theme.spacing[5],
+  pawIconBox: {
+    backgroundColor: '#FEF3C7',
+    padding: 8,
+    borderRadius: 8,
   },
-  title: {
-    ...theme.typography.h1,
-    color: '#FFF',
-    marginBottom: theme.spacing[2],
+  statBold: {
+    fontWeight: '700',
+    fontSize: 13,
+    color: '#0F172A',
   },
-  subtitle: {
-    ...theme.typography.bodyLg,
-    color: '#E0E0E0',
+  statSmall: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 'auto',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginTop: 40,
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: 'white',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border.subdued,
+  },
+  statNumber: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#64748B',
     fontWeight: '500',
+    textAlign: 'center',
   },
-  content: {
-    padding: theme.spacing[5],
+  sectionHeader: {
+    marginTop: theme.spacing[8],
+    marginBottom: theme.spacing[5],
+  },
+  sectionSub: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B45309',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   sectionTitle: {
     ...theme.typography.h2,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing[6],
+    fontSize: 22,
+    color: '#0F172A',
+  },
+  guaranteeBadge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  guaranteeText: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '600',
   },
   benefitsList: {
-    gap: theme.spacing[4],
+    gap: 12,
   },
   benefitCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface.default,
-    padding: theme.spacing[4],
-    borderRadius: theme.radius.lg,
-    ...theme.shadows.sm,
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border.subdued,
   },
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: theme.colors.primary.surface,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing[4],
+    marginRight: 16,
   },
   benefitText: {
     flex: 1,
   },
   benefitTitle: {
-    ...theme.typography.h3,
-    color: theme.colors.text.primary,
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 6,
   },
   benefitDesc: {
-    ...theme.typography.bodyMd,
-    color: theme.colors.text.secondary,
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 20,
   },
-  footer: {
-    padding: theme.spacing[5],
-    backgroundColor: theme.colors.surface.default,
+  processList: {
+    paddingLeft: 8,
+    position: 'relative',
+  },
+  timelineLine: {
+    position: 'absolute',
+    left: 23,
+    top: 20,
+    bottom: 40,
+    width: 2,
+    backgroundColor: '#E2E8F0',
+  },
+  processItem: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    position: 'relative',
+    zIndex: 1,
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1E293B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+    marginTop: 2,
+  },
+  stepNumber: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  processContent: {
+    flex: 1,
+  },
+  processHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  processTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  timeTag: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  timeText: {
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  processDesc: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 20,
+  },
+  testimonialCard: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    marginTop: 20,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border.subdued,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 4,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  ratingScore: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    marginLeft: 4,
+  },
+  quoteText: {
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 24,
+    fontStyle: 'italic',
+    marginBottom: 20,
+    position: 'relative',
+    zIndex: 2,
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    position: 'relative',
+    zIndex: 2,
+  },
+  authorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  authorName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  authorTitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  quoteIconBig: {
+    position: 'absolute',
+    bottom: -20,
+    right: 10,
+    fontSize: 120,
+    color: '#F8FAFC',
+    fontWeight: '900',
+    zIndex: 1,
+  },
+  securityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
+    marginBottom: 40,
+  },
+  securityText: {
+    fontSize: 12,
+    color: '#64748B',
+  },
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    padding: theme.spacing[4],
     borderTopWidth: 1,
     borderTopColor: theme.colors.border.subdued,
-    paddingBottom: 40,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
-  startButton: {
-    marginBottom: theme.spacing[3],
+  ctaButton: {
+    backgroundColor: '#FBBF24', // Yellow color
+    borderRadius: 16,
+    height: 56,
   },
-  termsText: {
-    ...theme.typography.caption,
-    color: theme.colors.text.muted,
-    textAlign: 'center',
+  ctaButtonText: {
+    color: '#0F172A',
+    fontWeight: '700',
   },
+  loginRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  loginText: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  loginLink: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  }
 });
