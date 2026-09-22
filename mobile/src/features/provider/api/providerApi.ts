@@ -1,4 +1,5 @@
 import { apiClient } from '../../../infrastructure/api/client';
+import * as ImageManipulator from 'expo-image-manipulator';
 import {
   CreateProviderProfileDto,
   UpdateProviderAddressDto,
@@ -7,7 +8,23 @@ import {
   SubmitKycDto,
   ProviderProfileResponse,
   ApiResponse,
+  SubmitDocumentsDto,
 } from '../types/provider.types';
+
+// Helper to compress images to ensure they are well under 50MB (usually around 1-2MB)
+const compressImage = async (uri: string): Promise<string> => {
+  try {
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1200 } }], // Resize width to 1200px max, keeping aspect ratio
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    return manipResult.uri;
+  } catch (error) {
+    console.error('Image compression error:', error);
+    return uri; // Return original if compression fails
+  }
+};
 
 export const providerApi = {
   createProfile: async (data: CreateProviderProfileDto): Promise<ApiResponse<ProviderProfileResponse>> => {
@@ -32,9 +49,14 @@ export const providerApi = {
     formData.append('dob', data.dob);
     formData.append('issueDate', data.issueDate);
 
-    formData.append('frontImage', frontImage as any);
-    formData.append('backImage', backImage as any);
-    formData.append('faceImage', faceImage as any);
+    // Compress images
+    const frontUri = await compressImage(frontImage.uri);
+    const backUri = await compressImage(backImage.uri);
+    const faceUri = await compressImage(faceImage.uri);
+
+    formData.append('frontImage', { ...frontImage, uri: frontUri } as any);
+    formData.append('backImage', { ...backImage, uri: backUri } as any);
+    formData.append('faceImage', { ...faceImage, uri: faceUri } as any);
 
     const response = await apiClient.post('/providers/kyc', formData, {
       headers: {
@@ -42,6 +64,28 @@ export const providerApi = {
       },
     });
     return response.data;
+  },
+
+  uploadDocuments: async (
+    data: SubmitDocumentsDto
+  ): Promise<ApiResponse<null>> => {
+    let lastResponse;
+    for (let i = 0; i < data.certificateImages.length; i++) {
+      const img = data.certificateImages[i];
+      const compressedUri = await compressImage(img.uri);
+      
+      const formData = new FormData();
+      formData.append('file', { ...img, uri: compressedUri } as any);
+      formData.append('documentType', 'OTHER');
+
+      lastResponse = await apiClient.post('/providers/documents', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+
+    return lastResponse?.data || { success: true, message: 'Success', data: null };
   },
 
   addServiceArea: async (data: AddServiceAreaDto): Promise<ApiResponse<null>> => {

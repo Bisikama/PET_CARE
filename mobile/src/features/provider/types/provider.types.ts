@@ -43,10 +43,15 @@ export interface SubmitKycDto {
   issueDate: string;
 }
 
+export interface SubmitDocumentsDto {
+  certificateImages: { uri: string; type: string; name: string }[];
+}
+
 export interface ProviderProfileResponse {
   id: string;
   userId: string;
   status: string;
+  kycStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
   providerType: ProviderType;
   bio: string | null;
   experienceYears: number | null;

@@ -29,5 +29,5 @@ COPY --from=builder /app/prisma ./prisma
 # Expose port (must match PORT env)
 EXPOSE 3000
 
-# Start application
-CMD ["npm", "run", "start:prod"]
+# Start application (Run migrations automatically, then start server)
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
