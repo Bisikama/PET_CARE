@@ -27,6 +27,25 @@ export class WalletsController {
     return this.walletsService.getMyWalletData(userId);
   }
 
+  @Post('me/topup')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Nạp tiền vào ví PetCare (Dùng cho khách hàng và thử nghiệm)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        amount: { type: 'number', example: 1000000, description: 'Số tiền nạp vào ví' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Nạp tiền thành công.' })
+  async topupWallet(
+    @GetCurrentUserId() userId: string,
+    @Body('amount') amount: number,
+  ) {
+    return this.walletsService.topupWallet(userId, Number(amount));
+  }
+
   @Get('me/transactions')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy lịch sử biến động số dư (Sổ cái)' })

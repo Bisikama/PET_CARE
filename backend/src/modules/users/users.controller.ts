@@ -11,6 +11,7 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -23,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { UsersService } from './application/use-cases/users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { DeleteAccountUseCase } from './application/use-cases/delete-account.use-case';
@@ -40,6 +42,31 @@ export class UsersController {
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
     private readonly deactivateAccountUseCase: DeactivateAccountUseCase,
   ) {}
+
+  @Public()
+  @Get('booking-test-ids')
+  @ApiOperation({
+    summary: 'Lấy các thông tin ID mẫu (id, addressId, petId, providerId, serviceId...) để test flow booking (Public, không bắt buộc login)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về các ID để test booking. Có thể truyền ?userId=... hoặc không truyền để tự động lấy user mẫu trong DB.',
+  })
+  async getBookingTestIds(@Query('userId') userId?: string) {
+    return this.usersService.getBookingTestContext(userId);
+  }
+
+  @Get('me/booking-test-ids')
+  @ApiOperation({
+    summary: 'Lấy các thông tin ID (id, addressId, petId, providerId...) của user hiện tại để test flow booking',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về các ID của user đang đăng nhập và thông tin provider/slot mẫu để test flow booking.',
+  })
+  async getMyBookingTestIds(@GetCurrentUserId() userId: string) {
+    return this.usersService.getBookingTestContext(userId);
+  }
 
   @Get('me')
   @ApiOperation({ summary: 'Lấy thông tin hồ sơ cá nhân' })
