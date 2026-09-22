@@ -128,19 +128,12 @@ export function ResetPasswordForm() {
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
-      style={{
-        backgroundColor: '#0b1c30',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='%23132742' fill-opacity='0.45'%3E%3Cpath d='M12 14c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm-4.5-2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm9 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6-4.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm3 0c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z'/%3E%3C/svg%3E")`,
-        backgroundSize: '60px 60px',
-      }}
-    >
+    <>
       <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 p-8 sm:p-10">
         {/* Header Icon & Title */}
         <div className="text-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto mb-4 relative shadow-sm text-amber-500">
-            <KeyRound className="w-10 h-10" />
+          <div className="w-20 h-20 rounded-full bg-[#f8fafc] flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 overflow-hidden">
+            <img src="/logo.png" alt="PetCare Logo" className="w-16 h-16 object-contain" />
           </div>
 
           <h2 className="text-2xl font-bold text-[#0f172a] tracking-tight">
@@ -288,6 +281,6 @@ export function ResetPasswordForm() {
           </Link>
         </div>
       </div>
-    </div>
+    </>
   );
 }
