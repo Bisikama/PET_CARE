@@ -4,19 +4,31 @@ import { CheckCircle2 } from 'lucide-react-native';
 import { theme } from '@/core/theme';
 import { TimeSlotOption } from '../types/booking.types';
 
+export function formatSlotPeriod(startTime?: string): string {
+  if (!startTime) return 'Thời gian';
+  const hour = parseInt(startTime.split(':')[0], 10);
+  if (hour >= 6 && hour < 11) return 'Sáng';
+  if (hour >= 11 && hour < 13) return 'Trưa';
+  if (hour >= 13 && hour < 18) return 'Chiều';
+  if (hour >= 18 && hour < 21) return 'Tối';
+  return 'Đêm';
+}
+
 export const defaultTimeSlots: TimeSlotOption[] = [
-  { id: 'slot-1', time: '09:00 AM', period: 'Morning', isAvailable: true },
-  { id: 'slot-2', time: '10:30 AM', period: 'Morning', isAvailable: true },
-  { id: 'slot-3', time: '11:30 AM', period: 'Midday', isAvailable: true },
-  { id: 'slot-4', time: '01:00 PM', period: 'Booked', isAvailable: false, isBooked: true },
-  { id: 'slot-5', time: '02:30 PM', period: 'Afternoon', isAvailable: true },
-  { id: 'slot-6', time: '04:00 PM', period: 'Evening', isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000001', name: 'Slot 1 (07:00 - 09:00)', time: '07:00 - 09:00', startTime: '07:00', endTime: '09:00', period: 'Sáng', slotOrder: 1, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000002', name: 'Slot 2 (09:00 - 11:00)', time: '09:00 - 11:00', startTime: '09:00', endTime: '11:00', period: 'Sáng', slotOrder: 2, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000003', name: 'Slot 3 (11:00 - 13:00)', time: '11:00 - 13:00', startTime: '11:00', endTime: '13:00', period: 'Trưa', slotOrder: 3, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000004', name: 'Slot 4 (13:00 - 15:00)', time: '13:00 - 15:00', startTime: '13:00', endTime: '15:00', period: 'Chiều', slotOrder: 4, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000005', name: 'Slot 5 (15:00 - 17:00)', time: '15:00 - 17:00', startTime: '15:00', endTime: '17:00', period: 'Chiều', slotOrder: 5, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000006', name: 'Slot 6 (17:00 - 19:00)', time: '17:00 - 19:00', startTime: '17:00', endTime: '19:00', period: 'Tối', slotOrder: 6, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000007', name: 'Slot 7 (19:00 - 21:00)', time: '19:00 - 21:00', startTime: '19:00', endTime: '21:00', period: 'Tối', slotOrder: 7, isAvailable: true },
+  { id: 'b23b1234-abcd-4234-8f02-000000000008', name: 'Slot 8 (21:00 - 23:00)', time: '21:00 - 23:00', startTime: '21:00', endTime: '23:00', period: 'Đêm', slotOrder: 8, isAvailable: true },
 ];
 
 interface TimeSlotGridProps {
   slots?: TimeSlotOption[];
   selectedSlotTime: string;
-  onSelectSlot: (time: string) => void;
+  onSelectSlot: (time: string, slot?: TimeSlotOption) => void;
   providerName?: string;
 }
 
@@ -24,15 +36,15 @@ export function TimeSlotGrid({
   slots = defaultTimeSlots,
   selectedSlotTime,
   onSelectSlot,
-  providerName = 'Happy Paws Care',
+  providerName = 'Chuyên viên PetCare',
 }: TimeSlotGridProps) {
   return (
     <View style={styles.container}>
       {/* Title & Timezone */}
       <View style={styles.titleRow}>
-        <Text style={styles.sectionTitle}>Available Times</Text>
+        <Text style={styles.sectionTitle}>Khung giờ khả dụng</Text>
         <View style={styles.tzPill}>
-          <Text style={styles.tzText}>Vietnam Time (GMT+7)</Text>
+          <Text style={styles.tzText}>Giờ Việt Nam (GMT+7)</Text>
         </View>
       </View>
 
@@ -44,21 +56,21 @@ export function TimeSlotGrid({
           fill={theme.colors.surface.lowest}
         />
         <Text style={styles.availabilityText} numberOfLines={1}>
-          <Text style={styles.boldProvider}>{providerName}</Text> is available at this time
+          <Text style={styles.boldProvider}>{providerName}</Text> có thể tiếp nhận trong ca này
         </Text>
       </View>
 
-      {/* Slots 3-column Grid */}
+      {/* Slots 2-column Grid */}
       <View style={styles.grid}>
         {slots.map((slot) => {
           const isSelected = selectedSlotTime === slot.time;
-          const isBooked = !!slot.isBooked;
+          const isBooked = !slot.isAvailable || !!slot.isBooked;
 
           if (isBooked) {
             return (
               <View key={slot.id} style={[styles.slotCard, styles.slotCardBooked]}>
                 <Text style={styles.slotTimeBooked}>{slot.time}</Text>
-                <Text style={styles.slotSubBooked}>Booked</Text>
+                <Text style={styles.slotSubBooked}>Đã kín lịch</Text>
               </View>
             );
           }
@@ -71,7 +83,7 @@ export function TimeSlotGrid({
                 isSelected ? styles.slotCardSelected : styles.slotCardAvailable,
               ]}
               activeOpacity={0.8}
-              onPress={() => onSelectSlot(slot.time)}
+              onPress={() => onSelectSlot(slot.time, slot)}
             >
               {isSelected && <View style={styles.selectedCornerDot} />}
               <Text
@@ -88,7 +100,7 @@ export function TimeSlotGrid({
                   isSelected ? styles.slotSubSelected : styles.slotSubAvailable,
                 ]}
               >
-                {isSelected ? 'Selected' : slot.period}
+                {isSelected ? 'Đã chọn' : slot.period || formatSlotPeriod(slot.startTime || slot.time.split(' - ')[0])}
               </Text>
             </TouchableOpacity>
           );
@@ -150,13 +162,14 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: theme.spacing[2] + 2,
     marginTop: theme.spacing[2],
   },
   slotCard: {
-    width: '31%',
+    width: '48%',
     borderRadius: theme.radius.xl,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

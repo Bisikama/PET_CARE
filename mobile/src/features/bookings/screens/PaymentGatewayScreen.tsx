@@ -62,7 +62,7 @@ export default function PaymentGatewayScreen() {
   const addressId = params.addressId || draft.addressId || '';
   const petId = params.petId || draft.petId || '';
   const petName = params.petName || draft.petName || 'Thú cưng';
-  const dateSlotText = params.dateSlotText || draft.timeSlot || 'Thứ Bảy · 09:00 - 10:30';
+  const dateSlotText = params.dateSlotText || draft.timeSlot || 'Hôm nay · 07:00 - 09:00';
   const totalAmount = Number(params.totalPrice) || draft.totalPrice || 250000;
   const customerNote = params.customerNote || draft.customerNote;
   const promoCode = params.promoCode || draft.promoCode;

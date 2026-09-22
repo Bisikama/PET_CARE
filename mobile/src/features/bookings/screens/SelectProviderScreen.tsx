@@ -56,7 +56,7 @@ export default function SelectProviderScreen() {
   const petSpecies = draft.petSpecies || 'Dog';
   const petWeight = params.petWeight || (draft.petWeight ? `${draft.petWeight} kg` : '5 kg');
   const serviceTitle = params.serviceTitle || draft.serviceTitle || 'Chăm sóc thú cưng';
-  const slotTime = params.slotTime || draft.timeSlot || '09:00 - 10:30';
+  const slotTime = params.slotTime || draft.timeSlot || '07:00 - 09:00';
   const day = params.day || '20';
   const bookingDate = params.date || draft.bookingDate || new Date().toISOString().split('T')[0];
   const dateSlotText = `Ngày ${day} · ${slotTime}`;
@@ -72,16 +72,20 @@ export default function SelectProviderScreen() {
 
       if (!activeAddressId) {
         try {
-          const addrRes = await addressApi.getAddresses();
-          const addrList = Array.isArray(addrRes?.data) ? addrRes.data : [];
+          const addrRes: any = await addressApi.getAddresses();
+          const addrList = Array.isArray(addrRes)
+            ? addrRes
+            : Array.isArray(addrRes?.data)
+            ? addrRes.data
+            : [];
           setAddresses(addrList);
 
           if (addrList.length > 0) {
             const defaultAddr = addrList.find((a: any) => a.isDefault || a.is_default) || addrList[0];
             activeAddressId = defaultAddr.id;
             activeAddressLine = `${(defaultAddr as any).addressLine || (defaultAddr as any).address_line || ''}, ${
-              defaultAddr.district || ''
-            }, ${defaultAddr.city || ''}`;
+              defaultAddr.ward ? defaultAddr.ward + ', ' : ''
+            }${defaultAddr.district || ''}, ${defaultAddr.city || ''}`;
             setSelectedAddressId(activeAddressId);
             setSelectedAddressLine(activeAddressLine);
             updateDraft({
@@ -115,6 +119,7 @@ export default function SelectProviderScreen() {
               'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
             tagline: 'Chuyên viên đối tác PetCare',
             isVerified: true,
+            isHomeVisit: true,
             rating: p.ratingAvg || 4.9,
             reviewCount: (p.totalCompletedBookings || 5) * 2 + 10,
             completedJobs: p.totalCompletedBookings || 10,

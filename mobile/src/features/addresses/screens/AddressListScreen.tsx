@@ -24,11 +24,15 @@ export default function AddressListScreen() {
     setLoading(true);
     setError('');
     try {
-      const res = await addressApi.getAddresses();
-      if (res.success) {
+      const res: any = await addressApi.getAddresses();
+      if (Array.isArray(res)) {
+        setAddresses(res);
+      } else if (res?.success && Array.isArray(res?.data)) {
+        setAddresses(res.data);
+      } else if (Array.isArray(res?.data)) {
         setAddresses(res.data);
       } else {
-        setError(res.message || 'Không thể tải danh sách địa chỉ');
+        setError(res?.message || 'Không thể tải danh sách địa chỉ');
       }
     } catch (err: any) {
       setError(err?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.');

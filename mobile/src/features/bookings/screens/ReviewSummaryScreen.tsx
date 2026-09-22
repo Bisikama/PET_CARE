@@ -90,7 +90,7 @@ export default function ReviewSummaryScreen() {
   const addressId = params.addressId || draft.addressId || '';
 
   const day = params.day || '20';
-  const slotTime = params.slotTime || draft.timeSlot || '09:00 - 10:30';
+  const slotTime = params.slotTime || draft.timeSlot || '07:00 - 09:00';
   const dateSlotText = `Ngày ${day} · ${slotTime}`;
 
   // Price base calculations

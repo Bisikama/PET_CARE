@@ -13,10 +13,12 @@ import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { BookingStepHeader } from '../components/BookingStepHeader';
 import { BookingCalendar } from '../components/BookingCalendar';
-import { TimeSlotGrid } from '../components/TimeSlotGrid';
+import { TimeSlotGrid, defaultTimeSlots, formatSlotPeriod } from '../components/TimeSlotGrid';
 import { BookingSummaryCard } from '../components/BookingSummaryCard';
 import { BookingBottomActions } from '../components/BookingBottomActions';
 import { useBookingFlow } from '../context/BookingContext';
+import { bookingsApi } from '@/infrastructure/api/bookings.api';
+import { TimeSlotOption } from '../types/booking.types';
 
 export default function ScheduleTimeScreen() {
   const router = useRouter();
@@ -37,14 +39,55 @@ export default function ScheduleTimeScreen() {
 
   const today = new Date();
   const [selectedDay, setSelectedDay] = useState<number>(today.getDate());
-  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('09:00 - 10:30');
+  const [timeSlots, setTimeSlots] = useState<TimeSlotOption[]>(defaultTimeSlots);
+  const [selectedSlotId, setSelectedSlotId] = useState<string>(
+    draft.slotId || defaultTimeSlots[0]?.id || 'b23b1234-abcd-4234-8f02-000000000001'
+  );
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string>(
+    draft.timeSlot || defaultTimeSlots[0]?.time || '07:00 - 09:00'
+  );
+
+  // Fetch real time slots from backend DB
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSlots = async () => {
+      try {
+        const slotsFromDb = await bookingsApi.getTimeSlots();
+        if (isMounted && Array.isArray(slotsFromDb) && slotsFromDb.length > 0) {
+          const mapped: TimeSlotOption[] = slotsFromDb.map((ts) => ({
+            id: ts.id,
+            name: ts.name,
+            time: `${ts.start_time} - ${ts.end_time}`,
+            startTime: ts.start_time,
+            endTime: ts.end_time,
+            period: formatSlotPeriod(ts.start_time),
+            slotOrder: ts.slot_order,
+            isAvailable: true,
+          }));
+          setTimeSlots(mapped);
+          
+          // If no slot chosen or previously chosen slot not in list, pick the first
+          if (!draft.timeSlot && mapped[0]) {
+            setSelectedSlotTime(mapped[0].time);
+            setSelectedSlotId(mapped[0].id);
+          }
+        }
+      } catch (err) {
+        // Fallback to defaultTimeSlots
+      }
+    };
+    fetchSlots();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const petName = params.petName || draft.petName || 'Thú cưng';
   const petAvatar =
     params.petAvatarUrl ||
     draft.petAvatarUrl ||
     'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80';
-  const providerName = params.providerName || draft.providerName || 'PetCare Partner';
+  const providerName = params.providerName || draft.providerName || 'Chuyên viên PetCare';
   const serviceTitle = params.serviceTitle || draft.serviceTitle || 'Chăm sóc thú cưng';
 
   // Compute selected full date string (YYYY-MM-DD)
@@ -68,10 +111,18 @@ export default function ScheduleTimeScreen() {
     return `Ngày ${selectedDay} · ${selectedSlotTime}`;
   }, [selectedDay, selectedSlotTime]);
 
+  const handleSelectSlot = (time: string, slot?: TimeSlotOption) => {
+    setSelectedSlotTime(time);
+    if (slot) {
+      setSelectedSlotId(slot.id);
+    }
+  };
+
   const handleContinue = () => {
     updateDraft({
       bookingDate: selectedDateStr,
       timeSlot: selectedSlotTime,
+      slotId: selectedSlotId,
       slotStartTime: selectedSlotTime.split(' - ')[0] || selectedSlotTime,
       slotEndTime: selectedSlotTime.split(' - ')[1] || '',
     });
@@ -93,6 +144,7 @@ export default function ScheduleTimeScreen() {
         day: selectedDay.toString(),
         date: selectedDateStr,
         slotTime: selectedSlotTime,
+        slotId: selectedSlotId,
       },
     });
   };
@@ -189,8 +241,9 @@ export default function ScheduleTimeScreen() {
 
         {/* 4. Available Times Slots */}
         <TimeSlotGrid
+          slots={timeSlots}
           selectedSlotTime={selectedSlotTime}
-          onSelectSlot={setSelectedSlotTime}
+          onSelectSlot={handleSelectSlot}
           providerName={providerName}
         />
 

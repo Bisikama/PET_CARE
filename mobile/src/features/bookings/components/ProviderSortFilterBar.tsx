@@ -10,12 +10,12 @@ export interface ProviderFilterOption {
 }
 
 const filterOptions: ProviderFilterOption[] = [
-  { id: 'best_match', label: 'Best Match', icon: 'star' },
-  { id: 'earliest', label: 'Earliest Available' },
-  { id: 'highest_rated', label: 'Highest Rated' },
-  { id: 'lowest_price', label: 'Lowest Price' },
-  { id: 'verified_only', label: 'Verified Only', icon: 'verified' },
-  { id: 'home_visit', label: 'Home Visit', icon: 'car' },
+  { id: 'best_match', label: 'Phù hợp nhất', icon: 'star' },
+  { id: 'earliest', label: 'Sớm nhất' },
+  { id: 'highest_rated', label: 'Đánh giá cao' },
+  { id: 'lowest_price', label: 'Giá tốt nhất' },
+  { id: 'verified_only', label: 'Đã xác thực', icon: 'verified' },
+  { id: 'home_visit', label: 'Tại nhà', icon: 'car' },
 ];
 
 interface ProviderSortFilterBarProps {
