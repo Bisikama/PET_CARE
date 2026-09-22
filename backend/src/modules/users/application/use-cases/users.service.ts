@@ -225,4 +225,235 @@ export class UsersService {
       throw error;
     }
   }
+
+  /**
+   * Lấy nhanh các thông tin ID (id, addressId, petId, providerId...) dùng để test flow booking
+   * Hỗ trợ cho user cụ thể hoặc tự động lấy dữ liệu mẫu trong DB
+   */
+  async getBookingTestContext(requestedUserId?: string) {
+    let targetUser: any = null;
+
+    if (requestedUserId) {
+      targetUser = await this.prisma.user.findUnique({
+        where: { id: requestedUserId },
+        select: publicUserSelect,
+      });
+      if (!targetUser) {
+        throw new NotFoundException(`Không tìm thấy người dùng với ID: ${requestedUserId}`);
+      }
+    } else {
+      // Ưu tiên tìm user đã có cả thú cưng và địa chỉ
+      targetUser = await this.prisma.user.findFirst({
+        where: {
+          isActive: true,
+          status: 'ACTIVE',
+          pets: { some: {} },
+          customer_addresses: { some: { deleted_at: null } },
+        },
+        select: publicUserSelect,
+      });
+
+      // Nếu không có user nào đủ cả 2, tìm user có thú cưng
+      if (!targetUser) {
+        targetUser = await this.prisma.user.findFirst({
+          where: {
+            isActive: true,
+            status: 'ACTIVE',
+            pets: { some: {} },
+          },
+          select: publicUserSelect,
+        });
+      }
+
+      // Dự phòng: Lấy user active bất kỳ
+      if (!targetUser) {
+        targetUser = await this.prisma.user.findFirst({
+          where: { isActive: true, status: 'ACTIVE' },
+          select: publicUserSelect,
+        });
+      }
+    }
+
+    if (!targetUser) {
+      throw new NotFoundException('Không tìm thấy người dùng nào trong hệ thống để lấy dữ liệu test');
+    }
+
+    const userId = targetUser.id;
+
+    // 1. Lấy danh sách địa chỉ của user
+    const addresses = await this.prisma.customer_addresses.findMany({
+      where: { customer_id: userId, deleted_at: null },
+      orderBy: [{ is_default: 'desc' }, { created_at: 'desc' }],
+    });
+
+    let addressId = addresses[0]?.id || null;
+    if (!addressId) {
+      const fallbackAddress = await this.prisma.customer_addresses.findFirst({
+        where: { deleted_at: null },
+      });
+      if (fallbackAddress) {
+        addressId = fallbackAddress.id;
+      }
+    }
+
+    // 2. Lấy danh sách thú cưng của user
+    const pets = await this.prisma.pets.findMany({
+      where: { customer_id: userId },
+      orderBy: { created_at: 'desc' },
+    });
+
+    let petId = pets[0]?.id || null;
+    if (!petId) {
+      const fallbackPet = await this.prisma.pets.findFirst({});
+      if (fallbackPet) {
+        petId = fallbackPet.id;
+      }
+    }
+
+    // 3. Kiểm tra xem chính user này có hồ sơ provider hay không
+    const myProviderProfile = await this.prisma.provider_profiles.findUnique({
+      where: { user_id: userId },
+      include: {
+        provider_services: {
+          where: { is_active: true, status: 'APPROVED' },
+          include: { services: true },
+        },
+      },
+    });
+
+    // 4. Lấy một provider mẫu đang APPROVED và có sẵn dịch vụ, ca làm việc (để test đặt lịch)
+    const sampleProvider = await this.prisma.provider_profiles.findFirst({
+      where: {
+        status: 'APPROVED',
+        kyc_status: 'APPROVED',
+        users: { isActive: true },
+        provider_services: {
+          some: {
+            status: 'APPROVED',
+            is_active: true,
+          },
+        },
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+        provider_services: {
+          where: { status: 'APPROVED', is_active: true },
+          include: { services: true },
+        },
+        provider_working_days: {
+          include: {
+            provider_working_slots: {
+              where: { status: 'AVAILABLE' },
+              include: { time_slots: true },
+            },
+          },
+        },
+      },
+    });
+
+    const activeService = sampleProvider?.provider_services?.[0];
+    const activeWorkingDay = sampleProvider?.provider_working_days?.find(
+      (d) => d.provider_working_slots && d.provider_working_slots.length > 0,
+    ) || sampleProvider?.provider_working_days?.[0];
+    const activeWorkingSlot = activeWorkingDay?.provider_working_slots?.[0];
+
+    const providerId = myProviderProfile?.id || null;
+
+    const targetProviderId = sampleProvider?.id || null;
+    const serviceId = activeService?.service_id || null;
+    const providerWorkingSlotId = activeWorkingSlot?.id || null;
+    const requestedSlotId = activeWorkingSlot?.slot_id || activeWorkingSlot?.time_slots?.id || null;
+    const bookingDate = activeWorkingDay?.work_date
+      ? new Date(activeWorkingDay.work_date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
+
+    return {
+      // Các ID cốt lõi đúng theo yêu cầu
+      id: userId,
+      userId,
+      addressId,
+      petId,
+      providerId, // ID provider profile của user này (nếu có đăng ký provider)
+
+      // Các ID bổ trợ để test ngay flow booking hoàn chỉnh
+      targetProviderId, // ID provider đối tác sẵn sàng nhận việc
+      serviceId,
+      providerWorkingSlotId,
+      requestedSlotId,
+      bookingDate,
+
+      // Chi tiết thông tin
+      user: targetUser,
+      addresses: addresses.map((a) => ({
+        id: a.id,
+        addressLine: a.address_line,
+        ward: a.ward,
+        district: a.district,
+        city: a.city,
+        formattedAddress: a.formatted_address,
+        isDefault: a.is_default,
+        latitude: a.latitude ? Number(a.latitude) : null,
+        longitude: a.longitude ? Number(a.longitude) : null,
+      })),
+      pets: pets.map((p) => ({
+        id: p.id,
+        name: p.name,
+        species: p.species,
+        breed: p.breed,
+        weight: p.weight ? Number(p.weight) : null,
+        gender: p.gender,
+        avatarUrl: p.avatar_url,
+      })),
+      myProviderProfile: myProviderProfile
+        ? {
+            id: myProviderProfile.id,
+            status: myProviderProfile.status,
+            kycStatus: myProviderProfile.kyc_status,
+            ratingAvg: myProviderProfile.rating_avg ? Number(myProviderProfile.rating_avg) : 0,
+            servicesCount: myProviderProfile.provider_services.length,
+          }
+        : null,
+      availableProvider: sampleProvider
+        ? {
+            providerId: sampleProvider.id,
+            providerUserId: sampleProvider.user_id,
+            fullName: sampleProvider.users.fullName,
+            avatarUrl: sampleProvider.users.avatarUrl,
+            ratingAvg: sampleProvider.rating_avg ? Number(sampleProvider.rating_avg) : 5,
+            serviceId: activeService?.service_id,
+            serviceName:
+              (activeService?.services as any)?.title ||
+              (activeService?.services as any)?.name ||
+              'Dịch vụ chăm sóc',
+            servicePrice: activeService?.price ? Number(activeService.price) : 250000,
+            petSpecies: activeService?.pet_species,
+            providerWorkingSlotId: activeWorkingSlot?.id,
+            requestedSlotId: activeWorkingSlot?.slot_id,
+            slotTime: activeWorkingSlot?.time_slots
+              ? `${activeWorkingSlot.time_slots.start_time} - ${activeWorkingSlot.time_slots.end_time}`
+              : null,
+            bookingDate,
+          }
+        : null,
+      sampleBookingPayload: {
+        customerId: userId,
+        addressId,
+        petId,
+        serviceId,
+        providerId: targetProviderId,
+        providerWorkingSlotId,
+        requestedSlotId,
+        bookingDate,
+        customerNote: 'Đơn test tự động từ test-context',
+      },
+    };
+  }
 }

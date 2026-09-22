@@ -59,16 +59,12 @@ export default function BookingCompleteScreen() {
     switch (method) {
       case 'WALLET':
         return 'Ví PetCare Wallet';
-      case 'VIETQR':
-        return 'Chuyển khoản VietQR';
-      case 'CARD':
-        return 'Thẻ Quốc tế';
+      case 'VNPAY':
+        return 'Cổng VNPAY / Ngân hàng';
       case 'MOMO':
         return 'Ví MoMo';
-      case 'CASH':
-        return 'Tiền mặt khi hoàn thành';
       default:
-        return 'Ví điện tử';
+        return 'Cổng thanh toán điện tử';
     }
   };
 
@@ -245,9 +241,9 @@ export default function BookingCompleteScreen() {
                 <CheckCircle2 size={18} color="#059669" />
               </View>
               <View style={styles.roadmapTextCol}>
-                <Text style={styles.roadmapTitle}>1. Xác nhận lịch hẹn</Text>
+                <Text style={styles.roadmapTitle}>1. Chờ Chuyên viên xác nhận</Text>
                 <Text style={styles.roadmapSubtext}>
-                  Hệ thống đã gửi thông báo đến {providerName}.
+                  Hệ thống đã gửi thông báo đến {providerName}. Chuyên viên có 15 phút để phản hồi; tiền được giữ an toàn tại Escrow và tự động hoàn nếu không nhận.
                 </Text>
               </View>
             </View>
