@@ -1,16 +1,43 @@
 import React from 'react';
-import { View, StyleSheet, Text, Image, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Image, ScrollView, ActivityIndicator, Alert, Modal, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CheckCircle2, TrendingUp, Calendar, Wallet, ShieldCheck, Star } from 'lucide-react-native';
 import { Screen } from '../../../core/components/Screen';
 import { Button } from '../../../core/components/Button';
+import { Input } from '../../../core/components/Input';
 import { ScreenHeader } from '../../../core/components/ScreenHeader';
 import { theme } from '../../../core/theme';
+import { useProviderStore } from '../store/useProviderStore';
+import { ProviderType } from '../types/provider.types';
 
 export default function BecomeProviderIntroScreen() {
   const router = useRouter();
+  const { createProfile, isSubmitting, profile } = useProviderStore();
 
-  const handleStart = () => {
+  const [showTypeModal, setShowTypeModal] = React.useState(false);
+  const [selectedType, setSelectedType] = React.useState<ProviderType | null>(null);
+  const [bio, setBio] = React.useState('');
+  const [experienceYears, setExperienceYears] = React.useState('');
+
+  const handleStart = async () => {
+    if (isSubmitting) return;
+    if (profile) {
+      router.push('/(customer)/become-provider/form');
+      return;
+    }
+    
+    setShowTypeModal(true);
+  };
+
+  const handleConfirmCreate = async () => {
+    if (!selectedType) return;
+    
+    setShowTypeModal(false);
+    await createProfile({
+      providerType: selectedType,
+      bio: bio.trim() || undefined,
+      experienceYears: experienceYears ? parseInt(experienceYears) : undefined
+    });
     router.push('/(customer)/become-provider/form');
   };
 
@@ -201,25 +228,167 @@ export default function BecomeProviderIntroScreen() {
 
       </ScrollView>
 
+      <Modal visible={showTypeModal} transparent animationType="slide">
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay} 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalContent}>
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+              <Text style={styles.modalTitle}>Khởi tạo Hồ sơ Đối tác</Text>
+              <TouchableOpacity onPress={() => setShowTypeModal(false)} style={{padding: 8}}>
+                <Text style={styles.modalCancelText}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>1. Lĩnh vực chuyên môn</Text>
+              <View style={styles.typesRow}>
+                <TouchableOpacity 
+                  style={[styles.typeOptionCard, selectedType === ProviderType.SITTER && styles.typeOptionActive]} 
+                  onPress={() => setSelectedType(ProviderType.SITTER)}
+                >
+                  <Text style={[styles.typeOptionTitle, selectedType === ProviderType.SITTER && styles.typeOptionTitleActive]}>Sitter</Text>
+                  <Text style={[styles.typeOptionDesc, selectedType === ProviderType.SITTER && styles.typeOptionDescActive]}>Chăm sóc thú cưng</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.typeOptionCard, selectedType === ProviderType.GROOMER && styles.typeOptionActive]} 
+                  onPress={() => setSelectedType(ProviderType.GROOMER)}
+                >
+                  <Text style={[styles.typeOptionTitle, selectedType === ProviderType.GROOMER && styles.typeOptionTitleActive]}>Groomer</Text>
+                  <Text style={[styles.typeOptionDesc, selectedType === ProviderType.GROOMER && styles.typeOptionDescActive]}>Spa & Cắt tỉa</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.typeOptionCard, selectedType === ProviderType.VET && styles.typeOptionActive]} 
+                  onPress={() => setSelectedType(ProviderType.VET)}
+                >
+                  <Text style={[styles.typeOptionTitle, selectedType === ProviderType.VET && styles.typeOptionTitleActive]}>Vet</Text>
+                  <Text style={[styles.typeOptionDesc, selectedType === ProviderType.VET && styles.typeOptionDescActive]}>Bác sĩ thú y</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.inputLabel, {marginTop: 16}]}>2. Giới thiệu bản thân (Bio)</Text>
+              <Input
+                placeholder="Ví dụ: Tôi rất yêu thích thú cưng..."
+                multiline
+                numberOfLines={3}
+                value={bio}
+                onChangeText={setBio}
+                style={{minHeight: 80, textAlignVertical: 'top'}}
+              />
+
+              <Text style={[styles.inputLabel, {marginTop: 16}]}>3. Số năm kinh nghiệm</Text>
+              <Input
+                placeholder="Ví dụ: 3"
+                keyboardType="numeric"
+                value={experienceYears}
+                onChangeText={setExperienceYears}
+              />
+
+              <Button
+                label="Khởi tạo Hồ sơ & Đi tiếp"
+                onPress={handleConfirmCreate}
+                style={{marginTop: 24, height: 50, borderRadius: 12, backgroundColor: '#0F172A'}}
+                disabled={!selectedType}
+              />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Sticky Bottom */}
       <View style={styles.bottomBar}>
         <Button 
-          label="Đăng ký trở thành Đối tác ngay" 
+          label={isSubmitting ? "Đang xử lý..." : "Đăng ký trở thành Đối tác ngay"}
           onPress={handleStart} 
-          rightIcon="arrow-right"
+          rightIcon={isSubmitting ? undefined : "arrow-right"}
           style={styles.ctaButton}
-          labelStyle={styles.ctaButtonText}
+          // labelStyle={styles.ctaButtonText}
+          disabled={isSubmitting}
         />
-        <View style={styles.loginRow}>
-          <Text style={styles.loginText}>Đã có tài khoản đối tác? </Text>
-          <Text style={styles.loginLink}>Đăng nhập</Text>
-        </View>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  modalSub: {
+    fontSize: 13,
+    color: '#64748B',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  typesRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  typeOptionCard: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+  },
+  typeOptionActive: {
+    backgroundColor: '#E0E7FF',
+    borderColor: '#6366F1',
+  },
+  typeOptionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  typeOptionTitleActive: {
+    color: '#4F46E5',
+  },
+  typeOptionDesc: {
+    fontSize: 10,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  typeOptionDescActive: {
+    color: '#4338CA',
+  },
+  modalCancelBtn: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
   container: {
     backgroundColor: '#F8FAFC', // light background like image
   },
