@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Tag, Copy, Check, Calendar, Coins, AlertCircle, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
+import { Tag, Copy, Check, Calendar, Coins, AlertCircle, ShieldCheck, Loader2 } from 'lucide-react';
 import { Promotion } from '../types';
 import { promotionsService } from '../services/promotions.service';
 import { Portal } from '@/components/ui/Portal';
@@ -133,7 +133,7 @@ export function PromotionCard({ promotion, onValidateSuccess }: PromotionCardPro
             onClick={() => setShowValidateModal(true)}
             className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-sm transition-all duration-150 cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <Tag className="w-3.5 h-3.5 text-amber-400" />
             Kiểm tra mã voucher
           </button>
         </div>

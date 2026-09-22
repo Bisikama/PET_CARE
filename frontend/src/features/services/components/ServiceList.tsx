@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useServices } from '../hooks/useServices';
 import { ServiceCard } from './ServiceCard';
-import { AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertCircle, RefreshCw, Package } from 'lucide-react';
 
 export const ServiceList: React.FC = () => {
   const { services, isLoading, error, refreshServices, clearError } = useServices();
@@ -78,7 +78,7 @@ export const ServiceList: React.FC = () => {
         <div className="relative">
           <div className="absolute -inset-1 rounded-full bg-teal-500/10 blur animate-pulse" />
           <div className="relative p-5 bg-teal-50 text-teal-600 rounded-2xl border border-teal-100">
-            <Sparkles className="h-10 w-10 fill-teal-100/30" />
+            <Package className="h-10 w-10" />
           </div>
         </div>
         

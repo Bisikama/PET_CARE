@@ -1,16 +1,22 @@
 'use client';
 
 import * as React from 'react';
-import { Tag, Search, RefreshCw, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
+import { Tag, Search, RefreshCw, Loader2, AlertTriangle, CheckCircle2, Ticket } from 'lucide-react';
 import { Promotion } from '../types';
 import { promotionsService } from '../services/promotions.service';
 import { PromotionCard } from './PromotionCard';
+import { useApplyPromotion } from '../hooks/useApplyPromotion';
 
 export function PromotionsView() {
   const [promotions, setPromotions] = React.useState<Promotion[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState('');
+
+  // Apply promo state
+  const [promoCode, setPromoCode] = React.useState('');
+  const [orderValue, setOrderValue] = React.useState('');
+  const { applyPromotion, isLoading: isApplying, error: applyError, result: applyResult, clearResult } = useApplyPromotion();
 
   const fetchPromotions = React.useCallback(async () => {
     setLoading(true);
@@ -30,9 +36,21 @@ export function PromotionsView() {
     fetchPromotions();
   }, [fetchPromotions]);
 
+  const handleApplyPromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoCode.trim() || !orderValue.trim()) return;
+    await applyPromotion({
+      promoCode: promoCode.trim().toUpperCase(),
+      orderValue: parseFloat(orderValue),
+    });
+  };
+
   const filteredPromotions = promotions.filter((p) =>
     p.code.toLowerCase().includes(search.toLowerCase().trim())
   );
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
   return (
     <div className="space-y-6 animate-fade-in select-none">
@@ -42,7 +60,7 @@ export function PromotionsView() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-extrabold uppercase tracking-wider backdrop-blur-sm">
-              <Sparkles className="w-3.5 h-3.5" /> Kho Ưu Đãi & Mã Giảm Giá Đang Áp Dụng
+              <Tag className="w-3.5 h-3.5" /> Kho Ưu Đãi & Mã Giảm Giá Đang Áp Dụng
             </div>
             <h2 className="text-2xl md:text-3xl font-black tracking-tight">
               Sưu Tầm Voucher Tiết Kiệm Chi Phí Chăm Sóc Bé Cưng
@@ -61,6 +79,77 @@ export function PromotionsView() {
             Làm mới danh sách
           </button>
         </div>
+      </div>
+
+      {/* Apply Promo Code Section */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Ticket className="w-5 h-5 text-emerald-500" />
+          <h3 className="text-sm font-black text-slate-800 tracking-tight">Áp dụng mã khuyến mãi</h3>
+          <code className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">POST /promotions/apply</code>
+        </div>
+
+        <form onSubmit={handleApplyPromo} className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mã khuyến mãi</label>
+            <input
+              type="text"
+              placeholder="VD: SUMMER2026"
+              value={promoCode}
+              onChange={(e) => { setPromoCode(e.target.value); clearResult(); }}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-bold text-slate-800 uppercase outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            />
+          </div>
+          <div className="w-full sm:w-48">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Giá trị đơn (VND)</label>
+            <input
+              type="number"
+              min="0"
+              step="10000"
+              placeholder="500000"
+              value={orderValue}
+              onChange={(e) => { setOrderValue(e.target.value); clearResult(); }}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={isApplying || !promoCode.trim() || !orderValue.trim()}
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {isApplying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ticket className="w-3.5 h-3.5" />}
+              {isApplying ? 'Đang kiểm tra...' : 'Áp dụng mã'}
+            </button>
+          </div>
+        </form>
+
+        {/* Apply result */}
+        {applyResult && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3 animate-in slide-in-from-top-2 duration-200">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-bold text-emerald-800">Áp dụng mã <span className="font-mono">{applyResult.code}</span> thành công!</p>
+              <div className="flex flex-wrap gap-3 mt-1.5">
+                <span className="px-2.5 py-1 bg-white rounded-lg font-bold text-emerald-700 border border-emerald-100">
+                  Giảm: {formatCurrency(applyResult.discountAmount)}
+                </span>
+                <span className="px-2.5 py-1 bg-white rounded-lg font-bold text-slate-700 border border-slate-100">
+                  Tổng sau giảm: {formatCurrency(applyResult.finalPrice)}
+                </span>
+              </div>
+              {applyResult.message && <p className="text-emerald-600 font-medium mt-1">{applyResult.message}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Apply error */}
+        {applyError && (
+          <div className="p-3 bg-rose-50 text-rose-700 text-xs font-semibold rounded-2xl border border-rose-100 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            {applyError}
+          </div>
+        )}
       </div>
 
       {/* Filter / Search Bar */}

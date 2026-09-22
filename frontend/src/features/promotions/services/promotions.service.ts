@@ -4,7 +4,10 @@ import {
   CreatePromotionInput, 
   UpdatePromotionInput, 
   ValidatePromotionInput, 
-  ValidatePromotionResult 
+  ValidatePromotionResult,
+  ApplyPromotionInput,
+  ApplyPromotionResult,
+  UpdatePromotionLimitsInput 
 } from '../types';
 
 export const promotionsService = {
@@ -35,6 +38,30 @@ export const promotionsService = {
   // Admin: Cập nhật thông tin/trạng thái mã khuyến mãi
   updatePromotion: async (id: string, data: UpdatePromotionInput): Promise<Promotion> => {
     const response = await axiosInstance.put<Promotion>(`/admin/promotions/${id}`, data);
+    return response.data;
+  },
+
+  // Customer: Áp dụng mã khuyến mãi tại Checkout
+  applyPromotion: async (data: ApplyPromotionInput): Promise<ApplyPromotionResult> => {
+    try {
+      const response = await axiosInstance.post<ApplyPromotionResult>('/promotions/apply', data);
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Fallback to active route /promotions/validate if /promotions/apply is not registered
+        const response = await axiosInstance.post<any>('/promotions/validate', data);
+        return response.data;
+      }
+      throw err;
+    }
+  },
+
+  // Admin: Cập nhật giới hạn sử dụng mã khuyến mãi
+  updatePromotionLimits: async (id: string, data: UpdatePromotionLimitsInput): Promise<Promotion> => {
+    const response = await axiosInstance.put<Promotion>(`/admin/promotions/${id}`, {
+      usage_limit: data.usageLimit,
+      max_usage_per_user: data.maxUsagePerUser,
+    });
     return response.data;
   },
 };

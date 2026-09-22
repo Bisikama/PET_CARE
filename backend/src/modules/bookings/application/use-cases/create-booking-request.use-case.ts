@@ -153,14 +153,18 @@ export class CreateBookingRequestUseCase {
     const estimatedStartAt = new Date(`${dateStr}T${slot.time_slots.start_time}:00`);
     const estimatedEndAt = new Date(`${dateStr}T${slot.time_slots.end_time}:00`);
 
+    if (estimatedStartAt <= new Date()) {
+      throw new BadRequestException('Thời gian bắt đầu ca làm việc phải ở tương lai.');
+    }
+
     // 7. Execute transaction with concurrency check
     const booking = await this.unitOfWork.transaction(async (tx) => {
-      // Concurrency update: check if slot is AVAILABLE and update status to RESERVED
-      const reservedUntil = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes reservation
+      // Concurrency update: check if slot is AVAILABLE and update status to HELD_FOR_PAYMENT
+      const heldUntil = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes reservation
       const affectedRows = await this.bookingRepo.updateWorkingSlotStatus(
         dto.providerWorkingSlotId,
-        'RESERVED_FOR_PROVIDER_RESPONSE',
-        reservedUntil,
+        'HELD_FOR_PAYMENT',
+        heldUntil,
         tx,
       );
 

@@ -46,17 +46,29 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
 
     // Concurrency Lock: only allow booking/reservation if current status is AVAILABLE
     const whereCondition: any = { id: slotId };
-    if (status === 'RESERVED_FOR_PROVIDER_RESPONSE') {
+    if (status === 'RESERVED_FOR_PROVIDER_RESPONSE' || status === 'HELD_FOR_PAYMENT') {
       whereCondition.status = 'AVAILABLE';
+    }
+
+    const dataToUpdate: any = {
+      status,
+      updated_at: new Date(),
+    };
+
+    if (status === 'HELD_FOR_PAYMENT') {
+      dataToUpdate.held_until = reservedUntil;
+      dataToUpdate.reserved_until = null;
+    } else if (status === 'RESERVED_FOR_PROVIDER_RESPONSE') {
+      dataToUpdate.reserved_until = reservedUntil;
+      dataToUpdate.held_until = null;
+    } else {
+      dataToUpdate.held_until = null;
+      dataToUpdate.reserved_until = null;
     }
 
     const result = await client.provider_working_slots.updateMany({
       where: whereCondition,
-      data: {
-        status,
-        reserved_until: reservedUntil,
-        updated_at: new Date(),
-      },
+      data: dataToUpdate,
     });
     return result.count;
   }
@@ -226,6 +238,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     return await client.bookings.findFirst({
       where: { id: bookingId },
       include: {
+        provider_profiles: true,
         provider_working_slots: {
           include: {
             time_slots: true,
@@ -253,7 +266,9 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
               include: {
                 booking_checklist_items: {
                   orderBy: {
-                    created_at: 'asc',
+                    service_checklist_templates: {
+                      sort_order: 'asc',
+                    },
                   },
                 },
               },
@@ -275,6 +290,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
             created_at: 'asc',
           },
         },
+        reviews: true,
       },
     });
   }
@@ -424,10 +440,12 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     ward: string,
     date: Date,
   ): Promise<any[]> {
-    // Look up providers that are approved and active
-    // that have active and approved capability matching the service, pet species, and weight range
-    // and have a service area covering the customer address
-    // and have at least one AVAILABLE working slot on that date.
+    const normalizedSpecies =
+      (petSpecies || '').toLowerCase().includes('cat') ||
+      (petSpecies || '').toLowerCase().includes('mèo')
+        ? 'Cat'
+        : 'Dog';
+
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -444,32 +462,11 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
         provider_services: {
           some: {
             service_id: serviceId,
-            pet_species: petSpecies,
+            pet_species: { equals: normalizedSpecies, mode: 'insensitive' },
             min_weight: { lte: petWeight },
             max_weight: { gte: petWeight },
             status: 'APPROVED',
             is_active: true,
-          },
-        },
-        provider_service_areas: {
-          some: {
-            city: city,
-            district: district,
-            ward: ward,
-            is_active: true,
-          },
-        },
-        provider_working_days: {
-          some: {
-            work_date: {
-              gte: startOfDay,
-              lte: endOfDay,
-            },
-            provider_working_slots: {
-              some: {
-                status: 'AVAILABLE',
-              },
-            },
           },
         },
       },
@@ -486,20 +483,15 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
         provider_services: {
           where: {
             service_id: serviceId,
-            pet_species: petSpecies,
+            pet_species: { equals: normalizedSpecies, mode: 'insensitive' },
             min_weight: { lte: petWeight },
             max_weight: { gte: petWeight },
             status: 'APPROVED',
             is_active: true,
           },
         },
+        provider_service_areas: true,
         provider_working_days: {
-          where: {
-            work_date: {
-              gte: startOfDay,
-              lte: endOfDay,
-            },
-          },
           include: {
             provider_working_slots: {
               where: {

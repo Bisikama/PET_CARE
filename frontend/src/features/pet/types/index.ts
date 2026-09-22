@@ -14,3 +14,4 @@ export interface Pet {
   createdAt?: string;
   updatedAt?: string;
 }
+export * from './medical-record.types';

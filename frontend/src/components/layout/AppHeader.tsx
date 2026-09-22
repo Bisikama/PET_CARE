@@ -1,16 +1,29 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';
-import { Bell } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { useMeStore } from '@/features/me';
+import { NotificationBadge, NotificationList } from '@/features/notifications';
 
 export const AppHeader = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const { openModal } = useMeStore();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getPageTitle = () => {
     if (pathname === ROUTES.DASHBOARD) {
@@ -57,9 +70,15 @@ export const AppHeader = () => {
 
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <button className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-          <Bell className="h-5 w-5" />
-        </button>
+        <div className="relative" ref={notificationRef}>
+          <NotificationBadge onClick={() => setShowNotifications(!showNotifications)} />
+          
+          {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 md:w-96 z-50 origin-top-right">
+              <NotificationList className="max-h-[80vh] border border-slate-200 shadow-xl" />
+            </div>
+          )}
+        </div>
 
         <div className="h-8 w-px bg-slate-200" />
 

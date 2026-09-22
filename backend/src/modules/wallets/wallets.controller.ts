@@ -4,6 +4,7 @@ import { WalletsService } from './application/use-cases/wallets.service';
 import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.decorator';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { CustomerPayoutRequestDto } from './dto/customer-payout-request.dto';
+import { AdminWithdrawDto } from './dto/admin-withdraw.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Role } from '@prisma/client';
@@ -94,5 +95,21 @@ export class WalletsController {
     @Query('limit') limit: number = 20,
   ) {
     return this.walletsService.getPayoutRequests(userId, Number(page), Number(limit));
+  }
+
+  @Post('admin/withdraw')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rút tiền trực tiếp dành cho Admin' })
+  @ApiResponse({ status: 200, description: 'Rút tiền thành công, số dư đã được trừ.' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực.' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập.' })
+  @ApiResponse({ status: 409, description: 'Số dư khả dụng không đủ.' })
+  async adminWithdraw(
+    @GetCurrentUserId() adminId: string,
+    @Body() dto: AdminWithdrawDto,
+  ) {
+    return this.walletsService.adminDirectWithdraw(adminId, dto.amount, dto.note, dto.bankDetails);
   }
 }

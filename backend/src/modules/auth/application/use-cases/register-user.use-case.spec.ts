@@ -16,6 +16,7 @@ describe('RegisterUserUseCase', () => {
       findByEmail: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      ensureWalletExists: jest.fn(),
     };
 
     const mockSupabaseAuthService = {

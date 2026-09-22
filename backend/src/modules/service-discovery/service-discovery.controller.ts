@@ -1,4 +1,4 @@
-import { Controller, Get, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 
 import { Public } from '../../common/decorators/public.decorator';
@@ -7,6 +7,7 @@ import { GetCurrentUserId } from '../../common/decorators/get-current-user-id.de
 import { DiscoverPackagesUseCase } from './application/use-cases/discover-packages.use-case';
 import { DiscoverProvidersUseCase } from './application/use-cases/discover-providers.use-case';
 import { GetRecommendationsUseCase } from './application/use-cases/get-recommendations.use-case';
+import { GetProviderDetailsUseCase } from './application/use-cases/get-provider-details.use-case';
 
 import { DiscoverPackagesDto } from './dto/discover-packages.dto';
 import { DiscoverProvidersDto } from './dto/discover-providers.dto';
@@ -18,6 +19,7 @@ export class ServiceDiscoveryController {
     private readonly discoverPackagesUseCase: DiscoverPackagesUseCase,
     private readonly discoverProvidersUseCase: DiscoverProvidersUseCase,
     private readonly getRecommendationsUseCase: GetRecommendationsUseCase,
+    private readonly getProviderDetailsUseCase: GetProviderDetailsUseCase,
   ) {}
 
   @Public()
@@ -66,5 +68,19 @@ export class ServiceDiscoveryController {
   })
   async getRecommendations() {
     return this.getRecommendationsUseCase.execute();
+  }
+
+  @Public()
+  @Get('providers/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Lấy thông tin chi tiết provider (Guest/Public)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về thông tin chi tiết provider',
+  })
+  async getProviderDetails(@Param('id') id: string) {
+    return this.getProviderDetailsUseCase.execute(id);
   }
 }

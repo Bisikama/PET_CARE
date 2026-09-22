@@ -12,6 +12,25 @@ export const meService = {
     return response.data;
   },
 
+  updateProfile: async (data: { fullName?: string; phone?: string }): Promise<any> => {
+    const response = await axiosInstance.patch('/users/me', data);
+    return response.data;
+  },
+
+  updateAvatar: async (file: File): Promise<any> => {
+    const formData = new FormData();
+    const ext = file.name.split('.').pop() || 'jpg';
+    const cleanFile = new File([file], `avatar.${ext}`, { type: file.type });
+    formData.append('file', cleanFile);
+
+    const response = await axiosInstance.patch('/users/me/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   registerProvider: async (data: { providerType: 'SITTER' | 'GROOMER' | 'VET'; bio: string; experienceYears: number }): Promise<any> => {
     const response = await axiosInstance.post('/providers/profile', data);
     return response.data;
@@ -89,4 +108,25 @@ export const meService = {
     const response = await axiosInstance.get('/services');
     return response.data;
   },
+
+  getUserMe: async (): Promise<User> => {
+    const response = await axiosInstance.get<User>('/users/me');
+    return response.data;
+  },
+
+  updateNotificationSettings: async (settings: any): Promise<any> => {
+    const response = await axiosInstance.patch('/users/me/notification-settings', settings);
+    return response.data;
+  },
+
+  deleteAccount: async (): Promise<any> => {
+    const response = await axiosInstance.delete('/users/me');
+    return response.data;
+  },
+
+  deactivateAccount: async (): Promise<any> => {
+    const response = await axiosInstance.patch('/users/me/deactivate');
+    return response.data;
+  },
 };
+

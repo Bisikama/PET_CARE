@@ -160,11 +160,17 @@ export class PaymentsService {
    */
   async processPaymentCallback(vnp_Params: any): Promise<{ RspCode: string; Message: string }> {
     const secureHash = vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
+    
+    // Lọc chỉ lấy các tham số bắt đầu bằng vnp_ để tránh lỗi chữ ký do ngrok/browser tự động thêm tham số
+    const vnpayParams: any = {};
+    for (const key in vnp_Params) {
+      if (key.startsWith('vnp_') && key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType') {
+        vnpayParams[key] = vnp_Params[key];
+      }
+    }
 
     const secretKey = this.configService.get<string>('VNP_HASH_SECRET', 'DUMMY_SECRET');
-    const sortedParams = this.sortObject(vnp_Params);
+    const sortedParams = this.sortObject(vnpayParams);
     const signData = qs.stringify(sortedParams, { encode: false });
     const hmac = crypto.createHmac('sha512', secretKey);
     const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
@@ -221,6 +227,16 @@ export class PaymentsService {
         if (rspCode === '00') {
           confirmedPayment = payment;
 
+          // Lấy cấu hình phí hoa hồng (COMMISSION_RATE) từ .env trước, sau đó fallback DB, mặc định 10%
+          const envCommission = this.configService.get<string>('COMMISSION_RATE');
+          let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+          if (isNaN(commissionRate)) {
+            const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+            commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+          }
+          const platformFee = Math.round(Number(payment.amount) * commissionRate);
+          const providerAmount = Number(payment.amount) - platformFee;
+
           // Thanh toán THÀNH CÔNG
           // 1. Cập nhật trạng thái Payment sang Ký Quỹ
           await tx.payments.update({
@@ -229,14 +245,27 @@ export class PaymentsService {
               status: 'PAID_HELD_IN_ESCROW',
               paid_at: new Date(),
               idempotency_key: idempotencyKey,
+              platform_fee: platformFee,
+              provider_amount: providerAmount,
             },
           });
 
-          // 2. Chuyển trạng thái Booking sang Chờ Provider xác nhận
+          // 2. Chuyển trạng thái Booking sang Chờ Provider xác nhận & chuyển Slot sang RESERVED_FOR_PROVIDER_RESPONSE
           await tx.bookings.update({
             where: { id: payment.booking_id },
             data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
           });
+
+          if (payment.bookings?.provider_working_slot_id) {
+            await tx.provider_working_slots.update({
+              where: { id: payment.bookings.provider_working_slot_id },
+              data: {
+                status: 'RESERVED_FOR_PROVIDER_RESPONSE',
+                held_until: null,
+                reserved_until: new Date(Date.now() + 15 * 60 * 1000),
+              },
+            });
+          }
 
           // 3. Tiền vào ví Provider ở dạng Ký quỹ (Pending Balance)
           const providerId = payment.bookings?.provider_id;
@@ -252,10 +281,10 @@ export class PaymentsService {
               if (providerWallet) {
                 await this.walletsService.processTransaction(
                   providerWallet.id,
-                  Number(payment.bookings.total_price), // Đảm bảo ghi nhận giá trị gốc
+                  providerAmount, // Chỉ ký quỹ phần tiền của Provider sau khi trừ phí
                   'ESCROW_HOLD',
                   payment.booking_id,
-                  'Ký quỹ thanh toán từ VNPay',
+                  'Ký quỹ thanh toán từ VNPay (đã trừ phí hoa hồng)',
                   tx,
                 );
               }
@@ -393,6 +422,16 @@ export class PaymentsService {
         }
       }
 
+      // Lấy cấu hình phí hoa hồng (COMMISSION_RATE) từ .env trước, sau đó fallback DB, mặc định 10%
+      const envCommission = this.configService.get<string>('COMMISSION_RATE');
+      let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+      if (isNaN(commissionRate)) {
+        const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+        commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+      }
+      const platformFee = Math.round(finalAmount * commissionRate);
+      const providerAmount = finalAmount - platformFee;
+
       // 2. Kiểm tra Ví Khách Hàng
       const customerWallet = await tx.wallets.findUnique({
         where: { user_id: customerId },
@@ -425,10 +464,10 @@ export class PaymentsService {
           if (providerWallet) {
             await this.walletsService.processTransaction(
               providerWallet.id,
-              finalAmount,
+              providerAmount, // Chỉ ký quỹ phần tiền của Provider
               'ESCROW_HOLD',
               bookingId,
-              `Ký quỹ thanh toán từ Ví Customer`,
+              `Ký quỹ thanh toán từ Ví Customer (đã trừ phí)`,
               tx,
             );
           }
@@ -453,14 +492,27 @@ export class PaymentsService {
           status: 'PAID_HELD_IN_ESCROW',
           transaction_code: `WALLET_${Date.now()}`,
           paid_at: new Date(),
+          platform_fee: platformFee,
+          provider_amount: providerAmount,
         },
       });
 
-      // 6. Cập nhật Booking
+      // 6. Cập nhật Booking & chuyển Slot sang RESERVED_FOR_PROVIDER_RESPONSE
       await tx.bookings.update({
         where: { id: bookingId },
         data: { status: 'PENDING_PROVIDER_ACCEPTANCE' },
       });
+
+      if (booking.provider_working_slot_id) {
+        await tx.provider_working_slots.update({
+          where: { id: booking.provider_working_slot_id },
+          data: {
+            status: 'RESERVED_FOR_PROVIDER_RESPONSE',
+            held_until: null,
+            reserved_until: new Date(Date.now() + 15 * 60 * 1000),
+          },
+        });
+      }
 
       return {
         success: true,
@@ -619,7 +671,7 @@ export class PaymentsService {
     const secretKey = this.configService.get<string>('MOMO_SECRET_KEY', 'DUMMY_SECRET_KEY');
     
     const requestType = 'captureWallet';
-    const orderInfo = `Thanh toán qua MoMo cho Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
+    const orderInfo = `PetCare Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
     const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
     const returnUrl = `${backendUrl}/api/payments/momo-return`;
     const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
@@ -682,11 +734,15 @@ export class PaymentsService {
       
       if (data.resultCode !== 0) {
         this.logger.error(`Momo URL creation failed: ${data.message}`, data);
-        throw new BadRequestException('Không thể tạo giao dịch MoMo');
+        throw new BadRequestException(`Không thể tạo giao dịch MoMo: ${data.message}`);
       }
       
       return data.payUrl;
     } catch (error) {
+      // Re-throw HttpException (BadRequestException, etc.) trực tiếp, không wrap lại
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error('Error calling MoMo API', error);
       throw new BadRequestException('Lỗi kết nối đến cổng thanh toán MoMo');
     }

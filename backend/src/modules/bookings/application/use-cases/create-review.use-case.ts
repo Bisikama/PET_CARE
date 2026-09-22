@@ -10,6 +10,7 @@ export class CreateReviewUseCase {
   async execute(bookingId: string, customerId: string, dto: CreateReviewDto) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
+      include: { provider_profiles: true },
     });
 
     if (!booking) {
@@ -39,7 +40,7 @@ export class CreateReviewUseCase {
         data: {
           booking_id: bookingId,
           reviewer_id: customerId,
-          reviewee_id: booking.provider_id!, // Assume provider exists for completed booking
+          reviewee_id: booking.provider_profiles?.user_id!, // Assume provider exists for completed booking
           rating: dto.rating,
           comment: dto.comment,
         },
@@ -51,7 +52,7 @@ export class CreateReviewUseCase {
         SET 
           rating_avg = ROUND((COALESCE(rating_avg, 0) * COALESCE(total_reviews, 0) + ${dto.rating}::numeric) / (COALESCE(total_reviews, 0) + 1), 2),
           total_reviews = COALESCE(total_reviews, 0) + 1
-        WHERE user_id = ${booking.provider_id}::uuid
+        WHERE id = ${booking.provider_id}::uuid
       `;
 
       return review;

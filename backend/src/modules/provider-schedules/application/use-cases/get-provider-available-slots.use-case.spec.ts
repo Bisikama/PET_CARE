@@ -90,7 +90,7 @@ describe('GetProviderAvailableSlotsUseCase', () => {
     const mockWorkingDays = [
       {
         id: 'wd-1',
-        work_date: new Date('2026-09-01T00:00:00.000Z'),
+        work_date: new Date('2099-09-01T00:00:00.000Z'),
         working_mode: 'FULL_TIME',
         provider_working_slots: [
           {
@@ -109,10 +109,10 @@ describe('GetProviderAvailableSlotsUseCase', () => {
 
     mockRepo.findWorkingDaysWithSlots!.mockResolvedValue(mockWorkingDays);
 
-    const result = await useCase.execute('provider-1', '2026-09-01', '2026-09-01');
+    const result = await useCase.execute('provider-1', '2099-09-01', '2099-09-01');
 
     expect(result).toHaveLength(1);
-    expect(result[0].workDate).toBe('2026-09-01');
+    expect(result[0].workDate).toBe('2099-09-01');
     expect(result[0].slots[0].providerWorkingSlotId).toBe('pws-1');
     expect(result[0].slots[0].status).toBe('AVAILABLE');
     expect(result[0].slots[0].isAvailable).toBe(true);

@@ -1,0 +1,39 @@
+import axiosInstance from '@/lib/axios';
+
+export interface CheckoutRequest {
+  bookingId: string;
+  promotionCode?: string;
+  promoCode?: string;
+  amount?: number;
+}
+
+export interface CheckoutResponse {
+  paymentUrl: string;
+}
+
+export const paymentService = {
+  checkout: async (data: CheckoutRequest): Promise<CheckoutResponse> => {
+    const response = await axiosInstance.post('/payments/checkout', data);
+    return response.data;
+  },
+
+  checkoutWallet: async (data: CheckoutRequest): Promise<any> => {
+    const response = await axiosInstance.post('/payments/checkout-wallet', data);
+    return response.data;
+  },
+
+  checkoutMomo: async (data: CheckoutRequest): Promise<CheckoutResponse> => {
+    const response = await axiosInstance.post('/payments/checkout-momo', data);
+    return response.data;
+  },
+
+  verifyVNPay: async (queryString: string): Promise<any> => {
+    const response = await axiosInstance.get(`/payments/vnpay-return${queryString}`);
+    return response.data;
+  },
+
+  triggerVnpayIpn: async (queryString: string): Promise<any> => {
+    const response = await axiosInstance.get(`/payments/vnpay-ipn${queryString}`);
+    return response.data;
+  },
+};
