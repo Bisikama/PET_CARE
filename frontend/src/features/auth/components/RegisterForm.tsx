@@ -74,36 +74,12 @@ export function RegisterForm() {
       <div className="max-w-xl w-full bg-white rounded-[32px] shadow-2xl overflow-hidden border border-slate-100 p-8 sm:p-10">
         {/* Logo Container */}
         <div className="text-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-[#e0f2fe] flex items-center justify-center mx-auto mb-4 relative shadow-sm">
-            {/* Blue Heart Shape */}
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-14 h-14 text-sky-400 fill-current"
-            >
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-            </svg>
-            {/* White Silhouette of Parent & Baby Animals Inside the Heart */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg
-                viewBox="0 0 64 64"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-12 h-12"
-              >
-                <path
-                  d="M26.5 30c.8 0 1.5.7 1.5 1.5V38c0 1.7-1.3 3-3 3h-5c-1.7 0-3-1.3-3-3v-6.5c0-.8.7-1.5 1.5-1.5h8z"
-                  fill="white"
-                />
-                <circle cx="22.5" cy="26" r="2.5" fill="white" />
-                <path
-                  d="M38.5 34c.6 0 1 .4 1 1v4c0 1.1-.9 2-2 2h-3c-1.1 0-2-.9-2-2v-4c0-.6.4-1 1-1h5z"
-                  fill="white"
-                />
-                <circle cx="35.5" cy="31" r="1.8" fill="white" />
-              </svg>
-            </div>
+          <div className="w-24 h-24 rounded-full bg-[#e0f2fe] flex items-center justify-center mx-auto mb-4 relative shadow-sm overflow-hidden">
+            <img 
+              src='/logo.png'
+              alt='logo'
+              className='w-full h-full object-cover'
+            />
           </div>
 
           <h2 className="text-2xl font-bold text-[#0f172a] tracking-tight">

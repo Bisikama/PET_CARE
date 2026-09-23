@@ -7,6 +7,7 @@ export interface Service {
   durationMinutes: number;
   isActive: boolean;
   cancellationPolicyId: string | null;
+  image_url?: string | null;
   createdAt: string;
   deletedAt: string | null;
 }

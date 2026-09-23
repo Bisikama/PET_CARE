@@ -19,7 +19,7 @@ export function ProviderHeader({ activeTab, onTabChange }: ProviderHeaderProps) 
   const user = providerData;
   const fullName = user?.fullName || 'Nguyễn Minh Thư';
   const email = user?.email || 'minhthu.grooming@gmail.com';
-  const avatarUrl = user?.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&q=80';
+  const avatarUrl = user?.avatarUrl || '/images/avatar-provider.png';
   const partnerCode = user?.id && user.id.length >= 4
     ? `PROV-${user.id.substring(0, 4).toUpperCase()}`
     : 'PROV-1209';

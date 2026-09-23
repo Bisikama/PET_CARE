@@ -96,8 +96,12 @@ export function MeModal() {
               <div className="absolute left-0 bottom-0 w-24 h-24 bg-teal-500/10 rounded-full blur-lg pointer-events-none" />
 
               {/* Large Avatar */}
-              <div className="w-20 h-20 rounded-full bg-teal-100/10 border-2 border-white/30 flex items-center justify-center text-teal-200 font-bold text-3xl uppercase shadow-inner mb-4">
-                {firstLetter}
+              <div className="w-20 h-20 rounded-full bg-teal-100/10 border-2 border-white/30 flex items-center justify-center text-teal-200 font-bold text-3xl uppercase shadow-inner mb-4 overflow-hidden">
+                {user.avatarUrl || (user as any).avatar ? (
+                  <img src={user.avatarUrl || (user as any).avatar} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <img src="/images/avatar-customer.png" alt={displayName} className="w-full h-full object-cover" />
+                )}
               </div>
 
               {/* Name */}

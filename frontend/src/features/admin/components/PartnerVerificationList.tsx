@@ -290,8 +290,12 @@ export function PartnerVerificationList() {
                 <div className="p-5 flex flex-col lg:flex-row lg:items-center gap-5">
                   {/* Avatar + Info */}
                   <div className="flex gap-4 flex-1 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 text-white font-extrabold text-lg flex items-center justify-center uppercase shrink-0 shadow-sm">
-                      {provider.users?.fullName?.charAt(0) || 'P'}
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 text-white font-extrabold text-lg flex items-center justify-center uppercase shrink-0 shadow-sm overflow-hidden">
+                      {provider.users?.avatarUrl ? (
+                        <img src={provider.users.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <img src="/images/avatar-provider.png" alt="Avatar" className="w-full h-full object-cover" />
+                      )}
                     </div>
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
