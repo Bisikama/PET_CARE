@@ -83,7 +83,7 @@ export class BookingsController {
     private readonly createReviewUseCase: CreateReviewUseCase,
     private readonly openDisputeUseCase: OpenDisputeUseCase,
     private readonly requestBookingExtensionUseCase: RequestBookingExtensionUseCase,
-  ) {}
+  ) { }
 
   @Post('calculate-price')
   @HttpCode(HttpStatus.OK)

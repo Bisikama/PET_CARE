@@ -371,4 +371,31 @@ export class WalletsService {
       };
     });
   }
+
+  async topupWallet(userId: string, amount: number) {
+    if (!amount || amount <= 0) {
+      throw new BadRequestException('Số tiền nạp phải lớn hơn 0');
+    }
+    const wallet = await this.prisma.wallets.upsert({
+      where: { user_id: userId },
+      update: {},
+      create: { user_id: userId },
+    });
+
+    return this.prisma.$transaction(async (tx) => {
+      const transaction = await this.processTransaction(
+        wallet.id,
+        amount,
+        'CREDIT',
+        null,
+        'Nạp tiền vào ví PetCare',
+        tx,
+      );
+      return {
+        success: true,
+        message: 'Nạp tiền vào ví thành công',
+        transaction,
+      };
+    });
+  }
 }
