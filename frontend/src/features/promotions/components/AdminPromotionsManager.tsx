@@ -272,9 +272,6 @@ export function AdminPromotionsManager() {
               <Tag className="w-5 h-5 text-amber-500" />
               Quản Lý Mã Khuyến Mãi (Admin Promotions)
             </h3>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">
-              Tạo và cập nhật mã giảm giá qua API: <code className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-mono text-[11px]">POST & PUT /api/admin/promotions</code>
-            </p>
           </div>
 
           <div className="flex items-center gap-3">

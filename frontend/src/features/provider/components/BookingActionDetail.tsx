@@ -157,7 +157,7 @@ export const BookingActionDetail: React.FC<BookingActionDetailProps> = ({ bookin
           {petInfo ? (
             <div className="flex gap-4">
               <img 
-                src={petInfo.avatar_url || 'https://via.placeholder.com/60'} 
+                src={petInfo.avatar_url || '/images/avatar-pet.png'} 
                 alt={petInfo.pet_name}
                 className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
               />

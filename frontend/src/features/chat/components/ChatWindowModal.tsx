@@ -197,7 +197,10 @@ export const ChatWindowModal: React.FC<ChatWindowModalProps> = ({ roomId, bookin
               {isLoading ? (
                 <div className="py-16 text-center text-xs font-semibold text-slate-400">Đang tải tin nhắn...</div>
               ) : safeMessages.length === 0 ? (
-                <div className="py-16 text-center text-xs font-semibold text-slate-400">Chưa có tin nhắn nào trong phòng này. Nhập tin nhắn bên dưới để bắt đầu trao đổi.</div>
+                <div className="py-16 text-center text-xs font-semibold text-slate-400 flex flex-col items-center">
+                  <img src="/images/empty-chat.png" alt="Empty Chat" className="w-24 h-24 mb-4 object-contain opacity-80" />
+                  Chưa có tin nhắn nào trong phòng này. Nhập tin nhắn bên dưới để bắt đầu trao đổi.
+                </div>
               ) : (
                 safeMessages.map((m: any) => {
                   const content = m.content || m.text || '';
