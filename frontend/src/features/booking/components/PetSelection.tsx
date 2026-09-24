@@ -99,11 +99,16 @@ export function PetSelection() {
                       src={pet.avatarUrl}
                       alt={pet.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/images/avatar-pet.png';
+                      }}
                     />
-                  ) : pet.species === 'Dog' || pet.species.toLowerCase() === 'dog' ? (
-                    <Dog className="w-8 h-8 text-teal-600" />
                   ) : (
-                    <Cat className="w-8 h-8 text-teal-600" />
+                    <img
+                      src="/images/avatar-pet.png"
+                      alt={pet.name}
+                      className="w-full h-full object-cover"
+                    />
                   )}
                 </div>
 

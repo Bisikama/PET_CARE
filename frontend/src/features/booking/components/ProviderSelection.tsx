@@ -139,7 +139,7 @@ export function ProviderSelection() {
         </div>
       ) : providers.length === 0 ? (
         <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
-          <Search className="w-10 h-10 text-slate-400 mb-3" />
+          <img src="/images/empty-search.png" alt="Empty Search" className="w-24 h-24 mb-4 object-contain opacity-80" />
           <h3 className="text-base font-bold text-slate-800">Không tìm thấy chuyên viên</h3>
           <p className="text-slate-400 text-xs mt-1 max-w-sm mx-auto font-medium leading-relaxed">
             Rất tiếc, hiện tại không có chuyên viên nào phục vụ loài vật của bạn ({selectedPet?.species}) ở khu vực {selectedAddress?.district}. Vui lòng kiểm tra lại địa chỉ hoặc thử dịch vụ khác.
@@ -172,10 +172,16 @@ export function ProviderSelection() {
                         alt={p.fullName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
+                          (e.currentTarget as HTMLImageElement).src = '/images/avatar-provider.png';
                         }}
                       />
-                    ) : null}
+                    ) : (
+                      <img
+                        src="/images/avatar-provider.png"
+                        alt={p.fullName}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                     <span className="select-none drop-shadow-sm">
                       {p.fullName?.charAt(0) || 'P'}
                     </span>
@@ -193,8 +199,8 @@ export function ProviderSelection() {
                         </span>
                       )}
                       {p.kycStatus === 'APPROVED' && (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/30 uppercase">
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/30 uppercase">
+                          <img src="/images/badge-kyc.png" alt="KYC" className="w-3.5 h-3.5 object-contain" />
                           Đã xác minh
                         </span>
                       )}

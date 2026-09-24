@@ -91,10 +91,7 @@ export const UpdateProfileModal: React.FC<UpdateProfileModalProps> = ({ isOpen, 
                 ) : (user as any)?.avatar || user?.avatarUrl ? (
                   <img src={(user as any)?.avatar || user?.avatarUrl} alt="Current avatar" className="w-full h-full object-cover" />
                 ) : (
-
-                  <span className="text-3xl font-bold text-slate-300">
-                    {user?.fullName?.charAt(0).toUpperCase() || 'U'}
-                  </span>
+                  <img src="/images/avatar-customer.png" alt="Current avatar" className="w-full h-full object-cover" />
                 )}
               </div>
               <button

@@ -141,15 +141,16 @@ export function ServiceSelection() {
                     <div className="flex items-start gap-3 pr-8">
                       {/* Service Icon */}
                       <div className="shrink-0 mt-0.5">
-                        {service.category?.toUpperCase() === 'GROOMER' ? (
-                          <Scissors className="w-6 h-6 text-amber-500" />
-                        ) : service.category?.toUpperCase() === 'SITTER' ? (
-                          <Home className="w-6 h-6 text-teal-500" />
-                        ) : service.category?.toUpperCase() === 'VET' ? (
-                          <Stethoscope className="w-6 h-6 text-rose-500" />
-                        ) : (
-                          <Package className="w-6 h-6 text-indigo-500" />
-                        )}
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50/50 flex items-center justify-center border border-indigo-100/50 p-2 relative overflow-hidden">
+                          <img 
+                            src={service.image_url || '/icons/dog-walking.svg'} 
+                            alt={service.name}
+                            className="w-full h-full object-contain mix-blend-multiply"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/icons/dog-walking.svg';
+                            }}
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-1 flex-1">

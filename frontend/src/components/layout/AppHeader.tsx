@@ -65,7 +65,7 @@ export const AppHeader = () => {
   const firstLetter = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-8 select-none">
+    <header className="h-16 bg-white/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-8 select-none">
       <h1 className="text-lg font-semibold text-slate-800">{getPageTitle()}</h1>
 
       <div className="flex items-center gap-4">

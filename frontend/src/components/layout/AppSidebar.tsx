@@ -87,7 +87,7 @@ export const AppSidebar = () => {
   return (
     <aside className="w-64 bg-slate-950 text-slate-100 flex flex-col h-screen border-r border-slate-800 select-none shrink-0">
       {/* Brand Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900">
+      <div className="h-16 flex items-center px-6 bg-slate-900">
         <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center font-bold text-slate-950">
            <img 

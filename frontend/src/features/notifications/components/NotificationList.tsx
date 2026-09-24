@@ -22,7 +22,12 @@ export const NotificationList: React.FC<NotificationListProps> = ({ className = 
   }
 
   if (notifications.length === 0) {
-    return <div className={`p-4 text-center text-sm text-gray-500 ${className}`}>Không có thông báo nào</div>;
+    return (
+      <div className={`p-8 flex flex-col items-center justify-center text-center ${className}`}>
+        <img src="/images/empty-notification.png" alt="Empty Notifications" className="w-24 h-24 mb-4 object-contain opacity-80" />
+        <p className="text-sm font-semibold text-gray-500">Không có thông báo nào</p>
+      </div>
+    );
   }
 
   const hasUnread = notifications.some(n => !n.isRead);
