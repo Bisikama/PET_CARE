@@ -1,6 +1,6 @@
 import React from 'react';
-import { ProviderScreen } from '@/features/provider';
+import { Redirect } from 'expo-router';
 
 export default function ProviderIndexRoute() {
-  return <ProviderScreen />;
+  return <Redirect href={'/(provider)/(tabs)/jobs' as any} />;
 }

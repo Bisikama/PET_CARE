@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
-import { media_type } from '@prisma/client';
+import { booking_media_category, media_type } from '@prisma/client';
 
 export class StartServiceEvidenceMediaDto {
   @ApiPropertyOptional({
@@ -21,6 +21,16 @@ export class StartServiceEvidenceMediaDto {
   @IsEnum(media_type)
   @IsOptional()
   mediaType?: media_type;
+
+  @ApiPropertyOptional({
+    enum: booking_media_category,
+    example: 'CHECK_IN',
+    description: 'Phân loại ảnh: CHECK_IN, CHECK_OUT, IN_PROGRESS, OTHER',
+    default: 'CHECK_IN',
+  })
+  @IsEnum(booking_media_category)
+  @IsOptional()
+  category?: booking_media_category;
 
   @ApiPropertyOptional({
     example: 'Ảnh chụp hiện trạng thú cưng trước khi tắm',

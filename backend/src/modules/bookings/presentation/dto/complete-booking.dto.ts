@@ -9,7 +9,7 @@ import {
   IsUrl,
   ValidateNested,
 } from 'class-validator';
-import { checklist_item_status, media_type } from '@prisma/client';
+import { booking_media_category, checklist_item_status, media_type } from '@prisma/client';
 
 export class UpdateBookingChecklistItemDto {
   @ApiProperty({ description: 'ID của checklist item trong đơn booking' })
@@ -42,6 +42,16 @@ export class BookingEvidenceMediaDto {
   @IsOptional()
   @IsEnum(media_type)
   mediaType?: media_type;
+
+  @ApiPropertyOptional({
+    enum: booking_media_category,
+    example: 'CHECK_OUT',
+    description: 'Phân loại ảnh: CHECK_IN, CHECK_OUT, IN_PROGRESS, OTHER',
+    default: 'CHECK_OUT',
+  })
+  @IsOptional()
+  @IsEnum(booking_media_category)
+  category?: booking_media_category;
 
   @ApiPropertyOptional({ description: 'Mô tả ngắn gọn về ảnh minh chứng' })
   @IsOptional()

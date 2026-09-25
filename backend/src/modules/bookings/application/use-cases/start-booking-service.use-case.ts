@@ -41,6 +41,7 @@ export class StartBookingServiceUseCase {
             uploaded_by: providerUserId,
             media_url: media.mediaUrl,
             media_type: media.mediaType || 'IMAGE',
+            category: media.category || 'CHECK_IN',
             caption: media.caption || 'Ảnh chụp hiện trạng ban đầu khi tiếp nhận thú cưng',
           })),
           tx,

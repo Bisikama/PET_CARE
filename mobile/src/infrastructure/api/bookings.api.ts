@@ -81,6 +81,87 @@ export interface BookingListItem {
   }>;
 }
 
+export interface ProviderBookingItem {
+  id: string;
+  customer_id?: string;
+  provider_id?: string;
+  booking_code?: string;
+  status:
+    | 'PENDING_PAYMENT'
+    | 'PENDING_PROVIDER_ACCEPTANCE'
+    | 'ACCEPTED'
+    | 'PROVIDER_ARRIVED'
+    | 'CHECKED_IN'
+    | 'IN_PROGRESS'
+    | 'AWAITING_CUSTOMER_CONFIRMATION'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'PROVIDER_TIMEOUT'
+    | 'CANCELLED'
+    | string;
+  total_price: number | string;
+  customer_note?: string | null;
+  provider_note?: string | null;
+  requested_date?: string;
+  estimated_start_at?: string;
+  estimated_end_at?: string;
+  service_duration_minutes?: number;
+  travel_duration_minutes?: number;
+  created_at: string;
+  updated_at?: string;
+  customer_addresses?: {
+    id?: string;
+    label?: string;
+    receiver_name?: string;
+    phone?: string;
+    address_line?: string;
+    ward?: string;
+    district?: string;
+    city?: string;
+    formatted_address?: string;
+    latitude?: string | number;
+    longitude?: string | number;
+  };
+  users?: {
+    id?: string;
+    fullName?: string;
+    full_name?: string;
+    avatarUrl?: string;
+    avatar_url?: string;
+    phone?: string;
+  };
+  booking_pets?: Array<{
+    id?: string;
+    pet_name?: string;
+    species?: string;
+    breed?: string;
+    weight?: string | number;
+    avatar_url?: string;
+    pets?: {
+      id?: string;
+      name?: string;
+      species?: string;
+      breed?: string;
+      weight?: string | number;
+      avatar_url?: string;
+    };
+    booking_services?: Array<{
+      id?: string;
+      service_name?: string;
+      price?: string | number;
+      duration_minutes?: number;
+      provider_services?: {
+        services?: {
+          id?: string;
+          name?: string;
+          title?: string;
+          duration_minutes?: number;
+        };
+      };
+    }>;
+  }>;
+}
+
 export interface GetBookingsResponse {
   data: BookingListItem[];
   meta: {
@@ -215,5 +296,92 @@ export const bookingsApi = {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.data)) return data.data;
     return [];
+  },
+
+  providerAccept: async (bookingId: string): Promise<{ bookingId: string; status: string }> => {
+    const { data } = await apiClient.post(`/bookings/${bookingId}/provider-accept`);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  providerReject: async (bookingId: string): Promise<{ bookingId: string; status: string }> => {
+    const { data } = await apiClient.post(`/bookings/${bookingId}/provider-reject`);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  providerCancel: async (
+    bookingId: string,
+    dto: { reason: string; note?: string }
+  ): Promise<{ bookingId: string; status: string }> => {
+    const { data } = await apiClient.post(`/bookings/${bookingId}/provider-cancel`, dto);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  startService: async (
+    bookingId: string,
+    dto?: {
+      petConditionNote?: string;
+      evidenceMedias?: Array<{
+        mediaUrl: string;
+        mediaType?: 'IMAGE' | 'VIDEO';
+        category?: 'CHECK_IN' | 'CHECK_OUT' | 'IN_PROGRESS' | 'OTHER';
+        caption?: string;
+      }>;
+    }
+  ): Promise<{ bookingId: string; status: string; message?: string }> => {
+    const { data } = await apiClient.post(`/bookings/${bookingId}/start-service`, dto || {});
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  uploadEvidence: async (bookingId: string, file: any): Promise<{
+    success: boolean;
+    mediaUrl: string;
+    mediaType: string;
+    fileName: string;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post(`/bookings/${bookingId}/evidence-upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  getChecklist: async (bookingId: string): Promise<any> => {
+    const { data } = await apiClient.get(`/bookings/${bookingId}/checklist`);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  updateChecklistItem: async (
+    bookingId: string,
+    itemId: string,
+    dto: { status: 'PENDING' | 'DONE' | 'SKIPPED'; note?: string }
+  ): Promise<any> => {
+    const { data } = await apiClient.patch(`/bookings/${bookingId}/checklist/${itemId}`, dto);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  batchUpdateChecklist: async (
+    bookingId: string,
+    items: Array<{ itemId: string; status: 'PENDING' | 'DONE' | 'SKIPPED'; note?: string }>
+  ): Promise<any> => {
+    const { data } = await apiClient.patch(`/bookings/${bookingId}/checklist/batch`, { items });
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  completeBooking: async (
+    bookingId: string,
+    dto: {
+      evidenceMedias?: Array<{
+        mediaUrl: string;
+        mediaType?: 'IMAGE' | 'VIDEO';
+        category?: 'CHECK_IN' | 'CHECK_OUT' | 'IN_PROGRESS' | 'OTHER';
+        caption?: string;
+      }>;
+      checklistItems?: Array<{ checklistItemId: string; status: 'DONE' | 'SKIPPED'; note?: string }>;
+      providerNote?: string;
+    }
+  ): Promise<any> => {
+    const { data } = await apiClient.post(`/bookings/${bookingId}/complete`, dto);
+    return data?.data !== undefined ? data.data : data;
   },
 };
