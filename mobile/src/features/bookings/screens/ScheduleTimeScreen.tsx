@@ -37,15 +37,67 @@ export default function ScheduleTimeScreen() {
     petWeight?: string;
   }>();
 
-  const today = new Date();
-  const [selectedDay, setSelectedDay] = useState<number>(today.getDate());
+  const today = useMemo(() => new Date(), []);
+  const [selectedDay, setSelectedDay] = useState<number>(() => {
+    // If it's late in the day (after 20:00), default to tomorrow
+    if (new Date().getHours() >= 20) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.getDate();
+    }
+    return new Date().getDate();
+  });
   const [timeSlots, setTimeSlots] = useState<TimeSlotOption[]>(defaultTimeSlots);
-  const [selectedSlotId, setSelectedSlotId] = useState<string>(
-    draft.slotId || defaultTimeSlots[0]?.id || 'b23b1234-abcd-4234-8f02-000000000001'
-  );
-  const [selectedSlotTime, setSelectedSlotTime] = useState<string>(
-    draft.timeSlot || defaultTimeSlots[0]?.time || '07:00 - 09:00'
-  );
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('');
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('');
+
+  // Process time slots to mark past slots on today as isPast & isAvailable: false
+  const processedTimeSlots = useMemo(() => {
+    const isToday = selectedDay === today.getDate();
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    return timeSlots.map((ts) => {
+      let isAvailable = ts.isAvailable !== false;
+      let isPast = false;
+
+      if (isToday && ts.startTime) {
+        const [slotHour, slotMin] = ts.startTime.split(':').map(Number);
+        // Slot is in the past if slotHour < currentHour or within 15 min buffer
+        if (slotHour < currentHour || (slotHour === currentHour && (slotMin || 0) <= currentMinute + 15)) {
+          isAvailable = false;
+          isPast = true;
+        }
+      }
+
+      return {
+        ...ts,
+        isAvailable,
+        isPast,
+      };
+    });
+  }, [selectedDay, timeSlots, today]);
+
+  // Keep selected slot pointing to a valid future slot
+  useEffect(() => {
+    const currentSelected = processedTimeSlots.find(
+      (s) => s.id === selectedSlotId || s.time === selectedSlotTime
+    );
+
+    if (!currentSelected || !currentSelected.isAvailable || (currentSelected as any).isPast) {
+      const firstValid = processedTimeSlots.find((s) => s.isAvailable && !(s as any).isPast);
+      if (firstValid) {
+        setSelectedSlotId(firstValid.id);
+        setSelectedSlotTime(firstValid.time);
+      } else if (selectedDay === today.getDate()) {
+        // No future slots left today! Move to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setSelectedDay(tomorrow.getDate());
+      }
+    }
+  }, [processedTimeSlots, selectedSlotId, selectedSlotTime, selectedDay, today]);
 
   // Fetch real time slots from backend DB
   useEffect(() => {
@@ -65,12 +117,6 @@ export default function ScheduleTimeScreen() {
             isAvailable: true,
           }));
           setTimeSlots(mapped);
-          
-          // If no slot chosen or previously chosen slot not in list, pick the first
-          if (!draft.timeSlot && mapped[0]) {
-            setSelectedSlotTime(mapped[0].time);
-            setSelectedSlotId(mapped[0].id);
-          }
         }
       } catch (err) {
         // Fallback to defaultTimeSlots
@@ -242,7 +288,7 @@ export default function ScheduleTimeScreen() {
 
         {/* 4. Available Times Slots */}
         <TimeSlotGrid
-          slots={timeSlots}
+          slots={processedTimeSlots}
           selectedSlotTime={selectedSlotTime}
           onSelectSlot={handleSelectSlot}
           providerName={providerName}

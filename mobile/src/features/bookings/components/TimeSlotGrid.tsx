@@ -64,13 +64,15 @@ export function TimeSlotGrid({
       <View style={styles.grid}>
         {slots.map((slot) => {
           const isSelected = selectedSlotTime === slot.time;
-          const isBooked = !slot.isAvailable || !!slot.isBooked;
+          const isUnavailable = !slot.isAvailable || !!slot.isBooked;
 
-          if (isBooked) {
+          if (isUnavailable) {
             return (
               <View key={slot.id} style={[styles.slotCard, styles.slotCardBooked]}>
                 <Text style={styles.slotTimeBooked}>{slot.time}</Text>
-                <Text style={styles.slotSubBooked}>Đã kín lịch</Text>
+                <Text style={styles.slotSubBooked}>
+                  {(slot as any).isPast ? 'Đã qua giờ' : 'Đã kín lịch'}
+                </Text>
               </View>
             );
           }

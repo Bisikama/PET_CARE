@@ -20,9 +20,19 @@ export function BookingCalendar({
 }: BookingCalendarProps) {
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  // Days 1-14 are past dates, 15-30 are available in current month
-  const pastDays = Array.from({ length: 14 }, (_, i) => i + 1);
-  const activeDays = Array.from({ length: 16 }, (_, i) => i + 15);
+  const today = new Date();
+  const todayDate = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  // Any day strictly before today is unclickable
+  const pastDays = Array.from({ length: Math.max(0, todayDate - 1) }, (_, i) => i + 1);
+  // Today and future days in current month are available
+  const activeDays = Array.from(
+    { length: Math.max(0, daysInMonth - todayDate + 1) },
+    (_, i) => i + todayDate
+  );
   const nextMonthPadding = [1, 2, 3, 4, 5];
 
   return (

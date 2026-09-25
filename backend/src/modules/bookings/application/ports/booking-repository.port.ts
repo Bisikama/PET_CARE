@@ -92,6 +92,7 @@ export interface BookingRepositoryPort {
       uploaded_by: string;
       media_url: string;
       media_type: any;
+      category?: any;
       caption?: string;
     }>,
     tx?: any,

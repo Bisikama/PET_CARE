@@ -60,6 +60,7 @@ export class CompleteBookingUseCase {
             uploaded_by: providerUserId,
             media_url: media.mediaUrl,
             media_type: media.mediaType || 'IMAGE',
+            category: media.category || 'CHECK_OUT',
             caption: media.caption || 'Ảnh chụp hoàn tất dịch vụ',
           })),
           tx,

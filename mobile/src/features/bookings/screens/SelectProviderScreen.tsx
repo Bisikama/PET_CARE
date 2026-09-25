@@ -7,9 +7,10 @@ import {
   StatusBar,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, MapPin, AlertCircle, RefreshCw } from 'lucide-react-native';
+import { Check, MapPin, AlertCircle, RefreshCw, ChevronRight } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { BookingStepHeader } from '../components/BookingStepHeader';
@@ -118,31 +119,38 @@ export default function SelectProviderScreen() {
           : [];
 
         if (list.length > 0) {
-          const mapped: MatchedProviderItem[] = list.map((p, idx) => ({
-            id: p.providerId,
-            name: p.fullName || `Chuyên viên ${idx + 1}`,
-            avatarUrl:
-              p.avatarUrl ||
-              'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
-            tagline: 'Chuyên viên đối tác PetCare',
-            isVerified: true,
-            isHomeVisit: true,
-            rating: p.ratingAvg || 4.9,
-            reviewCount: (p.totalCompletedBookings || 5) * 2 + 10,
-            completedJobs: p.totalCompletedBookings || 10,
-            compatibilityScore: Math.round(p.score) || 98,
-            isBestChoice: idx === 0,
-            matchReasons:
-              p.recommendationReasons && p.recommendationReasons.length > 0
-                ? p.recommendationReasons
-                : [`Chuyên chăm sóc ${petSpecies === 'Cat' ? 'mèo' : 'chó'} (${petWeight})`],
-            price: p.servicePrice || draft.servicePrice || 250000,
-            priceSubtext: 'Giá dịch vụ theo loài & cân nặng',
-            earliestSlot: p.slots?.[0]
-              ? `${p.slots[0].startTime} - ${p.slots[0].endTime}`
-              : slotTime,
-            providerWorkingSlotId: p.slots?.[0]?.providerWorkingSlotId,
-          }));
+          const mapped: MatchedProviderItem[] = list.map((p, idx) => {
+            const matchedSlot = p.slots?.find((s: any) => {
+              const fullTime = `${s.startTime} - ${s.endTime}`;
+              return fullTime === slotTime || s.startTime === slotTime.split(' - ')[0] || s.slotId === params.slotId || s.slotId === draft.slotId;
+            }) || p.slots?.[0];
+
+            return {
+              id: p.providerId,
+              name: p.fullName || `Chuyên viên ${idx + 1}`,
+              avatarUrl:
+                p.avatarUrl ||
+                'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
+              tagline: 'Chuyên viên đối tác PetCare',
+              isVerified: true,
+              isHomeVisit: true,
+              rating: p.ratingAvg || 4.9,
+              reviewCount: (p.totalCompletedBookings || 5) * 2 + 10,
+              completedJobs: p.totalCompletedBookings || 10,
+              compatibilityScore: Math.round(p.score) || 98,
+              isBestChoice: idx === 0,
+              matchReasons:
+                p.recommendationReasons && p.recommendationReasons.length > 0
+                  ? p.recommendationReasons
+                  : [`Chuyên chăm sóc ${petSpecies === 'Cat' ? 'mèo' : 'chó'} (${petWeight})`],
+              price: p.servicePrice || draft.servicePrice || 250000,
+              priceSubtext: 'Giá dịch vụ theo loài & cân nặng',
+              earliestSlot: matchedSlot
+                ? `${matchedSlot.startTime} - ${matchedSlot.endTime}`
+                : slotTime,
+              providerWorkingSlotId: matchedSlot?.providerWorkingSlotId || p.slots?.[0]?.providerWorkingSlotId,
+            };
+          });
 
           setProviders(mapped);
           setSelectedProviderId(mapped[0].id);
@@ -203,15 +211,39 @@ export default function SelectProviderScreen() {
     const selectedProvider = providers.find((p) => p.id === selectedProviderId) || providers[0];
     if (!selectedProvider) return;
 
+    const finalAddressId = selectedAddressId || draft.addressId || addresses[0]?.id || '';
+    const finalAddressLine = selectedAddressLine || draft.addressLine || '';
+    const finalWorkingSlotId = selectedProvider.providerWorkingSlotId || draft.providerWorkingSlotId || '';
+
+    if (!finalAddressId) {
+      Alert.alert(
+        'Chưa có địa chỉ nhận dịch vụ',
+        'Vui lòng thêm hoặc chọn địa chỉ nhận dịch vụ để tiếp tục.',
+        [
+          { text: 'Để sau', style: 'cancel' },
+          { text: 'Thêm địa chỉ ngay', onPress: () => router.push('/(customer)/addresses/add') },
+        ]
+      );
+      return;
+    }
+
+    if (!finalWorkingSlotId) {
+      Alert.alert(
+        'Chưa có ca làm việc',
+        'Chuyên viên chưa có ca làm việc khả dụng trong khung giờ này. Vui lòng chọn ca hoặc ngày khác.'
+      );
+      return;
+    }
+
     // Save selected provider and address into BookingContext
     updateDraft({
       providerId: selectedProvider.id,
       providerName: selectedProvider.name,
       providerAvatar: selectedProvider.avatarUrl,
       providerRating: selectedProvider.rating,
-      providerWorkingSlotId: selectedProvider.providerWorkingSlotId || draft.providerWorkingSlotId,
-      addressId: selectedAddressId || draft.addressId,
-      addressLine: selectedAddressLine || draft.addressLine,
+      providerWorkingSlotId: finalWorkingSlotId,
+      addressId: finalAddressId,
+      addressLine: finalAddressLine,
       servicePrice: selectedProvider.price,
     });
 
@@ -224,8 +256,9 @@ export default function SelectProviderScreen() {
         providerName: selectedProvider.name,
         providerAvatar: selectedProvider.avatarUrl,
         providerRating: String(selectedProvider.rating || 4.9),
-        providerWorkingSlotId: selectedProvider.providerWorkingSlotId || '',
-        addressId: selectedAddressId || '',
+        providerWorkingSlotId: finalWorkingSlotId,
+        addressId: finalAddressId,
+        addressLine: finalAddressLine,
         petId: params.petId || draft.petId || '',
         petName: petName,
         petBreed: params.petBreed || draft.petBreed || (petSpecies === 'Cat' ? 'Mèo' : 'Chó'),
@@ -317,15 +350,20 @@ export default function SelectProviderScreen() {
           </View>
         </View>
 
-        {/* 3. Address Preview */}
-        {selectedAddressLine ? (
-          <View style={styles.addressBar}>
-            <MapPin size={16} color={theme.colors.primary.navy} />
+        {/* 3. Address Preview / Interactive Selector */}
+        <TouchableOpacity
+          style={styles.addressBar}
+          onPress={() => router.push('/(customer)/addresses')}
+          activeOpacity={0.7}
+        >
+          <MapPin size={16} color={theme.colors.primary.navy} />
+          <View style={{ flex: 1 }}>
             <Text style={styles.addressText} numberOfLines={1}>
-              Địa chỉ dịch vụ: {selectedAddressLine}
+              {selectedAddressLine ? `Địa chỉ: ${selectedAddressLine}` : 'Chưa chọn địa chỉ - Nhấn để thêm'}
             </Text>
           </View>
-        ) : null}
+          <ChevronRight size={16} color={theme.colors.text.tertiary} />
+        </TouchableOpacity>
 
         {/* 4. Booking Criteria Summary Card */}
         <BookingCriteriaSummaryCard
