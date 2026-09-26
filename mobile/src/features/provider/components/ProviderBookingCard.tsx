@@ -30,6 +30,7 @@ interface ProviderBookingCardProps {
   onReject?: (booking: ProviderBookingItem) => void;
   onAction?: (booking: ProviderBookingItem) => void;
   onReviewRequest?: (booking: ProviderBookingItem) => void;
+  onStartService?: (booking: ProviderBookingItem) => void;
   isActionLoading?: boolean;
 }
 
@@ -39,6 +40,7 @@ export function ProviderBookingCard({
   onReject,
   onAction,
   onReviewRequest,
+  onStartService,
   isActionLoading,
 }: ProviderBookingCardProps) {
   // Extract Pet Information
@@ -254,14 +256,23 @@ export function ProviderBookingCard({
             <Text style={styles.reviewRequestButtonText}>Review Request</Text>
             <ArrowRight size={18} color="#261900" />
           </TouchableOpacity>
-        ) : booking.status === 'IN_PROGRESS' ? (
+        ) : booking.status === 'ACCEPTED' || booking.status === 'IN_PROGRESS' || booking.status === 'CHECKED_IN' ? (
           <TouchableOpacity
             style={styles.continueButton}
-            onPress={() => onAction?.(booking)}
+            onPress={() => onStartService ? onStartService(booking) : onAction?.(booking)}
             activeOpacity={0.85}
           >
             <PlayCircle size={18} color="#261900" />
             <Text style={styles.continueButtonText}>Làm dịch vụ</Text>
+          </TouchableOpacity>
+        ) : booking.status === 'AWAITING_CUSTOMER_CONFIRMATION' ? (
+          <TouchableOpacity
+            style={styles.waitingReviewButton}
+            onPress={() => onStartService ? onStartService(booking) : onAction?.(booking)}
+            activeOpacity={0.85}
+          >
+            <Clock size={16} color="#005236" />
+            <Text style={styles.waitingReviewButtonText}>Chờ review</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -596,5 +607,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#0B2A4A',
+  },
+  waitingReviewButton: {
+    height: 42,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 164, 114, 0.15)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  waitingReviewButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#005236',
   },
 });

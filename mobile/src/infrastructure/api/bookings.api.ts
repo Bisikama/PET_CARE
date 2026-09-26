@@ -31,18 +31,51 @@ export interface ActiveBooking {
 
 export interface BookingListItem {
   id: string;
-  booking_code: string;
-  status: 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | string;
-  total_amount: number;
+  booking_code?: string;
+  status:
+    | 'PENDING'
+    | 'PENDING_PAYMENT'
+    | 'PENDING_PROVIDER_ACCEPTANCE'
+    | 'ACCEPTED'
+    | 'PROVIDER_ARRIVED'
+    | 'CHECKED_IN'
+    | 'IN_PROGRESS'
+    | 'AWAITING_CUSTOMER_CONFIRMATION'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'REJECTED'
+    | 'PROVIDER_TIMEOUT'
+    | string;
+  total_price?: number | string;
+  total_amount?: number;
   grand_total?: number;
+  discount_amount?: number | string;
   payment_method?: string;
   payment_status?: string;
+  requested_date?: string;
+  estimated_start_at?: string;
+  estimated_end_at?: string;
   booking_date?: string;
   start_time?: string;
   created_at: string;
   location_type?: string;
   notes?: string;
+  customer_note?: string | null;
+  provider_note?: string | null;
+  cancellation_reason?: string | null;
+  time_slots?: {
+    id?: string;
+    name?: string;
+    start_time?: string;
+    end_time?: string;
+    slot_order?: number;
+  };
+  address_snapshot?: any;
   customer_addresses?: {
+    id?: string;
+    label?: string;
+    receiver_name?: string;
+    phone?: string;
     address_line?: string;
     ward?: string;
     district?: string;
@@ -60,6 +93,12 @@ export interface BookingListItem {
     };
   };
   booking_pets?: Array<{
+    id?: string;
+    pet_name?: string;
+    species?: string;
+    breed?: string;
+    weight?: string | number;
+    avatar_url?: string;
     pets?: {
       id?: string;
       name?: string;
@@ -69,12 +108,16 @@ export interface BookingListItem {
       weight?: number;
     };
     booking_services?: Array<{
-      price?: number;
+      id?: string;
+      service_name?: string;
+      price?: number | string;
+      duration_minutes?: number;
       provider_services?: {
         services?: {
           id?: string;
           title?: string;
           name?: string;
+          duration_minutes?: number;
         };
       };
     }>;
