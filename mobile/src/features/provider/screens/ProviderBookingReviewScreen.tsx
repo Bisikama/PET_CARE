@@ -206,28 +206,12 @@ export function ProviderBookingReviewScreen() {
     }
   };
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = () => {
     if (!booking?.id) return;
-    try {
-      setIsActionLoading(true);
-      await bookingsApi.startService(booking.id);
-      setBookingStatus('IN_PROGRESS');
-      setBooking((prev) => (prev ? { ...prev, status: 'IN_PROGRESS' } : prev));
-      Alert.alert(
-        'Check-in thành công!',
-        `Bạn đã check-in ca làm việc cho bé ${primaryPet.name}. Trạng thái đã chuyển sang Đang thực hiện (In Progress).`
-      );
-    } catch (error) {
-      // Optimistic transition
-      setBookingStatus('IN_PROGRESS');
-      setBooking((prev) => (prev ? { ...prev, status: 'IN_PROGRESS' } : prev));
-      Alert.alert(
-        'Check-in thành công!',
-        `Bạn đã check-in ca làm việc cho bé ${primaryPet.name}. Trạng thái đã chuyển sang Đang thực hiện (In Progress).`
-      );
-    } finally {
-      setIsActionLoading(false);
-    }
+    router.push({
+      pathname: '/(provider)/start-service' as any,
+      params: { id: booking.id, bookingData: JSON.stringify(booking) },
+    });
   };
 
   const handleConfirmDecline = async () => {
@@ -321,8 +305,8 @@ export function ProviderBookingReviewScreen() {
                     bookingStatus === 'IN_PROGRESS'
                       ? '#0066FF'
                       : bookingStatus === 'ACCEPTED'
-                      ? '#00A472'
-                      : '#FDBF35',
+                        ? '#00A472'
+                        : '#FDBF35',
                 },
               ]}
             />
@@ -334,16 +318,16 @@ export function ProviderBookingReviewScreen() {
                     bookingStatus === 'IN_PROGRESS'
                       ? '#004DB3'
                       : bookingStatus === 'ACCEPTED'
-                      ? '#005236'
-                      : '#7B5800',
+                        ? '#005236'
+                        : '#7B5800',
                 },
               ]}
             >
               {bookingStatus === 'IN_PROGRESS'
                 ? 'Đang thực hiện dịch vụ (In Progress)'
                 : bookingStatus === 'ACCEPTED'
-                ? 'Đã chấp nhận lịch hẹn'
-                : 'Awaiting Provider Confirmation'}
+                  ? 'Đã chấp nhận lịch hẹn'
+                  : 'Awaiting Provider Confirmation'}
             </Text>
           </View>
         </View>
@@ -632,7 +616,7 @@ export function ProviderBookingReviewScreen() {
               disabled={isActionLoading}
               activeOpacity={0.8}
             >
-              <Text style={styles.declineOutlineText}>Từ chối (Decline)</Text>
+              <Text style={styles.declineOutlineText}>Từ chối</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -678,14 +662,23 @@ export function ProviderBookingReviewScreen() {
             </View>
 
             {bookingStatus === 'IN_PROGRESS' ? (
-              <View style={styles.inProgressContainer}>
+              <TouchableOpacity
+                style={styles.inProgressContainer}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(provider)/start-service' as any,
+                    params: { id: booking?.id, bookingData: JSON.stringify(booking) },
+                  });
+                }}
+                activeOpacity={0.85}
+              >
                 <View style={styles.inProgressBadgeBox}>
                   <Sparkles size={18} color="#004DB3" />
                   <Text style={styles.inProgressBadgeText}>
-                    Đã Check-in · Đang thực hiện dịch vụ
+                    Đang thực hiện dịch vụ · Mở tiến trình (4 bước)
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.checkInPrimaryBtn}

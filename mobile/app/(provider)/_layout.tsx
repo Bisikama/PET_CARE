@@ -7,6 +7,7 @@ export default function ProviderLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="pending-approval" />
       <Stack.Screen name="booking-review" />
+      <Stack.Screen name="start-service" />
     </Stack>
   );
 }

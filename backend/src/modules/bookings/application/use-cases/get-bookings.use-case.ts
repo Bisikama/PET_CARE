@@ -47,6 +47,7 @@ export class GetBookingsUseCase {
         skip,
         take: limit,
         include: {
+          time_slots: true,
           customer_addresses: true,
           users: {
             select: {

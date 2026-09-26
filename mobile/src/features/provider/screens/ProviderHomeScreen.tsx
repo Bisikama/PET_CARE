@@ -580,11 +580,29 @@ export function ProviderHomeScreen() {
                     params: { id: b.id, bookingData: JSON.stringify(b) },
                   });
                 }}
-                onAction={(b) => {
+                onStartService={(b) => {
                   router.push({
-                    pathname: '/(provider)/booking-review' as any,
+                    pathname: '/(provider)/start-service' as any,
                     params: { id: b.id, bookingData: JSON.stringify(b) },
                   });
+                }}
+                onAction={(b) => {
+                  if (
+                    b.status === 'ACCEPTED' ||
+                    b.status === 'IN_PROGRESS' ||
+                    b.status === 'CHECKED_IN' ||
+                    b.status === 'AWAITING_CUSTOMER_CONFIRMATION'
+                  ) {
+                    router.push({
+                      pathname: '/(provider)/start-service' as any,
+                      params: { id: b.id, bookingData: JSON.stringify(b) },
+                    });
+                  } else {
+                    router.push({
+                      pathname: '/(provider)/booking-review' as any,
+                      params: { id: b.id, bookingData: JSON.stringify(b) },
+                    });
+                  }
                 }}
               />
             ))
