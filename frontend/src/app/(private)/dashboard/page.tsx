@@ -92,11 +92,6 @@ function DashboardContent() {
           <AdminPromotionsManager key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
-        ) : adminTab === 'chat' ? (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Trò Chuyện & Nhắn Tin Hệ Thống</h2>
-            <ChatWindowModal isOpen={true} onClose={() => router.push('/dashboard?tab=dashboard')} />
-          </div>
         ) : adminTab === 'arbitration' ? (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Trọng Tài Tranh Chấp & Khiếu Nại</h2>
@@ -140,18 +135,6 @@ function DashboardContent() {
           {providerTab === 'active-cases' && (
             <div className="space-y-6">
                <BookingActionDetail bookingId={activeBookingId} />
-            </div>
-          )}
-
-          {providerTab === 'chat' && (
-            <div className="space-y-6">
-              <ChatWindowModal 
-                isOpen={true} 
-                onClose={() => {
-                  router.push('/dashboard?tab=active-cases');
-                  router.refresh();
-                }} 
-              />
             </div>
           )}
 
@@ -319,20 +302,6 @@ function DashboardContent() {
     return (
       <div className="animate-fade-in">
         <PromotionsView />
-      </div>
-    );
-  }
-
-  if (searchParams.get('tab') === 'chat') {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <ChatWindowModal 
-          isOpen={true} 
-          onClose={() => {
-            router.push('/dashboard');
-            router.refresh();
-          }} 
-        />
       </div>
     );
   }
