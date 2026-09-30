@@ -207,7 +207,7 @@ function LoginFormInner() {
         </div>
 
         {/* Google Login Button */}
-        {/* <div className="flex justify-center">
+        <div className="flex justify-center">
           {GOOGLE_CLIENT_ID ? (
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
@@ -234,8 +234,7 @@ function LoginFormInner() {
               Đăng nhập bằng Google (Chưa cấu hình Client ID)
             </button>
           )}
-        </div> */}
-
+        </div>
         {/* Register link */}
         <div className="text-center text-sm font-semibold text-slate-650 mt-6">
           Chưa có tài khoản?{' '}
