@@ -98,10 +98,7 @@ export class PaymentsService {
       'VNP_URL',
       'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
     );
-    const returnUrl = this.configService.get<string>(
-      'VNP_RETURN_URL',
-      'http://localhost:3000/api/payments/vnpay-return',
-    );
+    const returnUrl = this.configService.getOrThrow<string>('VNP_RETURN_URL');
 
     const date = new Date();
     const createDate = this.formatDate(date);
@@ -672,7 +669,9 @@ export class PaymentsService {
     
     const requestType = 'captureWallet';
     const orderInfo = `PetCare Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
-    const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
+    const backendUrl = this.configService
+      .getOrThrow<string>('BACKEND_URL')
+      .replace(/\/$/, '');
     const returnUrl = `${backendUrl}/api/payments/momo-return`;
     const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
     const extraData = promotionCode ? `promotionCode=${promotionCode}` : '';

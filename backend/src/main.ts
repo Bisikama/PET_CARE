@@ -4,17 +4,25 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   // Enable Helmet for security headers
   app.use(helmet());
 
   // Enable CORS with credentials support (needed for cookies)
-  const frontendOrigin = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',')
-    : ['http://localhost:5000', 'http://127.0.0.1:5000'];
+  const frontendOrigin = configService
+    .getOrThrow<string>('FRONTEND_URL')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  if (frontendOrigin.length === 0) {
+    throw new Error('FRONTEND_URL must contain at least one origin');
+  }
 
   app.enableCors({
     origin: frontendOrigin,

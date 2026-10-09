@@ -15,6 +15,20 @@ export class PaymentsController {
     private readonly configService: ConfigService,
   ) {}
 
+  private getFrontendUrl(): string {
+    const frontendUrl = this.configService
+      .getOrThrow<string>('FRONTEND_URL')
+      .split(',')[0]
+      ?.trim()
+      .replace(/\/$/, '');
+
+    if (!frontendUrl) {
+      throw new Error('FRONTEND_URL must contain at least one origin');
+    }
+
+    return frontendUrl;
+  }
+
   @UseGuards(AccessTokenGuard)
   @ApiBearerAuth()
   @Post('checkout')
@@ -153,7 +167,7 @@ export class PaymentsController {
   @ApiQuery({ name: 'vnp_TxnRef', required: false, description: 'Mã giao dịch (chính là bookingId)' })
   @ApiResponse({ status: 302, description: 'Redirect về Frontend với trạng thái thanh toán.' })
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5000');
+    const frontendUrl = this.getFrontendUrl();
     const orderId = query.vnp_TxnRef || '';
     
     // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
@@ -174,7 +188,7 @@ export class PaymentsController {
   @ApiQuery({ name: 'orderId', required: false, description: 'Mã giao dịch (chính là bookingId)' })
   @ApiResponse({ status: 302, description: 'Redirect về Frontend với trạng thái thanh toán.' })
   async momoReturn(@Query() query: any, @Res() res: Response) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5000');
+    const frontendUrl = this.getFrontendUrl();
     const orderId = query.orderId || '';
     
     // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
