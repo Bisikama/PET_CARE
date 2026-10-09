@@ -11,11 +11,17 @@ export class ForgotPasswordUseCase {
   ) {}
 
   async execute(email: string) {
-    const frontendUrls = this.configService.get<string>('FRONTEND_URL')?.split(',') || [
-      'http://localhost:5000',
-      'http://127.0.0.1:5000',
-    ];
-    const redirectTo = frontendUrls[0] + '/reset-password';
+    const frontendUrl = this.configService
+      .getOrThrow<string>('FRONTEND_URL')
+      .split(',')[0]
+      ?.trim()
+      .replace(/\/$/, '');
+
+    if (!frontendUrl) {
+      throw new Error('FRONTEND_URL must contain at least one origin');
+    }
+
+    const redirectTo = `${frontendUrl}/reset-password`;
 
     await this.supabaseAuthService.resetPasswordForEmail(email, redirectTo);
 

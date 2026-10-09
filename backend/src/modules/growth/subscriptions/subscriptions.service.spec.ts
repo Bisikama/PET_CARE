@@ -19,7 +19,10 @@ describe('SubscriptionsService — BUG #3 Idempotency Fix', () => {
     $transaction: jest.fn((fn) => fn(mockPrisma)),
   };
 
-  const mockConfigService = { get: jest.fn().mockReturnValue('DUMMY_VALUE') };
+  const mockConfigService = {
+    get: jest.fn().mockReturnValue('DUMMY_VALUE'),
+    getOrThrow: jest.fn().mockReturnValue('https://backend.example.test/api/payments/vnpay-return'),
+  };
   const mockWalletsService = { processTransaction: jest.fn() };
 
   beforeEach(async () => {

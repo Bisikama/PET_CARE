@@ -1,19 +1,17 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import Constants from 'expo-constants';
 import { getMappedErrorMessage } from './errorMapping';
 
-// Auto-detect the local development server IP (helps with physical devices & Expo Go)
-let devHost = '10.0.2.2'; // Fallback for Android Emulator
-if (__DEV__) {
-  const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.packagerOpts?.hostType;
-  if (hostUri && typeof hostUri === 'string') {
-    devHost = hostUri.split(':')[0]; // Extracts the IP, drops the :8081 port
-  }
+const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+if (!apiUrl) {
+  throw new Error('EXPO_PUBLIC_API_URL is required');
 }
 
-// Use env variable if provided, otherwise use the auto-detected IP + port 3000
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${devHost}:3000/api`;
+const normalizedApiUrl = apiUrl.replace(/\/+$/, '');
+const BASE_URL = normalizedApiUrl.endsWith('/api')
+  ? normalizedApiUrl
+  : `${normalizedApiUrl}/api`;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

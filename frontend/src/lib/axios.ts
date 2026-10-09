@@ -4,9 +4,11 @@ import { getAuthToken, setAuthToken, removeAuthToken } from './auth';
 const getBaseURL = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!envUrl) {
-    return 'http://localhost:3000/api';
+    throw new Error('NEXT_PUBLIC_API_URL is required');
   }
-  return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+
+  const normalizedUrl = envUrl.replace(/\/+$/, '');
+  return normalizedUrl.endsWith('/api') ? normalizedUrl : `${normalizedUrl}/api`;
 };
 
 const axiosInstance = axios.create({
