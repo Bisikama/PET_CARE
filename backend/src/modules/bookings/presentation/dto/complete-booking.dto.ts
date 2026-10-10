@@ -35,7 +35,8 @@ export class UpdateBookingChecklistItemDto {
 
 export class BookingEvidenceMediaDto {
   @ApiProperty({ description: 'URL ảnh sau khi làm xong dịch vụ' })
-  @IsUrl()
+  @IsString()
+  @IsNotEmpty()
   mediaUrl: string;
 
   @ApiPropertyOptional({ enum: media_type, default: 'IMAGE' })

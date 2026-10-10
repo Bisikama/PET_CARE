@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,25 +14,37 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
   Dog,
   Cat,
-  Edit2,
+  Edit3,
   Plus,
   Trash2,
   Calendar,
   Activity,
-  FileText,
+  Heart,
+  Sparkles,
+  ShieldCheck,
+  AlertCircle,
+  Stethoscope,
   X,
   Check,
+  Share2,
+  Scale,
+  Clock,
+  ChevronRight,
+  Info,
 } from 'lucide-react-native';
-import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { petApi } from '../api/petApi';
 import { Pet, MedicalRecord } from '../types/pet.types';
+import { getPetAvatar } from '../utils/petAvatars';
+
+type RecordFilter = 'ALL' | 'VACCINE' | 'ALLERGY' | 'SURGERY';
 
 export default function PetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,6 +54,7 @@ export default function PetDetailScreen() {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<RecordFilter>('ALL');
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -81,6 +94,17 @@ export default function PetDetailScreen() {
     fetchData();
   };
 
+  const handleSharePet = async () => {
+    if (!pet) return;
+    try {
+      await Share.share({
+        message: `Hồ sơ thú cưng: ${pet.name} (${pet.breed || pet.species || 'Thú cưng'}) trên PetCare!`,
+      });
+    } catch (error) {
+      // Ignored
+    }
+  };
+
   const openModal = (record?: any) => {
     if (record) {
       setEditingRecord(record);
@@ -105,9 +129,15 @@ export default function PetDetailScreen() {
     setRecordDate('');
   };
 
+  const handleSetQuickDate = (offsetDays: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - offsetDays);
+    setRecordDate(d.toISOString().split('T')[0]);
+  };
+
   const handleSaveRecord = async () => {
     if (!recordType || !description.trim() || !recordDate.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ loại, mô tả và ngày.');
+      Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ loại mục, mô tả chi tiết và ngày thực hiện.');
       return;
     }
     setIsSubmitting(true);
@@ -120,17 +150,17 @@ export default function PetDetailScreen() {
 
       if (editingRecord) {
         await petApi.updateMedicalRecord(id, editingRecord.id, payload);
-        Alert.alert('Thành công', 'Đã cập nhật sổ y tế.');
+        Alert.alert('Thành công 🎉', 'Đã cập nhật thông tin sổ y tế.');
       } else {
         const res = await petApi.createMedicalRecord(id, payload);
         if (res.success) {
-          Alert.alert('Thành công', 'Đã thêm sổ y tế mới.');
+          Alert.alert('Thành công 🎉', 'Đã thêm ghi chú y tế mới cho bé.');
         } else {
           Alert.alert('Lỗi', res.message || 'Không thể tạo sổ y tế.');
         }
       }
       closeModal();
-      fetchData(); // Refresh list
+      fetchData();
     } catch (error: any) {
       Alert.alert('Lỗi', error.message || 'Không thể lưu sổ y tế.');
     } finally {
@@ -141,7 +171,7 @@ export default function PetDetailScreen() {
   const handleDeleteRecord = (recordId: string) => {
     Alert.alert(
       'Xóa ghi chú y tế',
-      'Bạn có chắc chắn muốn xóa mục sổ y tế này không?',
+      'Bạn có chắc chắn muốn xóa bản ghi y tế này không?',
       [
         { text: 'Hủy', style: 'cancel' },
         {
@@ -160,10 +190,26 @@ export default function PetDetailScreen() {
     );
   };
 
+  const handleBookForPet = () => {
+    if (!pet) return;
+    router.push({
+      pathname: '/(customer)/bookings/select-pet',
+      params: {
+        preselectedPetId: pet.id,
+      },
+    });
+  };
+
+  const filteredRecords = useMemo(() => {
+    if (activeFilter === 'ALL') return records;
+    return records.filter((r: any) => (r.recordType || r.record_type) === activeFilter);
+  }, [records, activeFilter]);
+
   if (loading) {
     return (
       <View style={[styles.screen, styles.centered]}>
         <ActivityIndicator size="large" color={theme.colors.primary.navy} />
+        <Text style={styles.loadingText}>Đang tải hồ sơ bé cưng...</Text>
       </View>
     );
   }
@@ -171,39 +217,54 @@ export default function PetDetailScreen() {
   if (!pet) {
     return (
       <View style={[styles.screen, styles.centered]}>
-        <Text style={styles.errorText}>Không tìm thấy thông tin thú cưng.</Text>
+        <AlertCircle size={48} color={theme.colors.semantic.error} />
+        <Text style={styles.errorText}>Không tìm thấy thông tin bé cưng</Text>
         <TouchableOpacity style={styles.backBtnFull} onPress={() => router.back()}>
-          <Text style={styles.backBtnText}>Quay lại</Text>
+          <Text style={styles.backBtnText}>Quay lại danh sách</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const isDog = (pet.species || '').toLowerCase() === 'dog';
-  const avatar = pet.avatarUrl || pet.avatar_url;
+  const avatarUrl = getPetAvatar(pet);
   const health = pet.healthNote || pet.health_note;
   const behavior = pet.behaviorNote || pet.behavior_note;
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary.navy} />
+      <StatusBar barStyle="light-content" backgroundColor="#071A2F" />
 
-      {/* Hero Header with Background */}
-      <View style={styles.heroHeader}>
-        <View style={styles.heroTopRow}>
-          <TouchableOpacity style={styles.heroBackBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ArrowLeft size={20} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.heroTitle}>Hồ Sơ Của {pet.name}</Text>
+      {/* Top Floating Nav Header */}
+      <View style={styles.topNav}>
+        <TouchableOpacity
+          style={styles.navIconBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={20} color="white" />
+        </TouchableOpacity>
+
+        <Text style={styles.navTitle} numberOfLines={1}>
+          Hồ Sơ Bé Cưng
+        </Text>
+
+        <View style={styles.navRightRow}>
           <TouchableOpacity
-            style={styles.heroEditBtn}
-            onPress={() => router.push(`/(customer)/pets/${pet.id}/edit`)}
+            style={styles.navIconBtn}
+            onPress={handleSharePet}
             activeOpacity={0.7}
           >
-            <Edit2 size={18} color={theme.colors.primary.navy} />
+            <Share2 size={18} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.navIconBtn, styles.navEditBtn]}
+            onPress={() => router.push(`/(customer)/pets/${pet.id}/edit`)}
+            activeOpacity={0.8}
+          >
+            <Edit3 size={18} color="#071A2F" />
           </TouchableOpacity>
         </View>
-        <View style={styles.heroBottomCurve} />
       </View>
 
       <ScrollView
@@ -214,214 +275,485 @@ export default function PetDetailScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[theme.colors.primary.navy]}
-            tintColor={theme.colors.primary.navy}
+            colors={[theme.colors.secondary.gold]}
+            tintColor="#FFFFFF"
           />
         }
       >
-        {/* Top Info Card */}
-        <View style={styles.infoCard}>
-          <View style={styles.infoCardTop}>
-            <View style={styles.avatarWrap}>
-              {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatarImg} />
+        {/* Luxury Hero Showcase Section */}
+        <View style={styles.heroSection}>
+          {/* Subtle Ambient Rings */}
+          <View style={styles.ambientGlow} />
+
+          {/* Large Elevated Avatar */}
+          <View style={styles.avatarContainer}>
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+            <View style={styles.speciesPill}>
+              {isDog ? (
+                <Dog size={14} color="#1D4ED8" />
               ) : (
-                <View style={styles.avatarFallback}>
-                  {isDog ? (
-                    <Dog size={36} color={theme.colors.primary.navy} />
-                  ) : (
-                    <Cat size={36} color={theme.colors.primary.navy} />
-                  )}
-                </View>
+                <Cat size={14} color="#B45309" />
               )}
-            </View>
-            <View style={styles.infoTextCol}>
-              <Text style={styles.petName}>{pet.name}</Text>
-              <Text style={styles.breedText}>{pet.breed || (isDog ? 'Chó cưng' : 'Mèo cưng')}</Text>
-              <View style={styles.tagsRow}>
-                {pet.gender && (
-                  <View style={styles.tagPill}>
-                    <Text style={styles.tagPillText}>
-                      {pet.gender === 'Male' ? '♂ Đực' : '♀ Cái'}
-                    </Text>
-                  </View>
-                )}
-                {pet.age !== undefined && pet.age !== null && (
-                  <View style={styles.tagPill}>
-                    <Text style={styles.tagPillText}>🎂 {pet.age} tuổi</Text>
-                  </View>
-                )}
-                {pet.weight !== undefined && pet.weight !== null && (
-                  <View style={[styles.tagPill, styles.weightTagPill]}>
-                    <Text style={styles.weightTagText}>⚖️ {pet.weight} kg</Text>
-                  </View>
-                )}
-              </View>
+              <Text style={styles.speciesPillText}>
+                {isDog ? 'Cún cưng' : 'Mèo cưng'}
+              </Text>
             </View>
           </View>
-          
-          {(health || behavior) && (
-            <View style={styles.notesBox}>
-              {health && (
-                <View style={styles.noteItem}>
-                  <Activity size={14} color="#059669" />
-                  <Text style={styles.noteText}>
-                    <Text style={{ fontWeight: '700' }}>Sức khỏe: </Text>
-                    {health}
-                  </Text>
+
+          {/* Pet Name & Identity */}
+          <View style={styles.nameHeader}>
+            <Text style={styles.petName}>{pet.name}</Text>
+            <View style={styles.verifiedBadge}>
+              <ShieldCheck size={14} color="#10B981" />
+              <Text style={styles.verifiedText}>Đã xác minh</Text>
+            </View>
+          </View>
+
+          <Text style={styles.petBreed}>
+            {pet.breed || (isDog ? 'Chó cưng đáng yêu' : 'Mèo cưng đáng yêu')}
+          </Text>
+
+          {/* Quick Action Buttons inside Hero */}
+          <View style={styles.heroActionsRow}>
+            <TouchableOpacity
+              style={styles.primaryHeroBtn}
+              onPress={handleBookForPet}
+              activeOpacity={0.85}
+            >
+              <Sparkles size={16} color="#071A2F" />
+              <Text style={styles.primaryHeroBtnText}>Đặt Lịch Cho Bé</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.secondaryHeroBtn}
+              onPress={() => openModal()}
+              activeOpacity={0.85}
+            >
+              <Plus size={16} color="white" />
+              <Text style={styles.secondaryHeroBtnText}>Thêm Sổ Y Tế</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Content Body */}
+        <View style={styles.bodyContainer}>
+          {/* 1. Key Metrics 2x2 Grid */}
+          <View style={styles.metricsGrid}>
+            {/* Age Card */}
+            <View style={[styles.metricCard, { backgroundColor: '#EFF6FF' }]}>
+              <View style={[styles.metricIconWrap, { backgroundColor: '#DBEAFE' }]}>
+                <Clock size={18} color="#1D4ED8" />
+              </View>
+              <Text style={styles.metricLabel}>ĐỘ TUỔI</Text>
+              <Text style={styles.metricValue}>
+                {pet.age !== undefined && pet.age !== null ? `${pet.age} tuổi` : 'Chưa rõ'}
+              </Text>
+              <Text style={styles.metricSub}>🎂 Sinh nhật</Text>
+            </View>
+
+            {/* Weight Card */}
+            <View style={[styles.metricCard, { backgroundColor: '#ECFDF5' }]}>
+              <View style={[styles.metricIconWrap, { backgroundColor: '#D1FAE5' }]}>
+                <Scale size={18} color="#059669" />
+              </View>
+              <Text style={styles.metricLabel}>CÂN NẶNG</Text>
+              <Text style={styles.metricValue}>
+                {pet.weight !== undefined && pet.weight !== null ? `${pet.weight} kg` : 'Chưa rõ'}
+              </Text>
+              <Text style={styles.metricSub}>⚖️ Thể trạng chuẩn</Text>
+            </View>
+
+            {/* Gender Card */}
+            <View style={[styles.metricCard, { backgroundColor: '#FEF3C7' }]}>
+              <View style={[styles.metricIconWrap, { backgroundColor: '#FDE68A' }]}>
+                <Heart size={18} color="#B45309" />
+              </View>
+              <Text style={styles.metricLabel}>GIỚI TÍNH</Text>
+              <Text style={styles.metricValue}>
+                {pet.gender === 'Male' ? '♂ Đực' : pet.gender === 'Female' ? '♀ Cái' : 'Chưa rõ'}
+              </Text>
+              <Text style={styles.metricSub}>
+                {pet.gender === 'Male' ? 'Bé trai' : 'Bé gái'}
+              </Text>
+            </View>
+
+            {/* Breed / Species Card */}
+            <View style={[styles.metricCard, { backgroundColor: '#FAF5FF' }]}>
+              <View style={[styles.metricIconWrap, { backgroundColor: '#F3E8FF' }]}>
+                {isDog ? (
+                  <Dog size={18} color="#7E22CE" />
+                ) : (
+                  <Cat size={18} color="#7E22CE" />
+                )}
+              </View>
+              <Text style={styles.metricLabel}>GIỐNG LOÀI</Text>
+              <Text style={styles.metricValue} numberOfLines={1}>
+                {pet.breed || (isDog ? 'Chó cảnh' : 'Mèo cảnh')}
+              </Text>
+              <Text style={styles.metricSub}>🧬 Thuần chủng</Text>
+            </View>
+          </View>
+
+          {/* 2. Care & Behavior Highlights */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <Activity size={20} color={theme.colors.primary.navy} />
+              <Text style={styles.sectionTitle}>Sức Khỏe & Tính Cách</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push(`/(customer)/pets/${pet.id}/edit`)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sectionActionText}>Chỉnh sửa</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.notesContainer}>
+            {/* Health Card */}
+            <View style={styles.noteCardEmerald}>
+              <View style={styles.noteCardTop}>
+                <View style={styles.noteBadgeEmerald}>
+                  <ShieldCheck size={16} color="#059669" />
+                  <Text style={styles.noteBadgeTextEmerald}>Tình trạng sức khỏe</Text>
                 </View>
-              )}
-              {behavior && (
-                <View style={styles.noteItem}>
-                  <FileText size={14} color={theme.colors.text.secondary} />
-                  <Text style={styles.noteText}>
-                    <Text style={{ fontWeight: '700' }}>Tính cách: </Text>
-                    {behavior}
-                  </Text>
+                <View style={styles.statusPillActive}>
+                  <Text style={styles.statusPillActiveText}>Tốt</Text>
                 </View>
-              )}
+              </View>
+              <Text style={styles.noteBodyText}>
+                {health || 'Bé có thể trạng khỏe mạnh, chưa ghi nhận dị ứng hay bệnh lý bẩm sinh.'}
+              </Text>
+            </View>
+
+            {/* Behavior Card */}
+            <View style={styles.noteCardAmber}>
+              <View style={styles.noteCardTop}>
+                <View style={styles.noteBadgeAmber}>
+                  <Sparkles size={16} color="#B45309" />
+                  <Text style={styles.noteBadgeTextAmber}>Tính cách & Thói quen</Text>
+                </View>
+                <View style={styles.statusPillFriendly}>
+                  <Text style={styles.statusPillFriendlyText}>Thân thiện</Text>
+                </View>
+              </View>
+              <Text style={styles.noteBodyText}>
+                {behavior || 'Bé rất ngoan, quấn người và phối hợp tốt khi được tắm spa hoặc cắt tỉa.'}
+              </Text>
+            </View>
+          </View>
+
+          {/* 3. Medical Passport Section */}
+          <View style={[styles.sectionHeader, { marginTop: 12 }]}>
+            <View style={styles.sectionTitleRow}>
+              <Stethoscope size={20} color={theme.colors.primary.navy} />
+              <Text style={styles.sectionTitle}>Sổ Y Tế & Tiêm Chủng</Text>
+              <View style={styles.recordCountBadge}>
+                <Text style={styles.recordCountText}>{records.length}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.addRecordHeaderBtn}
+              onPress={() => openModal()}
+              activeOpacity={0.8}
+            >
+              <Plus size={15} color="white" />
+              <Text style={styles.addRecordHeaderBtnText}>Thêm mới</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Filter Chips */}
+          <View style={styles.filterRow}>
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'ALL' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('ALL')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'ALL' && styles.filterChipTextActive]}>
+                Tất cả ({records.length})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'VACCINE' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('VACCINE')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'VACCINE' && styles.filterChipTextActive]}>
+                💉 Tiêm phòng
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'ALLERGY' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('ALLERGY')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'ALLERGY' && styles.filterChipTextActive]}>
+                ⚠️ Dị ứng
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'SURGERY' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('SURGERY')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'SURGERY' && styles.filterChipTextActive]}>
+                🏥 Điều trị
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Timeline of Records */}
+          {filteredRecords.length === 0 ? (
+            <View style={styles.emptyRecordsCard}>
+              <View style={styles.emptyIconCircle}>
+                <Calendar size={32} color={theme.colors.primary.navy} />
+              </View>
+              <Text style={styles.emptyRecordsTitle}>Chưa có ghi chú y tế nào</Text>
+              <Text style={styles.emptyRecordsDesc}>
+                Lưu lại lịch tiêm dại, sổ giun và các đợt điều trị để chuyên viên chăm sóc an toàn nhất.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyAddBtn}
+                onPress={() => openModal()}
+                activeOpacity={0.85}
+              >
+                <Plus size={16} color="white" />
+                <Text style={styles.emptyAddBtnText}>Thêm bản ghi đầu tiên</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.timelineContainer}>
+              {filteredRecords.map((record: any, index) => {
+                const type = record.recordType || record.record_type || 'VACCINE';
+                const dateStr = record.date || record.recordDate;
+
+                let badgeColor = '#059669';
+                let badgeBg = '#ECFDF5';
+                let typeLabel = 'Tiêm phòng (Vaccine)';
+                let icon = '💉';
+
+                if (type === 'ALLERGY') {
+                  badgeColor = '#D97706';
+                  badgeBg = '#FEF3C7';
+                  typeLabel = 'Dị ứng / Cảnh báo';
+                  icon = '⚠️';
+                } else if (type === 'SURGERY') {
+                  badgeColor = '#DC2626';
+                  badgeBg = '#FEE2E2';
+                  typeLabel = 'Phẫu thuật / Điều trị';
+                  icon = '🏥';
+                }
+
+                return (
+                  <View key={record.id || index} style={styles.timelineItem}>
+                    {/* Line Connector */}
+                    {index !== filteredRecords.length - 1 && (
+                      <View style={styles.timelineLine} />
+                    )}
+
+                    {/* Timeline Node */}
+                    <View style={[styles.timelineNode, { borderColor: badgeColor }]}>
+                      <View style={[styles.timelineNodeDot, { backgroundColor: badgeColor }]} />
+                    </View>
+
+                    {/* Record Card */}
+                    <View style={styles.recordCard}>
+                      <View style={styles.recordHeaderRow}>
+                        <View style={[styles.recordTypeTag, { backgroundColor: badgeBg }]}>
+                          <Text style={[styles.recordTypeTagText, { color: badgeColor }]}>
+                            {icon} {typeLabel}
+                          </Text>
+                        </View>
+
+                        <View style={styles.recordActionsRow}>
+                          <TouchableOpacity
+                            onPress={() => openModal(record)}
+                            style={styles.recordActionBtn}
+                            activeOpacity={0.7}
+                          >
+                            <Edit3 size={15} color="#64748B" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteRecord(record.id)}
+                            style={styles.recordActionBtn}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={15} color="#EF4444" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <Text style={styles.recordContentText}>{record.description}</Text>
+
+                      <View style={styles.recordFooterRow}>
+                        <Calendar size={13} color="#94A3B8" />
+                        <Text style={styles.recordDateText}>
+                          {dateStr
+                            ? new Date(dateStr).toLocaleDateString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              })
+                            : 'Chưa cập nhật ngày'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           )}
+
+          {/* Quick Booking CTA Card */}
+          <View style={styles.bookingCtaCard}>
+            <View style={styles.bookingCtaIconWrap}>
+              <Sparkles size={24} color="#F5B82E" />
+            </View>
+            <View style={styles.bookingCtaTextCol}>
+              <Text style={styles.bookingCtaTitle}>Chăm sóc bé chu đáo</Text>
+              <Text style={styles.bookingCtaSubtitle}>
+                Đặt lịch spa, tắm tỉa hoặc trông giữ tại nhà cho bé {pet.name} ngay hôm nay.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.bookingCtaButton}
+              onPress={handleBookForPet}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.bookingCtaButtonText}>Đặt Ngay</Text>
+              <ChevronRight size={16} color="#071A2F" />
+            </TouchableOpacity>
+          </View>
         </View>
-
-        {/* Medical Records Section */}
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <Activity size={20} color={theme.colors.primary.navy} />
-            <Text style={styles.sectionTitle}>Sổ Y Tế</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.addRecordBtn}
-            onPress={() => openModal()}
-            activeOpacity={0.8}
-          >
-            <Plus size={16} color="white" />
-            <Text style={styles.addRecordBtnText}>Thêm mới</Text>
-          </TouchableOpacity>
-        </View>
-
-        {records.length === 0 ? (
-          <View style={styles.emptyRecords}>
-            <Calendar size={32} color={theme.colors.border.strong} />
-            <Text style={styles.emptyRecordsText}>Chưa có ghi chú y tế nào</Text>
-          </View>
-        ) : (
-          <View style={styles.timeline}>
-            {records.map((record: any, index) => {
-              const type = record.recordType || record.record_type;
-              const dateStr = record.date || record.recordDate;
-              
-              let typeLabel = type;
-              if (type === 'VACCINE') typeLabel = 'Tiêm phòng (Vaccine)';
-              if (type === 'ALLERGY') typeLabel = 'Dị ứng / Dinh dưỡng';
-              if (type === 'SURGERY') typeLabel = 'Phẫu thuật / Điều trị';
-
-              return (
-              <View key={record.id} style={styles.timelineItem}>
-                <View style={styles.timelineDot} />
-                {index !== records.length - 1 && <View style={styles.timelineLine} />}
-                
-                <View style={styles.recordCard}>
-                  <View style={styles.recordHeader}>
-                    <Text style={styles.recordType}>{typeLabel}</Text>
-                    <Text style={styles.recordDate}>
-                      {dateStr ? new Date(dateStr).toLocaleDateString('vi-VN') : ''}
-                    </Text>
-                  </View>
-                  <Text style={styles.recordDesc}>{record.description}</Text>
-                  
-                  <View style={styles.recordActions}>
-                    <TouchableOpacity onPress={() => openModal(record)} style={styles.actionBtn}>
-                      <Edit2 size={14} color={theme.colors.text.secondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDeleteRecord(record.id)} style={styles.actionBtn}>
-                      <Trash2 size={14} color="#DC2626" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )})}
-          </View>
-        )}
       </ScrollView>
 
-      {/* Add/Edit Medical Record Modal */}
+      {/* Modern Medical Record Bottom Sheet Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <KeyboardAvoidingView
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={styles.modalContent}>
+          <View style={styles.modalBackdropClose}>
+            <TouchableOpacity style={{ flex: 1 }} onPress={closeModal} />
+          </View>
+
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingRecord ? 'Sửa Sổ Y Tế' : 'Thêm Sổ Y Tế'}
-              </Text>
-              <TouchableOpacity onPress={closeModal} style={styles.closeBtn}>
-                <X size={20} color={theme.colors.text.primary} />
+              <View>
+                <Text style={styles.modalTitle}>
+                  {editingRecord ? 'Cập Nhật Sổ Y Tế' : 'Thêm Ghi Chú Y Tế Mới'}
+                </Text>
+                <Text style={styles.modalSubtitle}>Ghi lại lịch tiêm, bệnh án hoặc dị ứng cho bé</Text>
+              </View>
+              <TouchableOpacity onPress={closeModal} style={styles.modalCloseBtn}>
+                <X size={20} color="#475569" />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {/* Type Selection */}
               <View style={styles.formGroup}>
-                <Text style={styles.fieldLabel}>LOẠI GHI CHÚ *</Text>
+                <Text style={styles.fieldLabel}>PHÂN LOẠI GHI CHÚ *</Text>
                 <View style={styles.typeSelectorRow}>
                   <TouchableOpacity
-                    style={[styles.typeBtn, recordType === 'VACCINE' && styles.typeBtnActive]}
+                    style={[styles.typeOptionBtn, recordType === 'VACCINE' && styles.typeOptionBtnActive]}
                     onPress={() => setRecordType('VACCINE')}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[styles.typeBtnText, recordType === 'VACCINE' && styles.typeBtnTextActive]}>Vaccine</Text>
+                    <Text style={styles.typeOptionIcon}>💉</Text>
+                    <Text style={[styles.typeOptionText, recordType === 'VACCINE' && styles.typeOptionTextActive]}>
+                      Tiêm phòng
+                    </Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={[styles.typeBtn, recordType === 'ALLERGY' && styles.typeBtnActive]}
+                    style={[styles.typeOptionBtn, recordType === 'ALLERGY' && styles.typeOptionBtnActive]}
                     onPress={() => setRecordType('ALLERGY')}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[styles.typeBtnText, recordType === 'ALLERGY' && styles.typeBtnTextActive]}>Dị ứng</Text>
+                    <Text style={styles.typeOptionIcon}>⚠️</Text>
+                    <Text style={[styles.typeOptionText, recordType === 'ALLERGY' && styles.typeOptionTextActive]}>
+                      Dị ứng
+                    </Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={[styles.typeBtn, recordType === 'SURGERY' && styles.typeBtnActive]}
+                    style={[styles.typeOptionBtn, recordType === 'SURGERY' && styles.typeOptionBtnActive]}
                     onPress={() => setRecordType('SURGERY')}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[styles.typeBtnText, recordType === 'SURGERY' && styles.typeBtnTextActive]}>Điều trị</Text>
+                    <Text style={styles.typeOptionIcon}>🏥</Text>
+                    <Text style={[styles.typeOptionText, recordType === 'SURGERY' && styles.typeOptionTextActive]}>
+                      Điều trị
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
+              {/* Description */}
               <View style={styles.formGroup}>
-                <Text style={styles.fieldLabel}>MÔ TẢ CHI TIẾT *</Text>
+                <Text style={styles.fieldLabel}>CHI TIẾT MÔ TẢ & GHI CHÚ *</Text>
                 <TextInput
                   style={[styles.textInput, styles.textArea]}
-                  placeholder="Nhập chi tiết thuốc, bác sĩ hoặc tình trạng..."
+                  placeholder="Ví dụ: Tiêm mũi 7 bệnh Pfizer, uống thuốc trị ve rận, không ăn tôm cua..."
+                  placeholderTextColor="#94A3B8"
                   multiline
-                  numberOfLines={3}
+                  numberOfLines={4}
                   value={description}
                   onChangeText={setDescription}
                 />
               </View>
 
+              {/* Date Input with Quick Chips */}
               <View style={styles.formGroup}>
-                <Text style={styles.fieldLabel}>NGÀY THỰC HIỆN *</Text>
+                <Text style={styles.fieldLabel}>NGÀY THỰC HIỆN (YYYY-MM-DD) *</Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="YYYY-MM-DD (VD: 2024-01-15)"
+                  placeholder="YYYY-MM-DD (Ví dụ: 2026-09-30)"
+                  placeholderTextColor="#94A3B8"
                   value={recordDate}
                   onChangeText={setRecordDate}
                 />
+
+                <View style={styles.quickDateRow}>
+                  <Text style={styles.quickDateLabel}>Chọn nhanh:</Text>
+                  <TouchableOpacity
+                    style={styles.quickDateChip}
+                    onPress={() => handleSetQuickDate(0)}
+                  >
+                    <Text style={styles.quickDateChipText}>Hôm nay</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickDateChip}
+                    onPress={() => handleSetQuickDate(7)}
+                  >
+                    <Text style={styles.quickDateChipText}>7 ngày trước</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickDateChip}
+                    onPress={() => handleSetQuickDate(30)}
+                  >
+                    <Text style={styles.quickDateChipText}>1 tháng trước</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </ScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+                style={[styles.submitModalBtn, isSubmitting && styles.submitModalBtnDisabled]}
                 onPress={handleSaveRecord}
                 disabled={isSubmitting}
+                activeOpacity={0.85}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color="#071A2F" />
                 ) : (
                   <>
-                    <Check size={18} color="white" />
-                    <Text style={styles.submitBtnText}>
-                      {editingRecord ? 'Lưu Thay Đổi' : 'Tạo Mới'}
+                    <Check size={18} color="#071A2F" />
+                    <Text style={styles.submitModalBtnText}>
+                      {editingRecord ? 'Lưu Thay Đổi' : 'Lưu Vào Sổ Y Tế'}
                     </Text>
                   </>
                 )}
@@ -437,186 +769,257 @@ export default function PetDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: theme.colors.background.default,
+    backgroundColor: '#071A2F',
   },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
   errorText: {
-    color: theme.colors.text.secondary,
+    color: theme.colors.text.primary,
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 10,
     marginBottom: 20,
   },
   backBtnFull: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: theme.colors.surface.subdued,
-    borderRadius: theme.radius.md,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.primary.navy,
+    borderRadius: theme.radius.full,
   },
   backBtnText: {
-    fontWeight: '600',
+    color: 'white',
+    fontWeight: '700',
   },
-  heroHeader: {
-    backgroundColor: theme.colors.primary.navy,
-    paddingTop: 50, // For status bar + padding
-    paddingBottom: 60,
-    position: 'relative',
-  },
-  heroTopRow: {
+
+  /* Top Navigation Bar */
+  topNav: {
+    paddingTop: Platform.OS === 'ios' ? 54 : (StatusBar.currentHeight || 20) + 12,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    backgroundColor: '#071A2F',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing[5],
-    zIndex: 2,
+    zIndex: 10,
   },
-  heroBackBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  heroTitle: {
-    ...theme.typography.h3,
-    fontSize: 18,
+  navTitle: {
+    fontSize: 17,
     fontWeight: '800',
     color: 'white',
+    textAlign: 'center',
+    flex: 1,
+    marginHorizontal: 10,
   },
-  heroEditBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  navIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
-    ...theme.shadows.sm,
   },
-  heroBottomCurve: {
-    position: 'absolute',
-    bottom: -20,
-    left: -20,
-    right: -20,
-    height: 40,
-    backgroundColor: theme.colors.primary.navy,
-    borderRadius: 40,
+  navRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
+  navEditBtn: {
+    backgroundColor: '#F5B82E',
+  },
+
   scrollView: {
     flex: 1,
-    marginTop: -45, // Pull up to overlap the hero header
   },
   scrollContent: {
-    paddingHorizontal: theme.spacing[5],
-    paddingTop: theme.spacing[2],
-    paddingBottom: 40,
-    gap: theme.spacing[5],
+    paddingBottom: 60,
   },
-  infoCard: {
-    backgroundColor: theme.colors.surface.lowest,
-    borderRadius: 24,
-    padding: theme.spacing[5],
-    ...theme.shadows.md,
-    elevation: 6,
-    shadowColor: theme.colors.primary.navy,
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    gap: 20,
-  },
-  infoCardTop: {
+
+  /* Luxury Hero Showcase */
+  heroSection: {
+    backgroundColor: '#071A2F',
+    paddingTop: 8,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    gap: 12,
+    position: 'relative',
   },
-  avatarWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: theme.colors.surface.lowest,
-    alignItems: 'center',
-    justifyContent: 'center',
+  ambientGlow: {
+    position: 'absolute',
+    top: 0,
+    width: 280,
+    height: 180,
+    borderRadius: 140,
+    backgroundColor: 'rgba(245, 184, 46, 0.08)',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  avatarImage: {
+    width: 114,
+    height: 114,
+    borderRadius: 57,
     borderWidth: 4,
-    borderColor: 'white',
+    borderColor: '#FFFFFF',
+    backgroundColor: '#1E293B',
+  },
+  speciesPill: {
+    position: 'absolute',
+    bottom: -6,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'white',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
     ...theme.shadows.sm,
+    elevation: 3,
   },
-  avatarImg: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
+  speciesPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#071A2F',
   },
-  avatarFallback: {
+  nameHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: '#F1F5F9',
-  },
-  infoTextCol: {
-    alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    marginBottom: 4,
   },
   petName: {
-    ...theme.typography.h2,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '900',
-    color: theme.colors.primary.navy,
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
-  breedText: {
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.full,
+  },
+  verifiedText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#34D399',
+  },
+  petBreed: {
     fontSize: 14,
+    color: '#94A3B8',
     fontWeight: '600',
-    color: theme.colors.text.secondary,
+    marginBottom: 20,
   },
-  tagsRow: {
+  heroActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  primaryHeroBtn: {
+    flex: 1.2,
+    height: 46,
+    backgroundColor: '#F5B82E',
+    borderRadius: theme.radius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    ...theme.shadows.sm,
+  },
+  primaryHeroBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#071A2F',
+  },
+  secondaryHeroBtn: {
+    flex: 1,
+    height: 46,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: theme.radius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  secondaryHeroBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'white',
+  },
+
+  /* White Body Sheet */
+  bodyContainer: {
+    backgroundColor: '#F8F9FF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
+    gap: 20,
+  },
+
+  /* 2x2 Metrics Grid */
+  metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  tagPill: {
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.radius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border.subdued,
-  },
-  tagPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.colors.text.primary,
-  },
-  weightTagPill: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  weightTagText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#1D4ED8',
-  },
-  notesBox: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: theme.radius.xl,
-    padding: 16,
     gap: 12,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
   },
-  noteItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  noteText: {
+  metricCard: {
     flex: 1,
-    fontSize: 13,
-    color: '#065F46',
-    lineHeight: 20,
+    minWidth: '46%',
+    borderRadius: 20,
+    padding: 14,
+    gap: 4,
   },
+  metricIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  metricSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 2,
+  },
+
+  /* Section Header */
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: 4,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -624,205 +1027,474 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    ...theme.typography.h4,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: theme.colors.text.primary,
+    color: '#0F172A',
   },
-  addRecordBtn: {
+  sectionActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  recordCountBadge: {
+    backgroundColor: '#071A2F',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  recordCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: 'white',
+  },
+  addRecordHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: theme.colors.primary.navy,
+    backgroundColor: '#071A2F',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: theme.radius.full,
   },
-  addRecordBtnText: {
+  addRecordHeaderBtnText: {
     fontSize: 12,
     fontWeight: '700',
     color: 'white',
   },
-  emptyRecords: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
+
+  /* Care & Personality Notes */
+  notesContainer: {
     gap: 12,
   },
-  emptyRecordsText: {
-    color: theme.colors.text.muted,
-    fontSize: 14,
+  noteCardEmerald: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
+    ...theme.shadows.sm,
+    gap: 10,
   },
-  timeline: {
-    paddingLeft: 10,
-    paddingTop: 10,
+  noteCardAmber: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+    ...theme.shadows.sm,
+    gap: 10,
+  },
+  noteCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  noteBadgeEmerald: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  noteBadgeTextEmerald: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  noteBadgeAmber: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  noteBadgeTextAmber: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  statusPillActive: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.full,
+  },
+  statusPillActiveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#059669',
+  },
+  statusPillFriendly: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.full,
+  },
+  statusPillFriendlyText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  noteBodyText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#334155',
+    fontWeight: '500',
+  },
+
+  /* Filter Tabs */
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  filterChip: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radius.full,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterChipActive: {
+    backgroundColor: '#071A2F',
+    borderColor: '#071A2F',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  filterChipTextActive: {
+    color: 'white',
+  },
+
+  /* Timeline */
+  timelineContainer: {
+    paddingLeft: 6,
   },
   timelineItem: {
     position: 'relative',
-    paddingLeft: 36,
-    paddingBottom: 24,
-  },
-  timelineDot: {
-    position: 'absolute',
-    left: 0,
-    top: 6,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#0EA5E9',
-    borderWidth: 3,
-    borderColor: '#E0F2FE',
-    ...theme.shadows.sm,
-    zIndex: 2,
+    paddingLeft: 28,
+    paddingBottom: 16,
   },
   timelineLine: {
     position: 'absolute',
-    left: 6,
-    top: 18,
+    left: 7,
+    top: 20,
     bottom: -6,
     width: 2,
-    backgroundColor: '#E2E8F0',
-    borderStyle: 'dashed',
+    backgroundColor: '#CBD5E1',
+  },
+  timelineNode: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  timelineNodeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   recordCard: {
-    backgroundColor: 'white',
-    borderRadius: theme.radius.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: theme.colors.border.subdued,
+    borderColor: '#E2E8F0',
     ...theme.shadows.sm,
+    gap: 8,
   },
-  recordHeader: {
+  recordHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  recordType: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: theme.colors.text.primary,
+  recordTypeTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
   },
-  recordDate: {
+  recordTypeTagText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
+    fontWeight: '800',
   },
-  recordDesc: {
-    fontSize: 13,
-    color: theme.colors.text.secondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  recordActions: {
+  recordActionsRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
+    gap: 6,
   },
-  actionBtn: {
+  recordActionBtn: {
     padding: 4,
   },
+  recordContentText: {
+    fontSize: 13,
+    color: '#1E293B',
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  recordFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  recordDateText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+
+  /* Empty State */
+  emptyRecordsCard: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 10,
+  },
+  emptyIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyRecordsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  emptyRecordsDesc: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 10,
+  },
+  emptyAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#071A2F',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: theme.radius.full,
+    marginTop: 6,
+  },
+  emptyAddBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'white',
+  },
+
+  /* Quick Booking CTA Card */
+  bookingCtaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#071A2F',
+    borderRadius: 24,
+    padding: 16,
+    marginTop: 8,
+    ...theme.shadows.md,
+  },
+  bookingCtaIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(245, 184, 46, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookingCtaTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  bookingCtaTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: 'white',
+  },
+  bookingCtaSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    lineHeight: 15,
+  },
+  bookingCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#F5B82E',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: theme.radius.full,
+  },
+  bookingCtaButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#071A2F',
+  },
+
+  /* Medical Modal Bottom Sheet */
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(7, 26, 47, 0.65)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: theme.colors.surface.lowest,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: theme.spacing[5],
-    maxHeight: '80%',
+  modalBackdropClose: {
+    flex: 1,
+  },
+  modalSheet: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: '85%',
+  },
+  modalHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#CBD5E1',
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   modalTitle: {
-    ...theme.typography.h4,
     fontSize: 18,
-    fontWeight: '800',
-    color: theme.colors.text.primary,
+    fontWeight: '900',
+    color: '#0F172A',
   },
-  closeBtn: {
-    padding: 4,
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBody: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   formGroup: {
-    gap: 6,
+    gap: 8,
     marginBottom: 16,
   },
   fieldLabel: {
-    ...theme.typography.label,
     fontSize: 11,
     fontWeight: '800',
-    color: theme.colors.text.muted,
-  },
-  textInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border.subdued,
-    paddingHorizontal: 14,
-    height: 48,
-    fontSize: 14,
-    color: theme.colors.text.primary,
+    color: '#64748B',
+    letterSpacing: 0.5,
   },
   typeSelectorRow: {
     flexDirection: 'row',
     gap: 8,
   },
-  typeBtn: {
+  typeOptionBtn: {
     flex: 1,
-    height: 40,
-    borderRadius: theme.radius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border.subdued,
-    backgroundColor: '#F8FAFC',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
   },
-  typeBtnActive: {
-    backgroundColor: theme.colors.primary.navy,
-    borderColor: theme.colors.primary.navy,
+  typeOptionBtnActive: {
+    borderColor: '#071A2F',
+    backgroundColor: '#071A2F',
   },
-  typeBtnText: {
+  typeOptionIcon: {
+    fontSize: 13,
+  },
+  typeOptionText: {
     fontSize: 12,
     fontWeight: '700',
-    color: theme.colors.text.secondary,
+    color: '#475569',
   },
-  typeBtnTextActive: {
+  typeOptionTextActive: {
     color: 'white',
   },
+  textInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    height: 48,
+    fontSize: 14,
+    color: '#0F172A',
+  },
   textArea: {
-    height: 80,
+    height: 90,
     paddingTop: 12,
     textAlignVertical: 'top',
   },
-  modalFooter: {
-    paddingTop: 10,
+  quickDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    flexWrap: 'wrap',
   },
-  submitBtn: {
-    backgroundColor: theme.colors.primary.navy,
-    borderRadius: theme.radius.xl,
+  quickDateLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  quickDateChip: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.full,
+  },
+  quickDateChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  modalFooter: {
+    paddingTop: 4,
+  },
+  submitModalBtn: {
+    backgroundColor: '#F5B82E',
     height: 50,
+    borderRadius: theme.radius.full,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     ...theme.shadows.sm,
   },
-  submitBtnDisabled: {
-    opacity: 0.7,
+  submitModalBtnDisabled: {
+    opacity: 0.65,
   },
-  submitBtnText: {
-    ...theme.typography.label,
+  submitModalBtnText: {
     fontSize: 15,
     fontWeight: '800',
-    color: 'white',
+    color: '#071A2F',
   },
 });

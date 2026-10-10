@@ -34,6 +34,9 @@ export class CustomerConfirmBookingUseCase {
       // 1. Update Booking status to COMPLETED
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
 
+      // 1.5 Deactivate Chat Room
+      await this.bookingRepo.updateChatRoomStatus(bookingId, false, tx);
+
       // 2. Add Status Log
       await this.bookingRepo.addBookingStatusLog(
         bookingId,

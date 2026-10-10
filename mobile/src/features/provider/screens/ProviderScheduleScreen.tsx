@@ -12,7 +12,8 @@ import {
   RefreshControl,
   StatusBar,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { getFallbackBookingStatus } from '../data/mockProviderBookings';
 import {
   CalendarDays,
   ChevronLeft,
@@ -68,6 +69,17 @@ function addDays(d: Date, days: number): Date {
 }
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// Module-level persistent store for slot status overrides across tab switches & re-focuses
+const fallbackSlotOverridesMap: Record<string, string> = {};
+
+export const setFallbackSlotOverride = (workDate: string, slotId: string, status: string) => {
+  fallbackSlotOverridesMap[`${workDate}__${slotId}`] = status;
+};
+
+export const getFallbackSlotOverride = (workDate: string, slotId: string): string | undefined => {
+  return fallbackSlotOverridesMap[`${workDate}__${slotId}`];
+};
 
 export function ProviderScheduleScreen() {
   const router = useRouter();
@@ -142,7 +154,17 @@ export function ProviderScheduleScreen() {
         }
 
         if (scheduleRes.status === 'fulfilled' && scheduleRes.value.length > 0) {
-          setScheduleDays(scheduleRes.value);
+          const daysWithOverrides = scheduleRes.value.map((day) => ({
+            ...day,
+            slots: day.slots.map((s) => {
+              const overrideStatus = getFallbackSlotOverride(day.workDate, s.slotId);
+              if (overrideStatus && s.status !== 'BOOKED' && s.status !== 'HELD_FOR_PAYMENT') {
+                return { ...s, status: overrideStatus as any };
+              }
+              return s;
+            }),
+          }));
+          setScheduleDays(daysWithOverrides);
         } else {
           // Generate fallback initial days where unregistered days are BLOCKED
           generateFallbackDays(startDateStr, endDateStr, loadedMasterSlots);
@@ -251,54 +273,75 @@ export function ProviderScheduleScreen() {
           ];
 
     const days: ProviderWorkingDayView[] = weekDays.map((wd) => {
-      // Only demo today (2026-09-25) in current week has sample active demo slots, while all other days (especially October) are completely BLOCKED
-      if (wd.key === '2026-09-25') {
-        return {
-          workingDayId: `wd-${wd.key}`,
-          workDate: wd.key,
-          workingMode: 'FULL_TIME',
-          slots: [
-            { ...slotsList[0], status: 'AVAILABLE' },
-            { ...slotsList[1], status: 'AVAILABLE' },
-            {
-              ...slotsList[2],
-              status: 'BOOKED',
-              booking: {
-                id: 'bk-demo-1',
-                status: 'ACCEPTED',
-                customerName: 'Nguyễn Thu Hà',
-                customerPhone: '0908123456',
-                petName: 'Milo (Poodle)',
-                serviceName: 'Tắm spa khử mùi & Cắt tỉa',
-                totalPrice: 330000,
-              },
+      // Demo active slots for 2026-09-25 or today
+      const isDemoDay = wd.key === '2026-09-25' || wd.isToday;
+      let baseSlots: ProviderWorkingSlotView[] = [];
+
+      if (isDemoDay) {
+        baseSlots = [
+          { ...slotsList[0], status: 'AVAILABLE' },
+          { ...slotsList[1], status: 'AVAILABLE' },
+          {
+            ...slotsList[2],
+            status: 'BOOKED',
+            booking: {
+              id: 'bk-demo-1',
+              status: 'ACCEPTED',
+              customerName: 'Nguyễn Thu Hà',
+              customerPhone: '0908123456',
+              petName: 'Milo (Poodle)',
+              serviceName: 'Tắm spa khử mùi & Cắt tỉa',
+              totalPrice: 330000,
             },
-            { ...slotsList[3], status: 'AVAILABLE' },
-            { ...slotsList[4], status: 'AVAILABLE' },
-            {
+          },
+          { ...slotsList[3], status: 'AVAILABLE' },
+          { ...slotsList[4], status: 'AVAILABLE' },
+          (() => {
+            const demo2Status = getFallbackBookingStatus('bk-demo-2') || 'PENDING_PROVIDER_ACCEPTANCE';
+            const demo2SlotStatus =
+              demo2Status === 'ACCEPTED'
+                ? 'BOOKED'
+                : demo2Status === 'REJECTED'
+                  ? 'AVAILABLE'
+                  : 'RESERVED_FOR_PROVIDER_RESPONSE';
+
+            return {
               ...slotsList[5],
-              status: 'RESERVED_FOR_PROVIDER_RESPONSE',
-              booking: {
-                id: 'bk-demo-2',
-                status: 'PENDING_PROVIDER_ACCEPTANCE',
-                customerName: 'Lê Hoàng Nam',
-                petName: 'Lucky (Phốc sóc)',
-                serviceName: 'Combo chăm sóc toàn diện',
-                totalPrice: 320000,
-              },
-            },
-            { ...slotsList[6], status: 'BLOCKED' },
-            { ...slotsList[7], status: 'AVAILABLE' },
-          ],
-        };
+              status: demo2SlotStatus as any,
+              booking:
+                demo2Status === 'REJECTED'
+                  ? undefined
+                  : {
+                      id: 'bk-demo-2',
+                      status: demo2Status as any,
+                      customerName: 'Lê Hoàng Nam',
+                      petName: 'Lucky (Phốc sóc)',
+                      serviceName: 'Combo chăm sóc toàn diện',
+                      totalPrice: 320000,
+                    },
+            };
+          })(),
+          { ...slotsList[6], status: 'BLOCKED' },
+          { ...slotsList[7], status: 'AVAILABLE' },
+        ];
+      } else {
+        baseSlots = slotsList.map((s) => ({ ...s }));
       }
 
-      // Default: All slots are BLOCKED for unregistered days (e.g. October)
+      // Apply persistent session overrides
+      const slotsWithOverrides = baseSlots.map((s) => {
+        const overrideStatus = getFallbackSlotOverride(wd.key, s.slotId);
+        if (overrideStatus && s.status !== 'BOOKED' && s.status !== 'HELD_FOR_PAYMENT') {
+          return { ...s, status: overrideStatus as any };
+        }
+        return s;
+      });
+
       return {
-        workingDayId: null,
+        workingDayId: isDemoDay ? `wd-${wd.key}` : null,
         workDate: wd.key,
         workingMode: 'FULL_TIME',
-        slots: slotsList.map((s) => ({ ...s })),
+        slots: slotsWithOverrides,
       };
     });
 
@@ -308,6 +351,12 @@ export function ProviderScheduleScreen() {
   useEffect(() => {
     fetchSchedule();
   }, [fetchSchedule]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchSchedule();
+    }, [fetchSchedule])
+  );
 
   // Current selected day's data
   const currentDayData = useMemo(() => {
@@ -387,6 +436,9 @@ export function ProviderScheduleScreen() {
     const newStatus = slot.status === 'AVAILABLE' ? 'BLOCKED' : 'AVAILABLE';
     const targetSlotId = slot.slotId;
 
+    // Immediately record in persistent session overrides
+    setFallbackSlotOverride(selectedDate, targetSlotId, newStatus);
+
     try {
       setActionLoadingSlotId(targetSlotId);
 
@@ -403,10 +455,24 @@ export function ProviderScheduleScreen() {
         })
       );
 
+      // Dedicated backend block call if slot has a database working slot ID and status is BLOCKED
+      if (newStatus === 'BLOCKED' && slot.providerWorkingSlotId) {
+        try {
+          await providerSchedulesApi.blockSlot(slot.providerWorkingSlotId);
+        } catch (blockErr) {
+          console.warn('blockSlot endpoint error, will fallback to updateSchedule:', blockErr);
+        }
+      }
+
       // Determine updated slotIds for the selected day
       const currentAvailableSlotIds = currentDayData.slots
-        .filter((s) => (s.slotId === targetSlotId ? newStatus === 'AVAILABLE' : s.status === 'AVAILABLE'))
-        .map((s) => s.slotId);
+        .map((s) => {
+          if (s.slotId === targetSlotId) {
+            return newStatus === 'AVAILABLE' ? s.slotId : null;
+          }
+          return s.status === 'AVAILABLE' ? s.slotId : null;
+        })
+        .filter((id): id is string => Boolean(id));
 
       await providerSchedulesApi.updateSchedule({
         schedules: [
@@ -417,7 +483,7 @@ export function ProviderScheduleScreen() {
         ],
       });
     } catch (err: any) {
-      console.warn('API update failed, keeping optimistic UI update:', err);
+      console.warn('API update failed, keeping optimistic UI update with session persistence:', err);
     } finally {
       setActionLoadingSlotId(null);
     }
@@ -436,6 +502,11 @@ export function ProviderScheduleScreen() {
       Alert.alert('Chưa chọn slot', 'Vui lòng tích chọn ít nhất 1 khung giờ.');
       return;
     }
+
+    // Save all to persistent session overrides
+    selectedSlotIds.forEach((slotId) => {
+      setFallbackSlotOverride(selectedDate, slotId, status);
+    });
 
     try {
       setIsLoading(true);
@@ -503,6 +574,18 @@ export function ProviderScheduleScreen() {
     const sourceWeekStart = formatDateKey(prevMonday);
     const targetWeekStart = formatDateKey(currentWeekMonday);
 
+    // Copy overrides from previous week dates to current week dates
+    for (let i = 0; i < 7; i++) {
+      const prevDateKey = formatDateKey(addDays(prevMonday, i));
+      const targetDateKey = formatDateKey(addDays(currentWeekMonday, i));
+      const prevDay = scheduleDays.find((d) => d.workDate === prevDateKey);
+      if (prevDay) {
+        prevDay.slots.forEach((s) => {
+          setFallbackSlotOverride(targetDateKey, s.slotId, s.status);
+        });
+      }
+    }
+
     try {
       setIsCopying(true);
       await providerSchedulesApi.copyWeek({
@@ -523,6 +606,13 @@ export function ProviderScheduleScreen() {
   };
 
   const handleOpenAllSlots = async () => {
+    // Save all to persistent session overrides
+    currentDayData.slots.forEach((s) => {
+      if (s.status !== 'BOOKED' && s.status !== 'HELD_FOR_PAYMENT') {
+        setFallbackSlotOverride(selectedDate, s.slotId, 'AVAILABLE');
+      }
+    });
+
     try {
       setIsLoading(true);
       const allSlotIds = currentDayData.slots.map((s) => s.slotId);

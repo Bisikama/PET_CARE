@@ -358,28 +358,15 @@ export default function CustomerReviewServiceScreen() {
     setIsConfirming(true);
     try {
       await bookingsApi.customerConfirm(booking.id);
-      // Cập nhật trạng thái ngay tại chỗ thành COMPLETED
-      setBooking((prev) => (prev ? { ...prev, status: 'COMPLETED' } : prev));
+      const updatedBooking = { ...booking, status: 'COMPLETED' };
+      setBooking(updatedBooking as any);
       setIsConfirmModalVisible(false);
-      Alert.alert(
-        'Nghiệm thu thành công! ⭐',
-        'Cảm ơn bạn đã nghiệm thu dịch vụ. Khoản thanh toán đã được giải ngân cho người chăm sóc thú cưng.',
-        [
-          {
-            text: 'Đánh giá dịch vụ 5 Sao',
-            onPress: () => {
-              router.replace('/(customer)/(tabs)/bookings');
-            },
-          },
-          {
-            text: 'Về danh sách lịch hẹn',
-            style: 'cancel',
-            onPress: () => {
-              router.replace('/(customer)/(tabs)/bookings');
-            },
-          },
-        ]
-      );
+
+      // Chuyển thẳng sang màn hình đánh giá rating ngay sau khi nghiệm thu
+      router.replace({
+        pathname: '/(customer)/bookings/customer_rating',
+        params: { id: booking.id, bookingData: JSON.stringify(updatedBooking) },
+      });
     } catch (err: any) {
       setIsConfirmModalVisible(false);
       Alert.alert(
@@ -414,8 +401,27 @@ export default function CustomerReviewServiceScreen() {
   };
 
   const handleChatProvider = () => {
-    router.push('/(customer)/(tabs)/messages');
+    if (isCompleted) {
+      Alert.alert('Thông báo', 'Dịch vụ đã hoàn tất nghiệm thu. Phòng chat đã đóng.');
+      return;
+    }
+    if (!booking?.id) {
+      router.push('/(customer)/(tabs)/messages');
+      return;
+    }
+    router.push({
+      pathname: '/(customer)/chat/room',
+      params: {
+        bookingId: booking.id,
+        partnerName: providerName,
+        partnerPhone: providerPhone,
+        serviceTitle: serviceTitle,
+        petName: petName,
+        isActive: 'true',
+      },
+    });
   };
+
 
   return (
     <Screen
@@ -529,14 +535,16 @@ export default function CustomerReviewServiceScreen() {
             </View>
 
             <View style={styles.providerActionButtons}>
-              <TouchableOpacity
-                style={styles.chatButton}
-                onPress={handleChatProvider}
-                activeOpacity={0.8}
-              >
-                <MessageSquare size={16} color="white" />
-                <Text style={styles.chatButtonText}>Nhắn tin</Text>
-              </TouchableOpacity>
+              {!isCompleted && (
+                <TouchableOpacity
+                  style={styles.chatButton}
+                  onPress={handleChatProvider}
+                  activeOpacity={0.8}
+                >
+                  <MessageSquare size={16} color="white" />
+                  <Text style={styles.chatButtonText}>Nhắn tin</Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={styles.callButton}
@@ -820,20 +828,10 @@ export default function CustomerReviewServiceScreen() {
           <TouchableOpacity
             style={styles.completedReviewBtn}
             onPress={() => {
-              Alert.alert(
-                'Đánh giá dịch vụ ⭐',
-                `Bạn cảm thấy dịch vụ của ${providerName} như thế nào?`,
-                [
-                  { text: 'Đóng', style: 'cancel' },
-                  {
-                    text: 'Gửi 5 Sao ⭐',
-                    onPress: () => {
-                      Alert.alert('Cảm ơn bạn!', 'Đánh giá 5 sao của bạn đã được ghi nhận.');
-                      router.replace('/(customer)/(tabs)/bookings');
-                    },
-                  },
-                ]
-              );
+              router.push({
+                pathname: '/(customer)/bookings/customer_rating',
+                params: { id: booking?.id, bookingData: JSON.stringify(booking) },
+              });
             }}
             activeOpacity={0.85}
           >

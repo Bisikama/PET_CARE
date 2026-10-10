@@ -332,10 +332,10 @@ describe('PaymentsService', () => {
       );
       expect(mockWalletsService.processTransaction).toHaveBeenCalledWith(
         'wallet-1',
-        100000,
+        90000,
         'ESCROW_HOLD',
         'booking-123',
-        'Ký quỹ thanh toán từ Momo',
+        'Ký quỹ thanh toán từ Momo (đã trừ phí hoa hồng)',
         mockPrisma
       );
     });

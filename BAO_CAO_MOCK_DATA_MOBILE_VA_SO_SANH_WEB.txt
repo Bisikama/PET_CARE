@@ -1,0 +1,278 @@
+====================================================================================================
+BÁO CÁO CHI TIẾT: CÁC MÀN HÌNH MOBILE ĐANG DÙNG MOCK DATA & SO SÁNH VỚI WEB FRONTEND
+Hệ thống: Nền tảng chăm sóc thú cưng PETCARE / PET_LOVE
+Thời gian rà soát: 28/09/2026
+====================================================================================================
+
+PHẦN 1: TỔNG HỢP TRẠNG THÁI DỮ LIỆU CÁC MÀN HÌNH MOBILE
+----------------------------------------------------------------------------------------------------
+Hệ thống Mobile được xây dựng bằng Expo Router (app/) và kiến trúc tính năng (src/features/).
+Qua rà soát toàn bộ 48 màn hình & luồng điều hướng, hiện tại có 4 nhóm trạng thái dữ liệu:
+
+[NHÓM 1] MÀN HÌNH 100% MOCK DATA / TĨNH HOÀN TOÀN (CHƯA ĐẤU NỐI API THỰC TẾ):
+  1. ServiceDetailScreen.tsx
+     - Route: /(customer)/services/[id]
+     - Trạng thái: 100% Mock data từ biến `mockServiceDetail`.
+     - Dữ liệu giả lập: Gói "Premium Dog Grooming", 6 mục bao gồm (Organic Bath, Blow Dry,...),
+       3 kích cỡ thú cưng (Small, Medium, Large) với giá cố định, 3 gói Add-ons (Teeth cleaning,
+       Flea treatment, Shampoo), chính sách hủy hoàn tiền tĩnh.
+     * Lưu ý đặc biệt: Trong project có một màn hình khác là `ServiceDetailsScreen.tsx` (có chữ 's')
+       tại route `/(customer)/service/[id]` đã gọi API thật `servicesApi.getServiceDetails`,
+       `getPricingRules`, `getChecklistTemplates`, nhưng route số nhiều `services/[id]` vẫn trỏ vào màn mock này.
+
+  2. ProviderDetailScreen.tsx
+     - Route: /(customer)/providers/[id]
+     - Trạng thái: 100% Mock data từ biến `defaultProviderProfile`.
+     - Dữ liệu giả lập: Chuyên viên giả định "Elena Rostova", 5 bậc giá cún/mèo (từ 180k - 320k),
+       38 ảnh gallery Unsplash, đánh giá mẫu 4.98 sao, lịch làm việc tuần tĩnh (Mon-Sat 9-5).
+     * Lưu ý đặc biệt: Tương tự như trên, route số ít `/(customer)/provider/[id]` trỏ vào
+       `ProviderDetailsScreen.tsx` đã gọi API thật `serviceDiscoveryApi.getProviderDetails(id)`,
+       nhưng route `providers/[id]` vẫn đang chạy màn mock này.
+
+  3. ProviderEarningsRoute (earnings.tsx)
+     - Route: /(provider)/(tabs)/earnings
+     - Trạng thái: 100% Màn hình rỗng / Placeholder tĩnh.
+     - Dữ liệu giả lập: Không có dữ liệu. Chỉ hiển thị biểu tượng Coins và text tĩnh:
+       "Thu nhập & Doanh thu - Tổng kết thu nhập và quản lý ví số dư của đối tác".
+       Chưa có số dư ví, chưa có biểu đồ doanh thu, chưa có lịch sử rút tiền.
+
+  4. ProviderScreen.tsx
+     - Route: /(provider)/index (hoặc alias)
+     - Trạng thái: Placeholder rỗng chỉ có chữ "Provider Dashboard Placeholder".
+
+----------------------------------------------------------------------------------------------------
+[NHÓM 2] MÀN HÌNH CÓ GỌI API NHƯNG CHỨA DỮ LIỆU FALLBACK MOCK (NẾU DB RỖNG HOẶC LỖI):
+  5. BookingListScreen.tsx (Danh sách lịch hẹn của Khách)
+     - Route: /(customer)/(tabs)/bookings
+     - Dữ liệu API: Có gọi `bookingsApi.getBookings({ limit: 50 })`.
+     - Dữ liệu Mock: Khai báo mảng `fallbackBookings` gồm 4 đơn mẫu phong phú:
+       + bk-mock-1: "Happy Paws Care Studio" (465.000đ - Đã xác nhận)
+       + bk-mock-2: "Pet Spa & Grooming" (320.000đ - Đang thực hiện)
+       + bk-mock-3: "Care & Love Home" (250.000đ - Hoàn thành)
+       + bk-mock-4: "Pawsome Dog Walker" (100.000đ - Đã hủy)
+     - Cơ chế: Nếu tài khoản chưa tạo đơn nào trên database (`res.data.length === 0`) hoặc API bị lỗi,
+       màn hình sẽ tự động hiển thị 4 đơn giả lập này để demo UI.
+
+  6. ProviderHomeScreen.tsx (Danh sách nhận việc của Đối tác)
+     - Route: /(provider)/(tabs)/jobs
+     - Dữ liệu API: Có gọi `bookingsApi.getBookings({ limit: 50 })`.
+     - Dữ liệu Mock: Import từ file `src/features/provider/data/mockProviderBookings.ts`:
+       + prov-bk-01: Đơn chờ nhận của khách Nguyễn Thu Hà (250.000đ)
+       + prov-bk-02: Đơn chờ nhận của khách Trần Minh Quân (380.000đ)
+       + prov-bk-03: Đơn đang thực hiện (320.000đ)
+     - Cơ chế: Nếu Provider chưa có đơn thật nào từ hệ thống, danh sách sẽ fallback sang 3 đơn mock này.
+
+  7. ExploreScreen.tsx (Khám phá dịch vụ)
+     - Route: /(customer)/(tabs)/explore
+     - Dữ liệu API: Có gọi `servicesApi.getAllServices()`.
+     - Dữ liệu Mock: Mảng `fallbackServices` chứa 5 dịch vụ mặc định: Tắm rửa cắt tỉa (250k),
+       Chăm sóc chó tại nhà (150k), Dắt chó đi dạo (100k), Chăm sóc mèo (120k), Thăm khám thú y (300k).
+     - Cơ chế: Hiển thị 5 dịch vụ này nếu backend chưa có dữ liệu service hoặc gặp sự cố mạng.
+
+  8. ProviderScheduleScreen.tsx (Quản lý lịch làm việc của Đối tác)
+     - Route: /(provider)/(tabs)/schedule
+     - Dữ liệu API: Gọi `providerSchedulesApi.getSchedule` và `getTimeSlots`.
+     - Dữ liệu Mock: Hàm `generateFallbackDays()` tự động tạo các khung giờ mẫu từ 07:00 đến 21:00
+       với trạng thái BLOCKED khi chưa có ca làm việc nào được lưu trên hệ thống.
+
+----------------------------------------------------------------------------------------------------
+[NHÓM 3] MÀN HÌNH ĐÃ GỌI API THỰC TẾ NHƯNG CÒN MỘT SỐ THÀNH PHẦN BỊ HARDCODE / MOCK TẠM:
+  9. ReviewSummaryScreen.tsx (Tóm tắt đặt lịch & Hóa đơn)
+     - Route: /(customer)/bookings/review-summary
+     - Thành phần bị Mock:
+       + Danh sách Voucher: Mảng `mockVouchers` gồm 3 mã giảm giá tĩnh:
+         * `PETLOVE20`: Giảm 20.000đ
+         * `VIPCARE15`: Giảm 15% tối đa 100.000đ
+         * `FREESHIP30`: Giảm 30.000đ
+       + Các khoản phí sàn: Phí nền tảng cố định 15.000đ, Phí bảo hiểm 10.000đ hardcoded trực tiếp.
+
+  10. CustomerReviewServiceScreen.tsx (Khách nghiệm thu ca làm của Provider)
+     - Route: /(customer)/bookings/customer-review-service
+     - Thành phần bị Mock: Biến `fallbackEvidence` chứa 2 ảnh tiếp nhận check-in, 3 ảnh hoàn tất check-out
+       và 4 đầu việc checklist mẫu. Nếu ca hẹn thực tế chưa được provider upload ảnh qua app thì
+       màn hình sẽ nạp ảnh fallback này để người dùng xem trước giao diện nghiệm thu.
+
+  11. ProviderStartServiceScreen.tsx (Đối tác thực hiện ca & chụp ảnh nghiệm thu)
+     - Route: /(provider)/start-service
+     - Thành phần bị Mock: Mảng `DEFAULT_INITIAL_PHOTOS` và `DEFAULT_COMPLETION_PHOTOS` gồm 4 ảnh
+       Unsplash/Google Storage được seed sẵn để phục vụ demo khi chuyên viên chưa kích hoạt camera.
+
+  12. ScheduleTimeScreen.tsx (Khách chọn khung giờ đặt lịch)
+     - Route: /(customer)/bookings/schedule-time
+     - Thành phần bị Mock: `defaultTimeSlots` gồm 8 slot giờ chuẩn từ Slot 1 (07:00-09:00) đến
+       Slot 8 (21:00-23:00) làm giá trị khởi tạo trước khi API `bookingsApi.getTimeSlots()` trả về.
+
+  13. BecomeProviderSuccessScreen.tsx & PendingApprovalScreen.tsx
+     - Route: /(customer)/become-provider/success & /(provider)/pending-approval
+     - Thành phần bị Mock: Mã hồ sơ đăng ký hardcode `#PWC-89214`, tên cơ sở "Hồ sơ đối tác mới",
+       timeline xét duyệt 3 bước dạng giao diện tĩnh.
+
+  14. HomeScreen.tsx (Trang chủ khách hàng)
+     - Route: /(customer)/(tabs)/home
+     - Thành phần bị Mock/Tĩnh:
+       + Tên user fallback: 'Sarah Nguyen' (nếu user.full_name null)
+       + Banner cam kết chất lượng (`PromiseBanner`) & Khuyến mãi (`SpecialPromoBanner`) là thẻ tĩnh.
+
+----------------------------------------------------------------------------------------------------
+[NHÓM 4] MÀN HÌNH ĐÃ HOÀN TOÀN DÙNG API THỰC TẾ 100% (STRICT API):
+  15. PetListScreen, PetAddScreen, PetEditScreen, PetDetailScreen:
+      - Quản lý thú cưng, hồ sơ y tế tiêm phòng bệnh án (`MedicalRecord`) hoàn toàn qua `petApi`.
+  16. AddressListScreen, AddressAddScreen, AddressEditScreen:
+      - Quản lý danh sách địa chỉ nhận phục vụ qua `addressApi`.
+  17. SelectPetScreen, SelectProviderScreen:
+      - Chọn thú cưng và thuật toán tìm kiếm đối tác tương thích qua `bookingsApi.searchMatchingProviders`.
+  18. PaymentGatewayScreen:
+      - Lấy số dư ví PetCare, nạp tiền ví, trừ tiền ký quỹ qua `paymentsApi` & `bookingsApi.createBooking`.
+  19. CustomerRatingScreen:
+      - Gửi đánh giá sao, nhận xét khách hàng qua `bookingsApi.submitCustomerReview`.
+  20. ChatHomeScreen & ChatRoomScreen:
+      - Phòng chat, danh sách cuộc hội thoại, gửi tin nhắn, gửi ảnh qua `chatApi` (polling 5s).
+  21. BecomeProviderFormScreen:
+      - Quy trình 5 bước nộp eKYC, giấy tờ bằng cấp, tọa độ bản đồ qua `providerApi`.
+  22. Auth Screens (Login, Register, Forgot Password, Reset Password, Verify OTP, Change Password):
+      - Đăng nhập, đăng ký, xác thực OTP qua `authApi`.
+
+
+====================================================================================================
+PHẦN 2: BẢNG SO SÁNH CHI TIẾT GIỮA MOBILE VÀ WEB FRONTEND
+----------------------------------------------------------------------------------------------------
+
++------------------------+------------------------------------------+------------------------------------------+
+| Phân hệ / Tính năng    | Mobile App (React Native - Expo)         | Web Frontend (Next.js 14)                |
++------------------------+------------------------------------------+------------------------------------------+
+| 1. Trang chủ           | - Hiển thị: Avatar, lời chào, tìm kiếm   | - Hiển thị: Landing Page giới thiệu      |
+|    (Home / Landing)    |   nhanh, banner cam kết an toàn, lịch    |   nền tảng (Hero section, 4 cam kết chất |
+|                        |   hẹn đang diễn ra (Active booking card),|   lượng, quy trình đặt lịch 4 bước, bảng |
+|                        |   lưới 8 danh mục dịch vụ, banner ưu đãi |   giá tham khảo, lời chứng thực khách    |
+|                        |   và nút xem đối tác gần bạn.            |   hàng, nút đăng nhập / đăng ký).        |
+|                        | - Dữ liệu: Gọi API `getAllServices` và   | - Có Header điều hướng và Footer đầy đủ. |
+|                        |   `getActiveBooking`.                    |                                          |
++------------------------+------------------------------------------+------------------------------------------+
+| 2. Khám phá & Chi tiết | - Màn hình Khám phá: Lọc theo danh mục,  | - Trang Dịch vụ (`/services`):           |
+|    Dịch vụ             |   tìm kiếm từ khóa, danh sách dạng card. |   + Danh sách dịch vụ dạng bảng/card với |
+|                        | - CHI TIẾT DỊCH VỤ:                      |     trạng thái hoạt động (Active/Paused).|
+|                        |   + Route `/services/[id]`: ĐANG BỊ MOCK |   + Modal `ServiceDetailModal`: Hiển thị |
+|                        |     100% (gói Grooming, chọn size cún,   |     đầy đủ thông tin hệ thống từ API:    |
+|                        |     phí add-ons giả định).               |     * Thời lượng (phút), giá gốc (VND)   |
+|                        |   + Route `/service/[id]`: Dùng API thật |     * Danh mục dịch vụ hệ thống          |
+|                        |     lấy Pricing Rules & Checklist        |     * Ma trận quy tắc giá theo cân nặng  |
+|                        |     Templates nhưng chưa liên kết hết UI |     * Checklist kiểm tra từng bước       |
+|                        |     ở trang chủ.                         |     * Chính sách hủy & tỷ lệ hoàn tiền   |
+|                        |                                          |   + Phía Admin: Có tính năng tạo mới,    |
+|                        |                                          |     chỉnh sửa, cấu hình quy tắc và xóa.  |
++------------------------+------------------------------------------+------------------------------------------+
+| 3. Hồ sơ Đối tác       | - Route `/providers/[id]`: ĐANG BỊ MOCK  | - Component `ProviderDetail`:            |
+|    (Provider Profile)  |   100% (Profile giả "Elena Rostova", giá | - Hiển thị thông tin thực tế từ backend: |
+|                        |   tĩnh 180k-320k, 38 ảnh Unsplash giả).  |   + Tên chuyên viên, avatar, số điện     |
+|                        | - Route `/provider/[id]`: Đã gọi API     |     thoại liên hệ, email, địa chỉ cơ sở. |
+|                        |   thật `serviceDiscoveryApi` lấy profile,|   + Đánh giá sao trung bình, tổng số ca  |
+|                        |   rating, số ca hoàn thành, kinh nghiệm. |     đã hoàn thành, tỷ lệ đánh giá tốt.   |
+|                        | - Có màn hình `NearbyProvidersScreen`    |   + Danh sách dịch vụ chuyên viên đảm    |
+|                        |   hiển thị đối tác gần bạn qua API thật. |     nhận kèm theo mức giá cụ thể.        |
++------------------------+------------------------------------------+------------------------------------------+
+| 4. Quy trình Đặt lịch  | - Flow qua 5 màn hình:                   | - Flow 9 bước tại `/bookings` (Tab mới): |
+|    (Booking Flow)      |   1. Chọn thú cưng (API `getPets`)       |   1-2. Chọn thú cưng từ hồ sơ            |
+|                        |   2. Chọn ngày & giờ (8 time-slots)      |   3. Chọn dịch vụ hệ thống               |
+|                        |   3. Chọn đối tác phù hợp (API Matching) |   4. Xem chi tiết gói & quy tắc giá      |
+|                        |   4. Tóm tắt & Hóa đơn (ĐANG MOCK VOUCHER|   5-6. Tìm & chọn chuyên viên phù hợp    |
+|                        |      và phụ phí cố định)                 |   7. Chọn ngày & khung giờ khả dụng      |
+|                        |   5. Thanh toán ví PetCare (API thật)    |   8. Khai báo tình trạng / ghi chú cún   |
+|                        |   6. Hoàn tất & Mã đơn (params truyền)   |   9. Tóm tắt hóa đơn & Thanh toán ví/cổng|
+|                        |                                          | - Trên Web: Mã giảm giá lấy từ module    |
+|                        |                                          |   `promotions` thật, có kiểm tra điều    |
+|                        |                                          |   kiện đơn hàng tối thiểu.               |
++------------------------+------------------------------------------+------------------------------------------+
+| 5. Quản lý Lịch hẹn    | - `BookingListScreen`:                   | - `CustomerBookingList` & Dashboard:     |
+|    (Booking History)   |   + Các tab: ALL, UPCOMING, IN_PROGRESS, |   + Bảng danh sách đơn hẹn thời gian thực|
+|                        |     COMPLETED, CANCELLED.                |   + Xem mã đơn, trạng thái thanh toán,   |
+|                        |   + Có tìm kiếm theo mã đơn / tên.       |     trạng thái phục vụ (Ký quỹ ESCROW).  |
+|                        |   + Có modal hủy đơn kèm lý do.          |   + Xem chi tiết đơn (`BookingDetailModal)|
+|                        |   + CÓ DỮ LIỆU FALLBACK MOCK (4 đơn giả  |   + Hủy đơn có tính phí phạt tự động theo|
+|                        |     lập nếu DB rỗng).                    |     quy định chính sách hủy.             |
+|                        | - `CustomerReviewServiceScreen`: Nghiệm  |   + Gửi khiếu nại tranh chấp (Dispute)   |
+|                        |   thu ca làm việc, xem ảnh bàn giao &    |     lên đội ngũ Admin trọng tài xử lý.   |
+|                        |   hoàn thành (có fallback ảnh mẫu).      |                                          |
+|                        | - `CustomerRatingScreen`: Đánh giá 5 sao.|                                          |
++------------------------+------------------------------------------+------------------------------------------+
+| 6. Bảng điều khiển     | - `ProviderHomeScreen` (`jobs`):         | - Provider Dashboard (`/dashboard`):     |
+|    Đối tác             |   + Nhận / từ chối ca hẹn, chuyển trạng  |   + Quản lý ca hẹn đang thực hiện        |
+|    (Provider           |     thái (CÓ FALLBACK MOCK 3 đơn nếu DB  |     (`active-cases`).                    |
+|     Dashboard)         |     chưa có đơn).                        |   + Quản lý lịch làm việc tuần/tháng     |
+|                        | - `ProviderScheduleScreen` (`schedule`): |     (`ScheduleManager`).                 |
+|                        |   + Bật/khóa khung giờ làm việc theo     |   + Quản lý khu vực & bán kính nhận đơn  |
+|                        |     tuần, copy lịch (có slot fallback).  |     (`AreaManager`).                     |
+|                        | - `ProviderStartServiceScreen`:          |   + Quản lý dịch vụ & năng lực đảm nhận  |
+|                        |   + Bắt đầu ca, chụp ảnh check-in, tích  |     (`AddCapabilityModal`).              |
+|                        |     checklist, chụp ảnh check-out hoàn   |   + Quản lý hồ sơ chứng chỉ hành nghề    |
+|                        |     thành (có seed ảnh mẫu ban đầu).     |     (`AddCertificateModal`).             |
+|                        | - `ProviderEarningsRoute` (`earnings`):  |   + QUẢN LÝ VÍ & DOANH THU ĐẦY ĐỦ:       |
+|                        |   + HOÀN TOÀN TĨNH / PLACEHOLDER RỖNG,   |     * Số dư ví khả dụng, số dư đóng băng |
+|                        |     chưa có chức năng quản lý doanh thu! |     * Biểu đồ doanh thu theo thời gian   |
+|                        |                                          |     * Lịch sử biến động số dư            |
+|                        |                                          |     * Quản lý tài khoản ngân hàng & rút  |
++------------------------+------------------------------------------+------------------------------------------+
+| 7. Quản lý Hồ sơ       | - Quản lý Pet: Thêm, sửa, xóa, xem chi   | - Hồ sơ cá nhân (MeModal): Xem & cập     |
+|    Cá nhân & Thú cưng  |   tiết hồ sơ y tế/tiêm phòng (API thật). |   nhật tên, email, số điện thoại, avatar.|
+|    (Profile & Pets)    | - Quản lý Địa chỉ: Danh sách, thêm mới,  | - Quản lý Pet (`PetList`): Tương tự app, |
+|                        |   sửa, đặt địa chỉ mặc định (API thật).  |   có đầy đủ thông tin cún/mèo.           |
+|                        | - Customer Profile Tab: Xem thông tin,   | - Quản lý tài khoản ngân hàng & ví tiền. |
+|                        |   đăng xuất, liên kết sang Pet/Địa chỉ.  |                                          |
++------------------------+------------------------------------------+------------------------------------------+
+| 8. Đăng ký Đối tác     | - `BecomeProviderIntroScreen`            | - Đăng ký đối tác trực tiếp, upload hồ   |
+|    (Become Provider)   | - `BecomeProviderFormScreen`: 5 bước     |   sơ chứng từ và được hiển thị trong     |
+|                        |   (eKYC CCCD, giấy tờ, bản đồ vị trí,     |   danh sách chờ thẩm định của Admin      |
+|                        |   khu vực, chọn gói dịch vụ) qua API.    |   (`PartnerVerificationList`).           |
+|                        | - Màn hình thành công & chờ duyệt:       | - Admin xem ảnh CCCD mặt trước/sau, ảnh  |
+|                        |   Đang hiển thị mã hồ sơ tĩnh #PWC-89214.|   chân dung, bằng cấp để Phê duyệt/Từ chối|
++------------------------+------------------------------------------+------------------------------------------+
+| 9. Tin nhắn Trò chuyện | - `ChatHomeScreen` & `ChatRoomScreen`:   | - `ChatWindowModal`:                     |
+|    (Chat System)       |   + Kết nối API thật qua `chatApi`.      |   + Cửa sổ chat đồng bộ theo từng mã đơn |
+|                        |   + Tự động cập nhật mỗi 5 giây.         |     hẹn (`bookingId`).                   |
+|                        |   + Gửi tin nhắn text, chọn & gửi ảnh.   |   + Trò chuyện trực tiếp giữa Khách hàng |
+|                        |   + Gợi ý phản hồi nhanh (quick chips).  |     và Chuyên viên chăm sóc.             |
++------------------------+------------------------------------------+------------------------------------------+
+| 10. Phân hệ Quản trị   | - Không có trên Mobile (Mobile chỉ dành  | - Hệ thống Quản trị toàn diện:           |
+|     (Admin Portal)     |   cho Khách hàng và Đối tác dịch vụ).    |   + Thống kê doanh thu, đơn hàng         |
+|                        |                                          |   + Phê duyệt đối tác (Duyệt eKYC CCCD)  |
+|                        |                                          |   + Quản lý danh mục dịch vụ hệ thống    |
+|                        |                                          |   + Quản lý người dùng, khóa tài khoản   |
+|                        |                                          |   + Nhật ký kiểm toán hệ thống (Audit)   |
+|                        |                                          |   + Quản lý mã khuyến mãi (Promotions)   |
+|                        |                                          |   + Quản lý dòng tiền ký quỹ (Escrow)    |
+|                        |                                          |   + Trọng tài xử lý tranh chấp khiếu nại |
++------------------------+------------------------------------------+------------------------------------------+
+
+
+====================================================================================================
+PHẦN 3: CÁC ĐIỂM CẦN LÀM TIẾP ĐỂ GỠ BỎ MOCK HOÀN TOÀN TRÊN MOBILE
+----------------------------------------------------------------------------------------------------
+
+1. ĐỒNG BỘ ROUTING DỊCH VỤ VÀ ĐỐI TÁC:
+   - Sửa route `/services/[id]` để trỏ về `ServiceDetailsScreen.tsx` (dùng API thật) thay vì
+     `ServiceDetailScreen.tsx` (đang mock 100%).
+   - Sửa route `/providers/[id]` để trỏ về `ProviderDetailsScreen.tsx` (dùng API thật) thay vì
+     `ProviderDetailScreen.tsx` (Elena Rostova mock 100%).
+
+2. GỠ BỎ FALLBACK DỮ LIỆU GIẢ KHI DATABASE RỖNG:
+   - Tại `BookingListScreen.tsx`: Khi `res.data.length === 0`, hiển thị `EmptyState` ("Bạn chưa có
+     lịch hẹn nào") thay vì gán `fallbackBookings`.
+   - Tại `ProviderHomeScreen.tsx`: Khi `res.data.length === 0`, hiển thị `EmptyState` thay vì gán
+     `getFallbackProviderBookings()`.
+   - Tại `ExploreScreen.tsx`: Khi không có dịch vụ trả về, hiển thị thông báo thay vì nạp `fallbackServices`.
+
+3. HOÀN THIỆN MÀN HÌNH VÍ & DOANH THU ĐỐI TÁC (`earnings.tsx`):
+   - Thay thế placeholder rỗng hiện tại bằng giao diện hiển thị số dư ví đối tác, doanh thu tuần/tháng,
+     lịch sử giao dịch nhận tiền từ các đơn đã nghiệm thu hoàn tất (sử dụng `paymentsApi.getMyWallet()`
+     và các API settlement đã có sẵn ở backend).
+
+4. TÍCH HỢP API VOUCHER / PROMOTIONS CHO BƯỚC ĐẶT LỊCH:
+   - Thay thế mảng `mockVouchers` trong `ReviewSummaryScreen.tsx` bằng API lấy danh sách khuyến mãi
+     hợp lệ từ backend (`/promotions/active`), và tính phí nền tảng / bảo hiểm theo cài đặt hệ thống.
+
+5. CẬP NHẬT MÃ HỒ SƠ ĐỐI TÁC THẬT:
+   - Trong `BecomeProviderSuccessScreen.tsx`, truyền mã hồ sơ thật lấy từ `profile.id` hoặc
+     `profile.providerCode` thay vì hiển thị mã cố định `#PWC-89214`.
+
+====================================================================================================
+Báo cáo hoàn tất. File được lưu tại: BAO_CAO_MOCK_DATA_MOBILE_VA_SO_SANH_WEB.txt
+====================================================================================================

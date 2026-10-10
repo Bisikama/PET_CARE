@@ -29,6 +29,7 @@ import {
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { petApi } from '../api/petApi';
+import { PET_AVATAR_PRESETS } from '../utils/petAvatars';
 
 const popularDogBreeds = [
   'Poodle',
@@ -119,6 +120,7 @@ export default function PetAddScreen() {
         weight: weight ? parseFloat(weight) : undefined,
         healthNote: healthNote.trim() || undefined,
         behaviorNote: behaviorNote.trim() || undefined,
+        avatarUrl: !avatarFile && avatarUri ? avatarUri : undefined,
         avatar: avatarFile || undefined,
       });
 
@@ -200,7 +202,38 @@ export default function PetAddScreen() {
                 <Camera size={14} color="white" />
               </View>
             </TouchableOpacity>
-            <Text style={styles.avatarHint}>Chạm để tải ảnh đại diện bé cưng</Text>
+            <Text style={styles.avatarHint}>Chạm để chọn ảnh từ máy hoặc chọn ảnh mẫu bên dưới</Text>
+
+            {/* Quick Presets */}
+            <View style={styles.presetSection}>
+              <Text style={styles.presetTitle}>Ảnh đại diện mẫu ({species === 'Dog' ? 'Chó' : 'Mèo'}):</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presetScroll}>
+                {PET_AVATAR_PRESETS.filter((p) => p.species === species).map((preset) => {
+                  const isSelected = avatarUri === preset.uri;
+                  return (
+                    <TouchableOpacity
+                      key={preset.id}
+                      style={[styles.presetThumbWrap, isSelected && styles.presetThumbWrapActive]}
+                      onPress={() => {
+                        setAvatarUri(preset.uri);
+                        setAvatarFile(null);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Image source={{ uri: preset.uri }} style={styles.presetThumb} />
+                      <Text style={[styles.presetThumbText, isSelected && styles.presetThumbTextActive]} numberOfLines={1}>
+                        {preset.name}
+                      </Text>
+                      {isSelected && (
+                        <View style={styles.presetCheckmark}>
+                          <Check size={10} color="white" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
           </View>
 
           {/* 2. Species Selector (Dog / Cat) */}
@@ -520,6 +553,65 @@ const styles = StyleSheet.create({
     ...theme.typography.bodySm,
     fontSize: 12,
     color: theme.colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  presetSection: {
+    width: '100%',
+    marginTop: 8,
+    gap: 8,
+  },
+  presetTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    paddingHorizontal: 8,
+  },
+  presetScroll: {
+    gap: 10,
+    paddingHorizontal: 8,
+    paddingBottom: 4,
+  },
+  presetThumbWrap: {
+    alignItems: 'center',
+    gap: 4,
+    position: 'relative',
+    padding: 3,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  presetThumbWrapActive: {
+    borderColor: '#0B2A4A',
+    backgroundColor: '#EFF4FF',
+  },
+  presetThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#E2E8F0',
+  },
+  presetThumbText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  presetThumbTextActive: {
+    color: '#0B2A4A',
+    fontWeight: '800',
+  },
+  presetCheckmark: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'white',
   },
   formGroup: {
     gap: 6,

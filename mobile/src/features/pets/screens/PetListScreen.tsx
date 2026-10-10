@@ -24,11 +24,13 @@ import {
   Sparkles,
   Info,
   ShieldCheck,
+  ChevronRight,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
 import { petApi } from '../api/petApi';
 import { Pet } from '../types/pet.types';
+import { getPetAvatar } from '../utils/petAvatars';
 
 // Removed fallback pets to strictly use API data
 
@@ -185,7 +187,7 @@ export default function PetListScreen() {
             <View style={styles.listWrap}>
               {pets.map((pet) => {
                 const isDog = (pet.species || '').toLowerCase() === 'dog';
-                const avatar = pet.avatarUrl || pet.avatar_url;
+                const avatar = getPetAvatar(pet);
                 const health = pet.healthNote || pet.health_note;
                 const behavior = pet.behaviorNote || pet.behavior_note;
 
@@ -193,23 +195,13 @@ export default function PetListScreen() {
                   <TouchableOpacity 
                     key={pet.id} 
                     style={styles.petCard}
-                    activeOpacity={0.8}
+                    activeOpacity={0.88}
                     onPress={() => router.push(`/(customer)/pets/${pet.id}`)}
                   >
                     <View style={styles.petCardTop}>
                       {/* Avatar */}
                       <View style={styles.avatarWrap}>
-                        {avatar ? (
-                          <Image source={{ uri: avatar }} style={styles.avatarImg} />
-                        ) : (
-                          <View style={styles.avatarFallback}>
-                            {isDog ? (
-                              <Dog size={28} color={theme.colors.primary.navy} />
-                            ) : (
-                              <Cat size={28} color={theme.colors.primary.navy} />
-                            )}
-                          </View>
-                        )}
+                        <Image source={{ uri: avatar }} style={styles.avatarImg} />
                         <View
                           style={[
                             styles.speciesBadge,
@@ -248,7 +240,7 @@ export default function PetListScreen() {
                         </View>
 
                         <Text style={styles.breedText}>
-                          {pet.breed || (isDog ? 'Chó cưng' : 'Mèo cưng')}
+                          {pet.breed || (isDog ? 'Chó cưng đáng yêu' : 'Mèo cưng đáng yêu')}
                         </Text>
 
                         {/* Badges Row */}
@@ -284,7 +276,7 @@ export default function PetListScreen() {
                         {health && (
                           <View style={styles.noteItem}>
                             <ShieldCheck size={13} color="#059669" />
-                            <Text style={styles.noteText} numberOfLines={2}>
+                            <Text style={styles.noteText} numberOfLines={1}>
                               <Text style={{ fontWeight: '700' }}>Sức khỏe: </Text>
                               {health}
                             </Text>
@@ -293,7 +285,7 @@ export default function PetListScreen() {
                         {behavior && (
                           <View style={styles.noteItem}>
                             <Info size={13} color={theme.colors.text.secondary} />
-                            <Text style={styles.noteText} numberOfLines={2}>
+                            <Text style={styles.noteText} numberOfLines={1}>
                               <Text style={{ fontWeight: '700' }}>Tính cách: </Text>
                               {behavior}
                             </Text>
@@ -301,6 +293,28 @@ export default function PetListScreen() {
                         )}
                       </View>
                     )}
+
+                    {/* Card Actions Footer */}
+                    <View style={styles.cardActionsRow}>
+                      <TouchableOpacity
+                        style={styles.cardBookBtn}
+                        onPress={() =>
+                          router.push({
+                            pathname: '/(customer)/bookings/select-pet',
+                            params: { preselectedPetId: pet.id },
+                          })
+                        }
+                        activeOpacity={0.8}
+                      >
+                        <Sparkles size={14} color="#071A2F" />
+                        <Text style={styles.cardBookBtnText}>Đặt Lịch Dịch Vụ</Text>
+                      </TouchableOpacity>
+
+                      <View style={styles.cardDetailLink}>
+                        <Text style={styles.cardDetailLinkText}>Xem hồ sơ</Text>
+                        <ChevronRight size={14} color="#2563EB" />
+                      </View>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -540,6 +554,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: theme.colors.text.secondary,
     lineHeight: 16,
+  },
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    marginTop: 4,
+  },
+  cardBookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F5B82E',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: theme.radius.full,
+  },
+  cardBookBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#071A2F',
+  },
+  cardDetailLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  cardDetailLinkText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
   },
   emptyContainer: {
     alignItems: 'center',

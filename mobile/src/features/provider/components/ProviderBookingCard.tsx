@@ -129,6 +129,13 @@ export function ProviderBookingCard({
             <Text style={styles.statusInProgressText}>In Progress</Text>
           </View>
         );
+      case 'AWAITING_CUSTOMER_CONFIRMATION':
+        return (
+          <View style={[styles.statusBadge, { backgroundColor: '#FEF3D6' }]}>
+            <View style={[styles.statusDot, { backgroundColor: '#FDBF35' }]} />
+            <Text style={[styles.statusInProgressText, { color: '#7B5800' }]}>Chờ khách nghiệm thu</Text>
+          </View>
+        );
       case 'ACCEPTED':
         return (
           <View style={[styles.statusBadge, styles.statusAccepted]}>

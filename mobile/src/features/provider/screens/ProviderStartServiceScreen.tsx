@@ -12,6 +12,9 @@ import {
   Modal,
   TextInput,
   Platform,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -45,12 +48,14 @@ import {
   ListChecks,
   ClipboardCheck,
   MessageCircle,
+  ChevronDown,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import {
   bookingsApi,
   ProviderBookingItem,
 } from '@/infrastructure/api/bookings.api';
+import { updateFallbackBookingStatus } from '../data/mockProviderBookings';
 
 export interface EvidencePhotoItem {
   id: string;
@@ -521,6 +526,7 @@ export function ProviderStartServiceScreen() {
         })),
       });
 
+      updateFallbackBookingStatus(booking.id, 'IN_PROGRESS');
       setBooking((prev) => (prev ? { ...prev, status: 'IN_PROGRESS' } : prev));
       setIsConfirmStartModalVisible(false);
       setCurrentStep(2);
@@ -528,7 +534,9 @@ export function ProviderStartServiceScreen() {
         'Bắt đầu dịch vụ!',
         'Đã cập nhật trạng thái đơn hẹn sang IN_PROGRESS. Hãy thực hiện checklist các công việc.'
       );
-    } catch (error) {
+    } catch (error: any) {
+      console.warn('Start service API warning:', error);
+      updateFallbackBookingStatus(booking.id, 'IN_PROGRESS');
       setBooking((prev) => (prev ? { ...prev, status: 'IN_PROGRESS' } : prev));
       setIsConfirmStartModalVisible(false);
       setCurrentStep(2);
@@ -699,15 +707,23 @@ export function ProviderStartServiceScreen() {
         providerNote: providerFinalNote,
       });
 
+      updateFallbackBookingStatus(booking.id, 'AWAITING_CUSTOMER_CONFIRMATION');
       setIsWaitingForCustomerReview(true);
       setBooking((prev) =>
         prev ? { ...prev, status: 'AWAITING_CUSTOMER_CONFIRMATION' } : prev
       );
-    } catch (error) {
-      setIsWaitingForCustomerReview(true);
-      setBooking((prev) =>
-        prev ? { ...prev, status: 'AWAITING_CUSTOMER_CONFIRMATION' } : prev
+      Alert.alert(
+        'Đã gửi xác nhận!',
+        'Kết quả dịch vụ đã được gửi tới khách hàng để nghiệm thu.',
+        [{ text: 'Đã hiểu' }]
       );
+    } catch (error: any) {
+      console.error('Submit completion error:', error);
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể gửi xác nhận hoàn tất dịch vụ. Vui lòng thử lại sau.';
+      Alert.alert('Không thể gửi xác nhận', errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -733,7 +749,9 @@ export function ProviderStartServiceScreen() {
             </Text>
             <Text style={styles.dotSeparator}>•</Text>
             <Text style={styles.inProgressBadgeText}>
-              {booking?.status || 'IN_PROGRESS'}
+              {booking?.status === 'AWAITING_CUSTOMER_CONFIRMATION'
+                ? 'WAITING CONFIRMATION'
+                : booking?.status || 'IN_PROGRESS'}
             </Text>
           </View>
           <Text style={styles.stepCounterText}>Step {currentStep} of 4</Text>
@@ -2184,59 +2202,97 @@ export function ProviderStartServiceScreen() {
         visible={isNoteModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsNoteModalVisible(false)}
+        onRequestClose={() => {
+          Keyboard.dismiss();
+          setIsNoteModalVisible(false);
+        }}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheetCard}>
-            <View style={styles.sheetHandle} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoidingModalContainer}
+        >
+          <View style={styles.modalBackdrop}>
+            {/* Backdrop tap dismisses keyboard and closes modal */}
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                setIsNoteModalVisible(false);
+              }}
+            />
 
-            <View style={styles.modalHeaderRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalSheetTitle}>Add Task Note</Text>
-                <Text style={styles.modalSheetSubtitle} numberOfLines={2}>
-                  {selectedTaskForModal?.title || 'Task title'}
-                </Text>
+            <View style={styles.modalSheetCard}>
+              <View style={styles.sheetHandle} />
+
+              <View style={styles.modalHeaderRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalSheetTitle}>Add Task Note</Text>
+                  <Text style={styles.modalSheetSubtitle} numberOfLines={2}>
+                    {selectedTaskForModal?.title || 'Task title'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.modalCloseCircle}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setIsNoteModalVisible(false);
+                  }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <X size={18} color="#43474E" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.modalCloseCircle}
-                onPress={() => setIsNoteModalVisible(false)}
-              >
-                <X size={18} color="#43474E" />
-              </TouchableOpacity>
-            </View>
 
-            <View style={styles.modalInputBox}>
-              <TextInput
-                style={styles.modalTextInput}
-                multiline
-                numberOfLines={3}
-                value={taskNoteInput}
-                onChangeText={setTaskNoteInput}
-                placeholder="Add an observation or note about this task..."
-                placeholderTextColor="#74777F"
-                autoFocus
-              />
-            </View>
+              <View style={styles.modalInputBox}>
+                <TextInput
+                  style={styles.modalTextInput}
+                  multiline
+                  numberOfLines={3}
+                  value={taskNoteInput}
+                  onChangeText={setTaskNoteInput}
+                  placeholder="Add an observation or note about this task..."
+                  placeholderTextColor="#74777F"
+                  autoFocus
+                />
+                <View style={styles.inputAccessoryRow}>
+                  <TouchableOpacity
+                    style={styles.hideKeyboardBtn}
+                    onPress={Keyboard.dismiss}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronDown size={14} color="#0B2A4A" />
+                    <Text style={styles.hideKeyboardText}>Ẩn bàn phím</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            <View style={styles.modalTwoButtonsRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setIsNoteModalVisible(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.modalTwoButtonsRow}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setIsNoteModalVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalCancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.modalSaveBtn}
-                onPress={handleSaveTaskNote}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalSaveBtnText}>Save Note</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalSaveBtn}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    handleSaveTaskNote();
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.modalSaveBtnText}>Save Note</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ============================================================ */}
@@ -2246,62 +2302,99 @@ export function ProviderStartServiceScreen() {
         visible={isSkipModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsSkipModalVisible(false)}
+        onRequestClose={() => {
+          Keyboard.dismiss();
+          setIsSkipModalVisible(false);
+        }}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheetCard}>
-            <View style={styles.sheetHandle} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoidingModalContainer}
+        >
+          <View style={styles.modalBackdrop}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                setIsSkipModalVisible(false);
+              }}
+            />
 
-            <View style={styles.modalHeaderRow}>
-              <View style={styles.modalWarningIconBox}>
-                <AlertTriangle size={22} color="#7B5800" />
+            <View style={styles.modalSheetCard}>
+              <View style={styles.sheetHandle} />
+
+              <View style={styles.modalHeaderRow}>
+                <View style={styles.modalWarningIconBox}>
+                  <AlertTriangle size={22} color="#7B5800" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalSheetTitle}>Skip this task?</Text>
+                  <Text style={styles.modalSheetSubtitle} numberOfLines={2}>
+                    Add a note explaining why this task could not be completed.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.modalCloseCircle}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setIsSkipModalVisible(false);
+                  }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <X size={18} color="#43474E" />
+                </TouchableOpacity>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalSheetTitle}>Skip this task?</Text>
-                <Text style={styles.modalSheetSubtitle} numberOfLines={2}>
-                  Add a note explaining why this task could not be completed.
-                </Text>
+
+              <View style={styles.modalInputBox}>
+                <TextInput
+                  style={styles.modalTextInput}
+                  multiline
+                  numberOfLines={3}
+                  value={taskSkipReasonInput}
+                  onChangeText={setTaskSkipReasonInput}
+                  placeholder="Reason for skipping (e.g., Pet showed signs of stress, owner requested skip)..."
+                  placeholderTextColor="#74777F"
+                  autoFocus
+                />
+                <View style={styles.inputAccessoryRow}>
+                  <TouchableOpacity
+                    style={styles.hideKeyboardBtn}
+                    onPress={Keyboard.dismiss}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronDown size={14} color="#7B5800" />
+                    <Text style={styles.hideKeyboardText}>Ẩn bàn phím</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity
-                style={styles.modalCloseCircle}
-                onPress={() => setIsSkipModalVisible(false)}
-              >
-                <X size={18} color="#43474E" />
-              </TouchableOpacity>
-            </View>
 
-            <View style={styles.modalInputBox}>
-              <TextInput
-                style={styles.modalTextInput}
-                multiline
-                numberOfLines={3}
-                value={taskSkipReasonInput}
-                onChangeText={setTaskSkipReasonInput}
-                placeholder="Reason for skipping (e.g., Pet showed signs of stress, owner requested skip)..."
-                placeholderTextColor="#74777F"
-                autoFocus
-              />
-            </View>
+              <View style={styles.modalTwoButtonsRow}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setIsSkipModalVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalCancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
 
-            <View style={styles.modalTwoButtonsRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setIsSkipModalVisible(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalSkipConfirmBtn}
-                onPress={handleConfirmSkipTask}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalSkipConfirmBtnText}>Skip Task</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalSkipConfirmBtn}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    handleConfirmSkipTask();
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.modalSkipConfirmBtnText}>Skip Task</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ============================================================ */}
@@ -2311,62 +2404,99 @@ export function ProviderStartServiceScreen() {
         visible={isCaptionModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsCaptionModalVisible(false)}
+        onRequestClose={() => {
+          Keyboard.dismiss();
+          setIsCaptionModalVisible(false);
+        }}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheetCard}>
-            <View style={styles.sheetHandle} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoidingModalContainer}
+        >
+          <View style={styles.modalBackdrop}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                setIsCaptionModalVisible(false);
+              }}
+            />
 
-            <View style={styles.modalHeaderRow}>
-              <View style={styles.modalCaptionIconBox}>
-                <Tag size={20} color="#0B2A4A" />
+            <View style={styles.modalSheetCard}>
+              <View style={styles.sheetHandle} />
+
+              <View style={styles.modalHeaderRow}>
+                <View style={styles.modalCaptionIconBox}>
+                  <Tag size={20} color="#0B2A4A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalSheetTitle}>Sửa chú thích ảnh</Text>
+                  <Text style={styles.modalSheetSubtitle}>
+                    Thêm mô tả cho bức ảnh hoàn tất để khách hàng xem
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.modalCloseCircle}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setIsCaptionModalVisible(false);
+                  }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <X size={18} color="#43474E" />
+                </TouchableOpacity>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.modalSheetTitle}>Sửa chú thích ảnh</Text>
-                <Text style={styles.modalSheetSubtitle}>
-                  Thêm mô tả cho bức ảnh hoàn tất để khách hàng xem
-                </Text>
+
+              <View style={styles.modalInputBox}>
+                <TextInput
+                  style={styles.modalTextInput}
+                  multiline
+                  numberOfLines={3}
+                  value={photoCaptionInput}
+                  onChangeText={setPhotoCaptionInput}
+                  placeholder="Nhập chú thích ảnh..."
+                  placeholderTextColor="#74777F"
+                  autoFocus
+                />
+                <View style={styles.inputAccessoryRow}>
+                  <TouchableOpacity
+                    style={styles.hideKeyboardBtn}
+                    onPress={Keyboard.dismiss}
+                    activeOpacity={0.7}
+                  >
+                    <ChevronDown size={14} color="#0B2A4A" />
+                    <Text style={styles.hideKeyboardText}>Ẩn bàn phím</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity
-                style={styles.modalCloseCircle}
-                onPress={() => setIsCaptionModalVisible(false)}
-              >
-                <X size={18} color="#43474E" />
-              </TouchableOpacity>
-            </View>
 
-            <View style={styles.modalInputBox}>
-              <TextInput
-                style={styles.modalTextInput}
-                multiline
-                numberOfLines={3}
-                value={photoCaptionInput}
-                onChangeText={setPhotoCaptionInput}
-                placeholder="Nhập chú thích ảnh..."
-                placeholderTextColor="#74777F"
-                autoFocus
-              />
-            </View>
+              <View style={styles.modalTwoButtonsRow}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setIsCaptionModalVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.modalCancelBtnText}>Hủy</Text>
+                </TouchableOpacity>
 
-            <View style={styles.modalTwoButtonsRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setIsCaptionModalVisible(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCancelBtnText}>Hủy</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalSaveBtn}
-                onPress={handleSavePhotoCaption}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalSaveBtnText}>Lưu chú thích</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalSaveBtn}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    handleSavePhotoCaption();
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.modalSaveBtnText}>Lưu chú thích</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ============================================================ */}
@@ -4592,6 +4722,9 @@ const styles = StyleSheet.create({
   },
 
   /* Modals */
+  keyboardAvoidingModalContainer: {
+    flex: 1,
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 21, 45, 0.65)',
@@ -4662,6 +4795,25 @@ const styles = StyleSheet.create({
     color: '#0B1C30',
     minHeight: 70,
     textAlignVertical: 'top',
+  },
+  inputAccessoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
+  hideKeyboardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: '#DDE9F9',
+  },
+  hideKeyboardText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0B2A4A',
   },
   modalTwoButtonsRow: {
     flexDirection: 'row',

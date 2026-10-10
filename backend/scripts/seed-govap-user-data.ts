@@ -275,7 +275,13 @@ async function main() {
         gender: 'Male',
         health_note: 'Khỏe mạnh, thích chạy nhảy',
         behavior_note: 'Thân thiện, ham ăn',
+        avatar_url: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80',
       },
+    });
+  } else if (!bobiPet.avatar_url) {
+    bobiPet = await prisma.pets.update({
+      where: { id: bobiPet.id },
+      data: { avatar_url: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80' },
     });
   }
 
@@ -294,7 +300,13 @@ async function main() {
         gender: 'Female',
         health_note: 'Hơi kén ăn',
         behavior_note: 'Nhút nhát nhưng hiền lành',
+        avatar_url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80',
       },
+    });
+  } else if (!kikiPet.avatar_url) {
+    kikiPet = await prisma.pets.update({
+      where: { id: kikiPet.id },
+      data: { avatar_url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80' },
     });
   }
 

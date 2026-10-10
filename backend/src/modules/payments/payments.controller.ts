@@ -15,6 +15,27 @@ export class PaymentsController {
     private readonly configService: ConfigService,
   ) {}
 
+  @Public()
+  @Get('commission-preview')
+  @ApiOperation({ summary: 'Tính toán và xem trước phí hoa hồng nền tảng / tiền thực nhận cho mỗi đơn hàng' })
+  @ApiQuery({ name: 'amount', required: true, type: Number, description: 'Số tiền đơn hàng cần tính toán' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chi tiết phân bổ hoa hồng',
+    schema: {
+      example: {
+        amount: 200000,
+        commissionRate: 0.1,
+        commissionPercent: 10,
+        platformFee: 20000,
+        providerAmount: 180000,
+      },
+    },
+  })
+  async getCommissionPreview(@Query('amount') amount: string) {
+    return this.paymentsService.calculateCommissionPreview(Number(amount));
+  }
+
   @UseGuards(AccessTokenGuard)
   @ApiBearerAuth()
   @Post('checkout')

@@ -81,6 +81,10 @@ export class ChatService {
       throw new ForbiddenException('Bạn không có quyền gửi tin nhắn vào phòng này');
     }
 
+    if (!room.is_active) {
+      throw new ForbiddenException('Phòng chat đã bị khóa (Booking đã hoàn thành hoặc hủy)');
+    }
+
     const message = await this.prisma.chat_messages.create({
       data: {
         chat_room_id: dto.roomId,
@@ -106,6 +110,10 @@ export class ChatService {
 
     if (room.customer_id !== userId && room.provider_user_id !== userId) {
       throw new ForbiddenException('Bạn không có quyền gửi tin nhắn vào phòng này');
+    }
+
+    if (!room.is_active) {
+      throw new ForbiddenException('Phòng chat đã bị khóa (Booking đã hoàn thành hoặc hủy)');
     }
 
     if (!file) {

@@ -43,6 +43,12 @@ export class AutoReleaseEscrowCron {
             },
           });
 
+          // 1.5 Đóng phòng chat
+          await tx.chat_rooms.updateMany({
+            where: { booking_id: booking.id },
+            data: { is_active: false },
+          });
+
           // 2. Ghi log
           await tx.booking_status_logs.create({
             data: {

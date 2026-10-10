@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import {
   PawPrint,
   Bell,
@@ -27,177 +27,12 @@ import {
   ProviderBookingItem,
 } from '@/infrastructure/api/bookings.api';
 import { ProviderBookingCard } from '../components/ProviderBookingCard';
+import {
+  getFallbackProviderBookings,
+  updateFallbackBookingStatus,
+} from '../data/mockProviderBookings';
 
 type ProviderTabKey = 'REQUESTS' | 'UPCOMING' | 'IN_PROGRESS' | 'HISTORY';
-
-// High-fidelity fallback items directly matching Stitch mockup if DB has no seed data yet
-const fallbackProviderBookings: ProviderBookingItem[] = [
-  {
-    id: 'prov-bk-01',
-    booking_code: 'BK-2026-9812',
-    status: 'PENDING_PROVIDER_ACCEPTANCE',
-    total_price: 250000,
-    requested_date: '2026-09-24',
-    estimated_start_at: '2026-09-24T09:00:00.000Z',
-    estimated_end_at: '2026-09-24T10:00:00.000Z',
-    service_duration_minutes: 60,
-    created_at: '2026-09-24T08:00:00.000Z',
-    customer_note: 'Bé hơi nhát người lạ, xin làm nhẹ tay',
-    customer_addresses: {
-      formatted_address: '123 Đường Nguyễn Trãi, Phường 2, Quận 5, TP.HCM',
-      district: 'Quận 5',
-      city: 'Hồ Chí Minh',
-      receiver_name: 'Nguyễn Thu Hà',
-      phone: '0987654321',
-    },
-    users: {
-      fullName: 'Nguyễn Thu Hà',
-      phone: '0987654321',
-    },
-    booking_pets: [
-      {
-        id: 'pet-01',
-        pet_name: 'Milo',
-        species: 'Chó',
-        breed: 'Poodle',
-        weight: 4.5,
-        avatar_url:
-          'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=400&q=80',
-        booking_services: [
-          {
-            id: 'srv-01',
-            service_name: 'Tắm spa khử mùi',
-            price: 250000,
-            duration_minutes: 60,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'prov-bk-02',
-    booking_code: 'BK-2026-9813',
-    status: 'PENDING_PROVIDER_ACCEPTANCE',
-    total_price: 380000,
-    requested_date: '2026-09-24',
-    estimated_start_at: '2026-09-24T14:00:00.000Z',
-    estimated_end_at: '2026-09-24T15:30:00.000Z',
-    service_duration_minutes: 90,
-    created_at: '2026-09-24T08:15:00.000Z',
-    customer_addresses: {
-      formatted_address: '45 Lê Duẩn, Bến Nghé, Quận 1, TP.HCM',
-      district: 'Quận 1',
-      city: 'Hồ Chí Minh',
-      receiver_name: 'Trần Minh Quân',
-      phone: '0912345678',
-    },
-    users: {
-      fullName: 'Trần Minh Quân',
-      phone: '0912345678',
-    },
-    booking_pets: [
-      {
-        id: 'pet-02',
-        pet_name: 'Bơ',
-        species: 'Chó',
-        breed: 'Corgi',
-        weight: 11.0,
-        avatar_url:
-          'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=400&q=80',
-        booking_services: [
-          {
-            id: 'srv-02',
-            service_name: 'Cắt tỉa lông tạo kiểu',
-            price: 380000,
-            duration_minutes: 90,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'prov-bk-03',
-    booking_code: 'BK-2026-8741',
-    status: 'IN_PROGRESS',
-    total_price: 320000,
-    requested_date: '2026-09-24',
-    estimated_start_at: '2026-09-24T08:30:00.000Z',
-    estimated_end_at: '2026-09-24T09:45:00.000Z',
-    service_duration_minutes: 75,
-    created_at: '2026-09-23T15:00:00.000Z',
-    customer_addresses: {
-      formatted_address: '72 Trần Quốc Thảo, Phường 9, Quận 3, TP.HCM',
-      district: 'Quận 3',
-      city: 'Hồ Chí Minh',
-      receiver_name: 'Phạm Bích Ngọc',
-      phone: '0908889999',
-    },
-    users: {
-      fullName: 'Phạm Bích Ngọc',
-      phone: '0908889999',
-    },
-    booking_pets: [
-      {
-        id: 'pet-03',
-        pet_name: 'Lucky',
-        species: 'Chó',
-        breed: 'Phốc sóc (Pomeranian)',
-        weight: 3.2,
-        avatar_url:
-          'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80',
-        booking_services: [
-          {
-            id: 'srv-03',
-            service_name: 'Combo chăm sóc toàn diện',
-            price: 320000,
-            duration_minutes: 75,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'prov-bk-04',
-    booking_code: 'BK-2026-7711',
-    status: 'ACCEPTED',
-    total_price: 180000,
-    requested_date: '2026-09-25',
-    estimated_start_at: '2026-09-25T10:30:00.000Z',
-    estimated_end_at: '2026-09-25T11:15:00.000Z',
-    service_duration_minutes: 45,
-    created_at: '2026-09-23T18:00:00.000Z',
-    customer_addresses: {
-      formatted_address: '10 Đường số 4, Tân Phú, Quận 7, TP.HCM',
-      district: 'Quận 7',
-      city: 'Hồ Chí Minh',
-      receiver_name: 'Lê Hoàng Nam',
-      phone: '0933221100',
-    },
-    users: {
-      fullName: 'Lê Hoàng Nam',
-      phone: '0933221100',
-    },
-    booking_pets: [
-      {
-        id: 'pet-04',
-        pet_name: 'Miu Miu',
-        species: 'Mèo',
-        breed: 'Mèo Anh lông ngắn',
-        weight: 3.8,
-        avatar_url:
-          'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=400&q=80',
-        booking_services: [
-          {
-            id: 'srv-04',
-            service_name: 'Vệ sinh tai & cắt móng',
-            price: 180000,
-            duration_minutes: 45,
-          },
-        ],
-      },
-    ],
-  },
-];
 
 export function ProviderHomeScreen() {
   const router = useRouter();
@@ -222,20 +57,23 @@ export function ProviderHomeScreen() {
         setBookings(res.data as unknown as ProviderBookingItem[]);
       } else {
         // Use high-fidelity fallbacks when DB doesn't have bookings yet
-        setBookings(fallbackProviderBookings);
+        setBookings(getFallbackProviderBookings());
       }
     } catch (error) {
       console.warn('Using fallback provider bookings due to API response:', error);
-      setBookings(fallbackProviderBookings);
+      setBookings(getFallbackProviderBookings());
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+  // Tự động tải lại danh sách đơn hẹn mỗi khi quay lại màn hình
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [fetchBookings])
+  );
 
   // Handle Accept Booking
   const handleAccept = async (booking: ProviderBookingItem) => {
@@ -253,21 +91,19 @@ export function ProviderHomeScreen() {
             try {
               setActionLoadingId(booking.id);
               await bookingsApi.providerAccept(booking.id);
+              updateFallbackBookingStatus(booking.id, 'ACCEPTED');
+              setBookings((prev) =>
+                prev.map((item) =>
+                  item.id === booking.id ? { ...item, status: 'ACCEPTED' } : item
+                )
+              );
               Alert.alert('Thành công', 'Đã tiếp nhận đơn hẹn!');
-              // Optimistically update status to ACCEPTED
-              setBookings((prev) =>
-                prev.map((item) =>
-                  item.id === booking.id ? { ...item, status: 'ACCEPTED' } : item
-                )
-              );
             } catch (err: any) {
-              // Optimistic update for presentation if backend mock returns error
-              setBookings((prev) =>
-                prev.map((item) =>
-                  item.id === booking.id ? { ...item, status: 'ACCEPTED' } : item
-                )
-              );
-              Alert.alert('Thành công', 'Đã nhận đơn hẹn thành công!');
+              const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Không thể nhận đơn lúc này. Vui lòng thử lại sau.';
+              Alert.alert('Lỗi nhận việc', msg);
             } finally {
               setActionLoadingId(null);
             }
@@ -291,19 +127,19 @@ export function ProviderHomeScreen() {
             try {
               setActionLoadingId(booking.id);
               await bookingsApi.providerReject(booking.id);
-              Alert.alert('Đã từ chối', 'Đơn hẹn đã được cập nhật.');
+              updateFallbackBookingStatus(booking.id, 'REJECTED');
               setBookings((prev) =>
                 prev.map((item) =>
                   item.id === booking.id ? { ...item, status: 'REJECTED' } : item
                 )
               );
+              Alert.alert('Đã từ chối', 'Đơn hẹn đã được cập nhật.');
             } catch (err: any) {
-              setBookings((prev) =>
-                prev.map((item) =>
-                  item.id === booking.id ? { ...item, status: 'REJECTED' } : item
-                )
-              );
-              Alert.alert('Đã từ chối', 'Đơn hẹn đã được cập nhật.');
+              const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Không thể từ chối đơn lúc này. Vui lòng thử lại sau.';
+              Alert.alert('Lỗi từ chối', msg);
             } finally {
               setActionLoadingId(null);
             }
@@ -318,7 +154,12 @@ export function ProviderHomeScreen() {
     return {
       requests: bookings.filter((b) => b.status === 'PENDING_PROVIDER_ACCEPTANCE').length,
       upcoming: bookings.filter((b) => b.status === 'ACCEPTED').length,
-      inProgress: bookings.filter((b) => b.status === 'IN_PROGRESS' || b.status === 'CHECKED_IN').length,
+      inProgress: bookings.filter(
+        (b) =>
+          b.status === 'IN_PROGRESS' ||
+          b.status === 'CHECKED_IN' ||
+          b.status === 'AWAITING_CUSTOMER_CONFIRMATION'
+      ).length,
       history: bookings.filter(
         (b) =>
           b.status === 'COMPLETED' ||
@@ -337,7 +178,10 @@ export function ProviderHomeScreen() {
         return bookings.filter((b) => b.status === 'ACCEPTED');
       case 'IN_PROGRESS':
         return bookings.filter(
-          (b) => b.status === 'IN_PROGRESS' || b.status === 'CHECKED_IN'
+          (b) =>
+            b.status === 'IN_PROGRESS' ||
+            b.status === 'CHECKED_IN' ||
+            b.status === 'AWAITING_CUSTOMER_CONFIRMATION'
         );
       case 'HISTORY':
         return bookings.filter(

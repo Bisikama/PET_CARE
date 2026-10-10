@@ -39,6 +39,16 @@ export class ChatController {
     return this.getChatRoomsUseCase.execute(userId);
   }
 
+  @Get('rooms/by-booking/:bookingId')
+  @ApiOperation({ summary: 'Lấy phòng chat theo mã đơn đặt lịch' })
+  @ApiParam({ name: 'bookingId', description: 'ID đơn đặt lịch', type: String })
+  async getRoomByBooking(
+    @GetCurrentUserId() userId: string,
+    @Param('bookingId') bookingId: string,
+  ) {
+    return this.getChatRoomsUseCase.getRoomByBookingId(userId, bookingId);
+  }
+
   @Get('rooms/:roomId/messages')
   @ApiOperation({ summary: 'Lấy tin nhắn trong một phòng chat (Tự động đánh dấu đã đọc)' })
   @ApiParam({ name: 'roomId', description: 'ID phòng chat', type: String })
