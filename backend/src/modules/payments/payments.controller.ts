@@ -14,7 +14,6 @@ export class PaymentsController {
     private readonly paymentsService: PaymentsService,
     private readonly configService: ConfigService,
   ) { }
-
   @Public()
   @Get('commission-preview')
   @ApiOperation({ summary: 'Tính toán và xem trước phí hoa hồng nền tảng / tiền thực nhận cho mỗi đơn hàng' })
