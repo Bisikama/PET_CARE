@@ -34,6 +34,8 @@ export class PaymentsController {
   })
   async getCommissionPreview(@Query('amount') amount: string) {
     return this.paymentsService.calculateCommissionPreview(Number(amount));
+  }
+
   private getFrontendUrl(): string {
     const frontendUrl = this.configService
       .getOrThrow<string>('FRONTEND_URL')
