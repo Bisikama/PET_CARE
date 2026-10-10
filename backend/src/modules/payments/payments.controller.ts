@@ -13,8 +13,27 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
+  @Public()
+  @Get('commission-preview')
+  @ApiOperation({ summary: 'Tính toán và xem trước phí hoa hồng nền tảng / tiền thực nhận cho mỗi đơn hàng' })
+  @ApiQuery({ name: 'amount', required: true, type: Number, description: 'Số tiền đơn hàng cần tính toán' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chi tiết phân bổ hoa hồng',
+    schema: {
+      example: {
+        amount: 200000,
+        commissionRate: 0.1,
+        commissionPercent: 10,
+        platformFee: 20000,
+        providerAmount: 180000,
+      },
+    },
+  })
+  async getCommissionPreview(@Query('amount') amount: string) {
+    return this.paymentsService.calculateCommissionPreview(Number(amount));
   private getFrontendUrl(): string {
     const frontendUrl = this.configService
       .getOrThrow<string>('FRONTEND_URL')
@@ -52,10 +71,10 @@ export class PaymentsController {
     @Ip() ip: string,
   ) {
     const ipAddr = ip || '127.0.0.1';
-    
+
     // Security Fix: Get amount directly from database
     const booking = await this.paymentsService.getBookingForCheckout(bookingId);
-    
+
     const paymentUrl = await this.paymentsService.createVNPayUrl(bookingId, Number(booking.total_price), ipAddr, promotionCode);
     return { paymentUrl };
   }
@@ -125,7 +144,7 @@ export class PaymentsController {
 
   @Public()
   @Post('momo-ipn')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Webhook IPN từ Momo',
     description: 'Endpoint nhận thông báo trạng thái thanh toán từ hệ thống Momo. Yêu cầu xác thực chữ ký (Signature) bằng thuật toán HMAC SHA256.',
   })
@@ -169,7 +188,7 @@ export class PaymentsController {
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
     const frontendUrl = this.getFrontendUrl();
     const orderId = query.vnp_TxnRef || '';
-    
+
     // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
     try {
       await this.paymentsService.processPaymentCallback({ ...query });
@@ -190,7 +209,7 @@ export class PaymentsController {
   async momoReturn(@Query() query: any, @Res() res: Response) {
     const frontendUrl = this.getFrontendUrl();
     const orderId = query.orderId || '';
-    
+
     // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
     try {
       await this.paymentsService.processMomoIPN({ ...query });

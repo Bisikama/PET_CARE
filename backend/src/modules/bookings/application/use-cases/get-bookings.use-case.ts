@@ -83,6 +83,7 @@ export class GetBookingsUseCase {
               },
             },
           },
+          reviews: true,
         },
       }),
     ]);

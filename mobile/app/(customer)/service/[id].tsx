@@ -1,7 +1,7 @@
 import React from 'react';
-import { useLocalSearchParams } from 'expo-router';
-import ServiceDetailsScreen from '../../../src/features/services/screens/ServiceDetailsScreen';
+import ServiceDetailScreen from '@/features/services/screens/ServiceDetailScreen';
 
 export default function ServiceDetailsRoute() {
-  return <ServiceDetailsScreen />;
+  return <ServiceDetailScreen />;
 }
+

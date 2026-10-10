@@ -24,41 +24,53 @@ export class ProviderAcceptBookingUseCase {
       throw new NotFoundException(`Booking with ID ${bookingId} not found`);
     }
 
-    // Load provider profile to verify user owns the booking
-    const slot = await this.bookingRepo.findProviderWorkingSlotById(
-      booking.provider_working_slot_id,
-    );
-    if (!slot) {
-      throw new NotFoundException('Working slot associated with this booking not found');
+    // 1. Verify provider authorization defensively
+    let slot: any = null;
+    if (booking.provider_working_slot_id) {
+      slot = await this.bookingRepo.findProviderWorkingSlotById(
+        booking.provider_working_slot_id,
+      );
+      if (!slot) {
+        throw new NotFoundException('Working slot associated with this booking not found');
+      }
     }
 
-    const providerProfile = slot.provider_working_days.provider_profiles;
-    if (providerProfile.user_id !== providerUserId) {
+    const slotProviderUserId =
+      slot?.provider_working_days?.provider_profiles?.user_id;
+    const bookingProviderUserId = booking.provider_profiles?.user_id;
+    const isAssignedProvider =
+      (bookingProviderUserId && bookingProviderUserId === providerUserId) ||
+      (slotProviderUserId && slotProviderUserId === providerUserId) ||
+      booking.provider_id === providerUserId;
+
+    if (!isAssignedProvider) {
       throw new ForbiddenException('Bạn không phải là đối tác được chỉ định cho yêu cầu này.');
     }
 
-    // Determine next state
+    // 2. Determine next state via State Machine
     const nextStatus = this.stateMachine.providerAccept(booking.status);
 
     const result = await this.unitOfWork.transaction(async (tx) => {
-      // 1. Update Booking status to ACCEPTED
+      // 2.1 Update Booking status to ACCEPTED
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
 
-      // 1.5 Create Chat Room for Customer and Provider
+      // 2.2 Create Chat Room for Customer and Provider
       await this.bookingRepo.createChatRoom(bookingId, booking.customer_id, providerUserId, tx);
 
-      // 2. Update Slot status to BOOKED
-      await this.bookingRepo.updateWorkingSlotStatus(
-        booking.provider_working_slot_id,
-        'BOOKED',
-        null,
-        tx,
-      );
+      // 2.3 Update Slot status to BOOKED if working slot is linked
+      if (booking.provider_working_slot_id) {
+        await this.bookingRepo.updateWorkingSlotStatus(
+          booking.provider_working_slot_id,
+          'BOOKED',
+          null,
+          tx,
+        );
+      }
 
-      // 3. Log event and status log
+      // 2.4 Log event and status log
       await this.bookingRepo.addBookingEvent(
         bookingId,
-        providerProfile.user_id,
+        providerUserId,
         'PROVIDER_ACCEPTED',
         'Booking request accepted by provider',
         tx,

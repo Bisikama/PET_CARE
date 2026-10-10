@@ -254,9 +254,19 @@ export default function BookingListScreen() {
     try {
       const res = await bookingsApi.getBookings({ limit: 50 });
       if (res && res.data && res.data.length > 0) {
-        setBookings(res.data);
+        const sorted = [...res.data].sort((a, b) => {
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return timeB - timeA;
+        });
+        setBookings(sorted);
       } else {
-        setBookings(fallbackBookings);
+        const sorted = [...fallbackBookings].sort((a, b) => {
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return timeB - timeA;
+        });
+        setBookings(sorted);
       }
     } catch (error) {
       setBookings(fallbackBookings);
@@ -344,6 +354,21 @@ export default function BookingListScreen() {
     return isNaN(parsed) ? 0 : parsed;
   };
 
+  // Định dạng giờ khởi tạo (chỉ hiện giờ và phút: HH:mm)
+  const formatCreatedTime = (item: BookingListItem) => {
+    const raw = item.created_at;
+    if (!raw) return '--:--';
+    try {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return '--:--';
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    } catch {
+      return '--:--';
+    }
+  };
+
   // Tab Filtering logic
   const filteredBookings = useMemo(() => {
     return bookings.filter((item) => {
@@ -379,6 +404,10 @@ export default function BookingListScreen() {
       }
 
       return matchesTab && matchesSearch;
+    }).sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA; // Sắp xếp theo ngày tạo mới nhất lên đầu
     });
   }, [bookings, activeTab, searchQuery]);
 
@@ -509,17 +538,45 @@ export default function BookingListScreen() {
   };
 
   const handleChat = (item: BookingListItem) => {
-    router.push('/(customer)/(tabs)/messages');
+    const isClosed = item.status === 'COMPLETED' || item.status === 'CANCELLED';
+    if (isClosed) {
+      Alert.alert('Thông báo', 'Dịch vụ đã hoàn tất nghiệm thu. Phòng chat đã đóng.');
+      return;
+    }
+    if (['PENDING', 'PENDING_PAYMENT', 'PENDING_PROVIDER_ACCEPTANCE'].includes(item.status)) {
+      Alert.alert(
+        'Chưa thể mở chat',
+        'Phòng chat chỉ mở sau khi đơn đặt lịch thành công và được đối tác chấp nhận.'
+      );
+      return;
+    }
+
+    const provider = item.provider_profiles?.users;
+    const pet = item.booking_pets?.[0]?.pets;
+    const service = item.booking_pets?.[0]?.booking_services?.[0];
+
+    router.push({
+      pathname: '/(customer)/chat/room',
+      params: {
+        bookingId: item.id,
+        partnerName: provider?.fullName,
+        partnerAvatar: provider?.avatarUrl,
+        partnerPhone: (provider as any)?.phone || (provider as any)?.phoneNumber,
+        petName: pet?.name || item.booking_pets?.[0]?.pet_name,
+        serviceTitle: service?.service_name,
+        isActive: 'true',
+      },
+    });
   };
+
 
   const [isConfirmingId, setIsConfirmingId] = useState<string | null>(null);
 
   const handleReview = (item: BookingListItem) => {
-    Alert.alert(
-      'Đánh giá dịch vụ',
-      `Bạn đang mở form đánh giá 5 sao cho ${item.provider_profiles?.users?.fullName || 'chuyên viên'}.`,
-      [{ text: 'Đóng' }, { text: 'Gửi 5 Sao ⭐', onPress: () => Alert.alert('Cảm ơn bạn đã đánh giá!') }]
-    );
+    router.push({
+      pathname: '/(customer)/bookings/customer_rating',
+      params: { id: item.id, bookingData: JSON.stringify(item) },
+    });
   };
 
   const handleNavigateToReview = (item: BookingListItem) => {
@@ -683,15 +740,15 @@ export default function BookingListScreen() {
                 const bookingCode = getBookingCode(item);
                 const formattedDate = formatBookingDate(item);
                 const formattedTime = formatBookingTime(item);
+                const formattedCreatedTime = formatCreatedTime(item);
 
                 return (
                   <View key={item.id} style={styles.bookingCard}>
                     {/* Card Header */}
                     <View style={styles.cardHeader}>
-                      <View style={styles.codeRow}>
-                        <Text style={styles.codeText}>#{bookingCode}</Text>
-                        <View style={styles.dotSeparator} />
-                        <Text style={styles.dateSmallText}>{formattedDate}</Text>
+                      <View style={styles.createdTimeRow}>
+                        <Clock size={13} color={theme.colors.text.secondary} />
+                        <Text style={styles.createdTimeText}>{formattedCreatedTime}</Text>
                       </View>
 
                       <View
@@ -788,14 +845,16 @@ export default function BookingListScreen() {
                             <Text style={styles.cancelActionText}>Hủy đơn</Text>
                           </TouchableOpacity>
 
-                          <TouchableOpacity
-                            style={styles.chatActionBtn}
-                            onPress={() => handleChat(item)}
-                            activeOpacity={0.7}
-                          >
-                            <MessageSquare size={14} color={theme.colors.primary.navy} />
-                            <Text style={styles.chatActionText}>Nhắn tin</Text>
-                          </TouchableOpacity>
+                          {item.status === 'ACCEPTED' && (
+                            <TouchableOpacity
+                              style={styles.chatActionBtn}
+                              onPress={() => handleChat(item)}
+                              activeOpacity={0.7}
+                            >
+                              <MessageSquare size={14} color={theme.colors.primary.navy} />
+                              <Text style={styles.chatActionText}>Nhắn tin</Text>
+                            </TouchableOpacity>
+                          )}
                         </>
                       ) : item.status === 'AWAITING_CUSTOMER_CONFIRMATION' ? (
                         <>
@@ -836,12 +895,26 @@ export default function BookingListScreen() {
                       ) : isCompleted(item.status) ? (
                         <>
                           <TouchableOpacity
-                            style={styles.reviewActionBtn}
+                            style={[
+                              styles.reviewActionBtn,
+                              item.reviews && item.reviews.length > 0 ? { borderColor: '#A7F3D0', backgroundColor: '#ECFDF5' } : null,
+                            ]}
                             onPress={() => handleReview(item)}
                             activeOpacity={0.7}
                           >
-                            <Star size={14} color="#D97706" />
-                            <Text style={styles.reviewActionText}>Đánh giá</Text>
+                            <Star
+                              size={14}
+                              color={item.reviews && item.reviews.length > 0 ? '#059669' : '#D97706'}
+                              fill={item.reviews && item.reviews.length > 0 ? '#059669' : 'transparent'}
+                            />
+                            <Text
+                              style={[
+                                styles.reviewActionText,
+                                item.reviews && item.reviews.length > 0 ? { color: '#059669' } : null,
+                              ]}
+                            >
+                              {item.reviews && item.reviews.length > 0 ? 'Đã đánh giá' : 'Đánh giá'}
+                            </Text>
                           </TouchableOpacity>
 
                           <TouchableOpacity
@@ -1094,25 +1167,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.subdued,
   },
-  codeRow: {
+  createdTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
-  codeText: {
+  createdTimeText: {
     fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.primary.navy,
-  },
-  dotSeparator: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: theme.colors.text.muted,
-  },
-  dateSmallText: {
-    fontSize: 11,
-    color: theme.colors.text.muted,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
   },
   statusPill: {
     flexDirection: 'row',

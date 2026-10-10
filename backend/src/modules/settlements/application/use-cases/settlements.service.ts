@@ -214,17 +214,19 @@ export class SettlementsService {
     }
 
     // 4. Giải phóng ký quỹ (ESCROW_RELEASE: Giảm pending_balance, Tăng balance)
+    const { providerAmount, platformFee } = await this.ensureValidPaymentAmounts(payment, tx);
+
     await this.walletsService.processTransaction(
       providerWallet.id,
-      Number(payment.provider_amount), // Chỉ giải phóng phần tiền thực nhận của Provider
+      providerAmount, // Chỉ giải phóng phần tiền thực nhận của Provider
       'ESCROW_RELEASE',
       bookingId,
       `Giải phóng tiền ký quỹ cho Booking ${bookingId}`,
       tx,
     );
 
-    // 4.1. Chuyển phí hoa hồng cho Admin
-    if (payment.platform_fee && Number(payment.platform_fee) > 0) {
+    // 4.1. Chuyển phí hoa hồng cho Admin/Túi tiền hệ thống
+    if (platformFee > 0) {
       let adminUserId: string | null = null;
       
       const envAdminId = this.configService.get<string>('ADMIN_WALLET_USER_ID');
@@ -238,24 +240,29 @@ export class SettlementsService {
         } else {
           // Fallback: Tìm user đầu tiên có role ADMIN (nếu không có config)
           const adminUser = await tx.user.findFirst({
-            where: { role: 'ADMIN' as any }
+            where: { role: 'ADMIN' as any },
+            orderBy: { createdAt: 'asc' },
           });
           if (adminUser) adminUserId = adminUser.id;
         }
       }
 
       if (adminUserId) {
-        const adminWallet = await tx.wallets.findUnique({ where: { user_id: adminUserId } });
-        if (adminWallet) {
-          await this.walletsService.processTransaction(
-            adminWallet.id,
-            Number(payment.platform_fee),
-            'CREDIT',
-            bookingId,
-            `Thu phí hoa hồng cho Booking ${bookingId}`,
-            tx,
-          );
-        }
+        // Đảm bảo ví Admin luôn tồn tại (upsert để không bị lỗi null wallet)
+        const adminWallet = await tx.wallets.upsert({
+          where: { user_id: adminUserId },
+          update: {},
+          create: { user_id: adminUserId, balance: 0, pending_balance: 0 },
+        });
+
+        await this.walletsService.processTransaction(
+          adminWallet.id,
+          platformFee,
+          'CREDIT',
+          bookingId,
+          `Thu phí hoa hồng cho Booking ${bookingId}`,
+          tx,
+        );
       }
     }
 
@@ -504,5 +511,107 @@ export class SettlementsService {
     });
 
     return updatedPayment;
+  }
+
+  /**
+   * Đảm bảo provider_amount và platform_fee luôn được tính toán hợp lệ (Safe Fallback)
+   */
+  private async ensureValidPaymentAmounts(
+    payment: any,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ providerAmount: number; platformFee: number }> {
+    let providerAmount = Number(payment.provider_amount || 0);
+    let platformFee = Number(payment.platform_fee || 0);
+
+    if (providerAmount <= 0 && Number(payment.amount) > 0) {
+      const envCommission = this.configService.get<string>('COMMISSION_RATE');
+      let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+      if (isNaN(commissionRate)) {
+        const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+        commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+      }
+      platformFee = Math.round(Number(payment.amount) * commissionRate);
+      providerAmount = Math.max(0, Number(payment.amount) - platformFee);
+
+      await tx.payments.update({
+        where: { id: payment.id },
+        data: {
+          platform_fee: platformFee,
+          provider_amount: providerAmount,
+        },
+      });
+    }
+
+    return { providerAmount, platformFee };
+  }
+
+  /**
+   * Lấy thông tin Túi tiền nền tảng (Platform Treasury Wallet)
+   */
+  async getPlatformWalletInfo() {
+    let adminUserId: string | null = null;
+    const envAdminId = this.configService.get<string>('ADMIN_WALLET_USER_ID');
+    if (envAdminId) {
+      adminUserId = envAdminId;
+    } else {
+      const configAdminId = await this.prisma.system_configs.findUnique({ where: { key: 'ADMIN_WALLET_USER_ID' } });
+      if (configAdminId && configAdminId.value) {
+        adminUserId = configAdminId.value;
+      } else {
+        const adminUser = await this.prisma.user.findFirst({
+          where: { role: 'ADMIN' as any },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (adminUser) adminUserId = adminUser.id;
+      }
+    }
+
+    if (!adminUserId) {
+      throw new BadRequestException('Chưa có tài khoản Admin trong hệ thống để khởi tạo túi tiền nền tảng');
+    }
+
+    // Đảm bảo ví Admin luôn tồn tại
+    const adminWallet = await this.prisma.wallets.upsert({
+      where: { user_id: adminUserId },
+      update: {},
+      create: { user_id: adminUserId, balance: 0, pending_balance: 0 },
+    });
+
+    // Lấy thông tin cấu hình tỷ lệ hoa hồng
+    const envCommission = this.configService.get<string>('COMMISSION_RATE');
+    let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+    if (isNaN(commissionRate)) {
+      const config = await this.prisma.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+      commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+    }
+
+    // Thống kê tổng hoa hồng đã thu (các giao dịch CREDIT vào ví sàn)
+    const totalPlatformFeeAgg = await this.prisma.wallet_transactions.aggregate({
+      _sum: { amount: true },
+      where: {
+        wallet_id: adminWallet.id,
+        type: 'CREDIT',
+      },
+    });
+
+    // Lấy 20 giao dịch gần nhất
+    const recentTransactions = await this.prisma.wallet_transactions.findMany({
+      where: { wallet_id: adminWallet.id },
+      orderBy: { created_at: 'desc' },
+      take: 20,
+    });
+
+    return {
+      adminUserId,
+      wallet: {
+        id: adminWallet.id,
+        balance: Number(adminWallet.balance),
+        pendingBalance: Number(adminWallet.pending_balance),
+      },
+      commissionRate,
+      commissionPercent: Math.round(commissionRate * 100),
+      totalCommissionCollected: Number(totalPlatformFeeAgg._sum.amount || 0),
+      recentTransactions,
+    };
   }
 }

@@ -1,39 +1,99 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Info } from 'lucide-react-native';
 import { theme } from '@/core/theme';
 
-interface BookingCalendarProps {
+export interface BookingCalendarProps {
   currentMonthName?: string;
-  selectedDay: number;
-  onSelectDay: (day: number) => void;
+  selectedDay?: number;
+  onSelectDay?: (day: number) => void;
+  viewDate?: Date;
+  selectedDate?: Date;
+  onSelectDate?: (date: Date) => void;
+  minDate?: Date;
+  maxDate?: Date;
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
+  canPrevMonth?: boolean;
+  canNextMonth?: boolean;
 }
 
 export function BookingCalendar({
-  currentMonthName = 'September 2026',
+  currentMonthName,
   selectedDay,
   onSelectDay,
+  viewDate = new Date(),
+  selectedDate = new Date(),
+  onSelectDate,
+  minDate = new Date(),
+  maxDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   onPrevMonth,
   onNextMonth,
+  canPrevMonth = true,
+  canNextMonth = true,
 }: BookingCalendarProps) {
-  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  // Thứ 2 đến Chủ nhật
+  const weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
-  const today = new Date();
-  const todayDate = today.getDate();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth(); // 0-indexed
 
-  // Any day strictly before today is unclickable
-  const pastDays = Array.from({ length: Math.max(0, todayDate - 1) }, (_, i) => i + 1);
-  // Today and future days in current month are available
-  const activeDays = Array.from(
-    { length: Math.max(0, daysInMonth - todayDate + 1) },
-    (_, i) => i + todayDate
+  // Month header text
+  const displayMonthName =
+    currentMonthName || `Tháng ${month + 1}, ${year}`;
+
+  // Start & End of normalized min & max dates
+  const minDateMidnight = new Date(
+    minDate.getFullYear(),
+    minDate.getMonth(),
+    minDate.getDate(),
+    0,
+    0,
+    0,
+    0
   );
-  const nextMonthPadding = [1, 2, 3, 4, 5];
+  const maxDateMidnight = new Date(
+    maxDate.getFullYear(),
+    maxDate.getMonth(),
+    maxDate.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
+
+  // Number of days in current viewing month
+  const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
+
+  // Day of week of the 1st day of the month (Monday = 0, Sunday = 6)
+  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
+
+  // Days in previous month for leading padding
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const leadingDays = Array.from(
+    { length: firstDayOfWeek },
+    (_, i) => daysInPrevMonth - firstDayOfWeek + 1 + i
+  );
+
+  // Current month days
+  const currentMonthDays = Array.from(
+    { length: daysInCurrentMonth },
+    (_, i) => i + 1
+  );
+
+  // Trailing padding to make full 7-col rows
+  const totalOccupied = leadingDays.length + currentMonthDays.length;
+  const trailingCount = (7 - (totalOccupied % 7)) % 7;
+  const trailingDays = Array.from({ length: trailingCount }, (_, i) => i + 1);
+
+  const handleSelectDayNumber = (d: number) => {
+    const target = new Date(year, month, d, 0, 0, 0, 0);
+    if (onSelectDate) {
+      onSelectDate(target);
+    } else if (onSelectDay) {
+      onSelectDay(d);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -42,26 +102,42 @@ export function BookingCalendar({
         <View style={styles.headerRow}>
           <View style={styles.monthTitleGroup}>
             <CalendarIcon size={20} color={theme.colors.primary.navy} />
-            <Text style={styles.monthTitle}>{currentMonthName}</Text>
+            <Text style={styles.monthTitle}>{displayMonthName}</Text>
           </View>
 
           <View style={styles.navButtons}>
             <TouchableOpacity
-              style={styles.navBtn}
-              activeOpacity={0.7}
-              onPress={onPrevMonth}
+              style={[styles.navBtn, !canPrevMonth && styles.navBtnDisabled]}
+              activeOpacity={canPrevMonth ? 0.7 : 1}
+              onPress={canPrevMonth ? onPrevMonth : undefined}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={!canPrevMonth}
             >
-              <ChevronLeft size={18} color={theme.colors.primary.navy} />
+              <ChevronLeft
+                size={18}
+                color={
+                  canPrevMonth
+                    ? theme.colors.primary.navy
+                    : theme.colors.text.light
+                }
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.navBtn}
-              activeOpacity={0.7}
-              onPress={onNextMonth}
+              style={[styles.navBtn, !canNextMonth && styles.navBtnDisabled]}
+              activeOpacity={canNextMonth ? 0.7 : 1}
+              onPress={canNextMonth ? onNextMonth : undefined}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              disabled={!canNextMonth}
             >
-              <ChevronRight size={18} color={theme.colors.primary.navy} />
+              <ChevronRight
+                size={18}
+                color={
+                  canNextMonth
+                    ? theme.colors.primary.navy
+                    : theme.colors.text.light
+                }
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -83,23 +159,39 @@ export function BookingCalendar({
 
         {/* Dates Grid */}
         <View style={styles.datesGrid}>
-          {/* Past days */}
-          {pastDays.map((d) => (
-            <View key={`past-${d}`} style={styles.dateCell}>
+          {/* Leading days from previous month */}
+          {leadingDays.map((d) => (
+            <View key={`prev-${d}`} style={styles.dateCell}>
               <Text style={styles.pastDateText}>{d}</Text>
             </View>
           ))}
 
-          {/* Active days */}
-          {activeDays.map((d) => {
-            const isSelected = selectedDay === d;
+          {/* Current Month Active & Inactive Days */}
+          {currentMonthDays.map((d) => {
+            const thisDate = new Date(year, month, d, 0, 0, 0, 0);
+            const isPast = thisDate < minDateMidnight;
+            const isBeyond30Days = thisDate > maxDateMidnight;
+            const isAvailable = !isPast && !isBeyond30Days;
+
+            const isSelected =
+              selectedDate.getFullYear() === year &&
+              selectedDate.getMonth() === month &&
+              selectedDate.getDate() === d;
+
+            if (!isAvailable) {
+              return (
+                <View key={`day-${d}`} style={styles.dateCell}>
+                  <Text style={styles.pastDateText}>{d}</Text>
+                </View>
+              );
+            }
 
             return (
               <TouchableOpacity
-                key={`active-${d}`}
+                key={`day-${d}`}
                 style={styles.dateCell}
                 activeOpacity={0.8}
-                onPress={() => onSelectDay(d)}
+                onPress={() => handleSelectDayNumber(d)}
               >
                 <View
                   style={[
@@ -128,12 +220,20 @@ export function BookingCalendar({
             );
           })}
 
-          {/* Next month preview padding */}
-          {nextMonthPadding.map((d) => (
+          {/* Trailing days for next month */}
+          {trailingDays.map((d) => (
             <View key={`next-${d}`} style={styles.dateCell}>
               <Text style={styles.nextMonthDateText}>{d}</Text>
             </View>
           ))}
+        </View>
+
+        {/* Bottom Booking Window Hint */}
+        <View style={styles.windowHintRow}>
+          <Info size={13} color="#64748B" />
+          <Text style={styles.windowHintText}>
+            Hỗ trợ đặt lịch linh hoạt trong vòng 30 ngày tới
+          </Text>
         </View>
       </View>
     </View>
@@ -176,12 +276,16 @@ const styles = StyleSheet.create({
     gap: theme.spacing[2],
   },
   navBtn: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.surface.container,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  navBtnDisabled: {
+    opacity: 0.35,
+    backgroundColor: '#F1F5F9',
   },
   weekDaysRow: {
     flexDirection: 'row',
@@ -214,12 +318,12 @@ const styles = StyleSheet.create({
   pastDateText: {
     ...theme.typography.bodySm,
     color: theme.colors.text.light,
-    opacity: 0.45,
+    opacity: 0.35,
   },
   nextMonthDateText: {
     ...theme.typography.bodySm,
     color: theme.colors.text.light,
-    opacity: 0.3,
+    opacity: 0.25,
   },
   dateCircle: {
     width: 32,
@@ -253,5 +357,20 @@ const styles = StyleSheet.create({
   },
   dotSelected: {
     backgroundColor: theme.colors.primary.navy,
+  },
+  windowHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  windowHintText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
   },
 });

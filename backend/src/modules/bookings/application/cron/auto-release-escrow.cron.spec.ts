@@ -22,6 +22,9 @@ describe('AutoReleaseEscrowCron', () => {
     booking_events: {
       create: jest.fn(),
     },
+    chat_rooms: {
+      updateMany: jest.fn(),
+    },
     $transaction: jest.fn(async (cb) => cb(mockPrisma)),
   };
 

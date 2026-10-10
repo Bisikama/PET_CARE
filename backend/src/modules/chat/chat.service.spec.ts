@@ -52,6 +52,7 @@ describe('ChatService', () => {
         id: 'room-1',
         customer_id: 'user-1',
         provider_user_id: 'provider-1',
+        is_active: true,
       };
       
       const mockMessage = {
@@ -107,7 +108,7 @@ describe('ChatService', () => {
 
   describe('saveMediaMessage', () => {
     it('should upload video and save message with VIDEO type', async () => {
-      const mockRoom = { id: 'room-1', customer_id: 'user-1', provider_user_id: 'provider-1' };
+      const mockRoom = { id: 'room-1', customer_id: 'user-1', provider_user_id: 'provider-1', is_active: true };
       (prisma.chat_rooms.findUnique as jest.Mock).mockResolvedValue(mockRoom);
       mockStorageService.uploadFile.mockResolvedValue('http://supabase/video.mp4');
       (prisma.chat_messages.create as jest.Mock).mockResolvedValue({ id: 'msg-1' });
@@ -128,7 +129,7 @@ describe('ChatService', () => {
     });
 
     it('should throw BadRequestException if file is missing', async () => {
-      const mockRoom = { id: 'room-1', customer_id: 'user-1', provider_user_id: 'provider-1' };
+      const mockRoom = { id: 'room-1', customer_id: 'user-1', provider_user_id: 'provider-1', is_active: true };
       (prisma.chat_rooms.findUnique as jest.Mock).mockResolvedValue(mockRoom);
 
       await expect(service.saveMediaMessage('user-1', 'room-1', null as any))

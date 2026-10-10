@@ -15,6 +15,16 @@ import { Role } from '@prisma/client';
 export class SettlementsController {
   constructor(private readonly settlementsService: SettlementsService) {}
 
+  @Get('platform-wallet')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xem số dư và lịch sử giao dịch Túi tiền nền tảng (Platform Treasury Wallet)' })
+  @ApiResponse({ status: 200, description: 'Thông tin ví nền tảng, số dư và lịch sử thu phí hoa hồng.' })
+  @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
+  @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
+  async getPlatformWallet() {
+    return this.settlementsService.getPlatformWalletInfo();
+  }
+
   @Get('payout-requests')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lấy danh sách yêu cầu rút tiền đang chờ duyệt (Admin)' })

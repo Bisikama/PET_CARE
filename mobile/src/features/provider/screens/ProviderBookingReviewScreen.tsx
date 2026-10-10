@@ -42,6 +42,7 @@ import {
   bookingsApi,
   ProviderBookingItem,
 } from '@/infrastructure/api/bookings.api';
+import { updateFallbackBookingStatus } from '../data/mockProviderBookings';
 
 export function ProviderBookingReviewScreen() {
   const router = useRouter();
@@ -189,18 +190,32 @@ export function ProviderBookingReviewScreen() {
     try {
       setIsActionLoading(true);
       await bookingsApi.providerAccept(booking.id);
+      updateFallbackBookingStatus(booking.id, 'ACCEPTED');
       setBookingStatus('ACCEPTED');
+      if (booking) {
+        booking.status = 'ACCEPTED';
+      }
       Alert.alert(
         'Nhận việc thành công!',
-        `Bạn đã tiếp nhận đơn hẹn của khách hàng ${customerName}. Kênh liên hệ trực tiếp đã mở khóa.`
+        `Bạn đã tiếp nhận đơn hẹn của khách hàng ${customerName}. Kênh liên hệ trực tiếp đã mở khóa.`,
+        [
+          {
+            text: 'Về trang chủ',
+            onPress: () => router.back(),
+          },
+          {
+            text: 'Xem chi tiết đơn',
+            style: 'cancel',
+          },
+        ]
       );
-    } catch (error) {
-      // Optimistic transition
-      setBookingStatus('ACCEPTED');
-      Alert.alert(
-        'Nhận việc thành công!',
-        `Bạn đã tiếp nhận đơn hẹn của khách hàng ${customerName}.`
-      );
+    } catch (error: any) {
+      console.error('Provider accept booking error:', error);
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể nhận việc lúc này. Vui lòng thử lại sau.';
+      Alert.alert('Không thể nhận việc', errorMsg);
     } finally {
       setIsActionLoading(false);
     }
@@ -219,15 +234,20 @@ export function ProviderBookingReviewScreen() {
     try {
       setIsActionLoading(true);
       await bookingsApi.providerReject(booking.id);
+      updateFallbackBookingStatus(booking.id, 'REJECTED');
       setIsDeclineModalVisible(false);
       Alert.alert(
         'Đã từ chối',
         'Yêu cầu đặt lịch đã được từ chối và chuyển tự động cho đối tác khác gần nhất.',
         [{ text: 'Về trang chủ', onPress: () => router.back() }]
       );
-    } catch (error) {
+    } catch (error: any) {
       setIsDeclineModalVisible(false);
-      router.back();
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Không thể từ chối lúc này.';
+      Alert.alert('Lỗi từ chối', errorMsg, [{ text: 'Đóng', onPress: () => router.back() }]);
     } finally {
       setIsActionLoading(false);
     }
@@ -382,7 +402,9 @@ export function ProviderBookingReviewScreen() {
               <View>
                 <Text style={styles.dateTimeLabel}>Ngày thực hiện</Text>
                 <Text style={styles.dateTimeValue}>
-                  {booking?.requested_date || 'Hôm nay, 24 Th10 2025'}
+                  {booking?.requested_date
+                    ? new Date(booking.requested_date).toLocaleDateString('vi-VN')
+                    : '24/10/2025'}
                 </Text>
               </View>
             </View>
@@ -554,11 +576,31 @@ export function ProviderBookingReviewScreen() {
                 bạn Chấp nhận đơn.
               </Text>
             </View>
+          ) : (bookingStatus === 'COMPLETED' || bookingStatus === 'CANCELLED') ? (
+            <View style={styles.lockedChannelBox}>
+              <Lock size={18} color="#74777F" />
+              <Text style={styles.lockedChannelText}>
+                Dịch vụ đã hoàn tất nghiệm thu. Kênh liên hệ và phòng chat đã đóng.
+              </Text>
+            </View>
           ) : (
             <View style={styles.acceptedChannelBox}>
               <TouchableOpacity
                 style={styles.channelButtonNavy}
-                onPress={() => Alert.alert('Tin nhắn', 'Kênh chat đã sẵn sàng.')}
+                onPress={() => {
+                  if (!booking?.id) return;
+                  router.push({
+                    pathname: '/(provider)/chat/room',
+                    params: {
+                      bookingId: booking.id,
+                      partnerName: customerName,
+                      partnerPhone: customerPhone,
+                      serviceTitle: serviceName,
+                      petName: primaryPet.name,
+                      isActive: 'true',
+                    },
+                  });
+                }}
                 activeOpacity={0.8}
               >
                 <MessageSquare size={16} color="#FFFFFF" />
@@ -570,7 +612,7 @@ export function ProviderBookingReviewScreen() {
                 onPress={makePhoneCall}
                 activeOpacity={0.8}
               >
-                <Phone size={16} color="#0B1C30" />
+                <Phone size={16} color="#0B2A4A" />
                 <Text style={styles.channelButtonGoldText}>Gọi khách</Text>
               </TouchableOpacity>
             </View>

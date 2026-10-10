@@ -297,12 +297,25 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
 
   async updateBookingStatus(bookingId: string, status: booking_status, tx?: any): Promise<any> {
     const client = tx || this.prisma;
+    const data: any = {
+      status,
+      updated_at: new Date(),
+    };
+    if (status === 'ACCEPTED') {
+      data.accepted_at = new Date();
+    }
+    if (status === 'IN_PROGRESS') {
+      data.started_at = new Date();
+    }
+    if (status === 'AWAITING_CUSTOMER_CONFIRMATION') {
+      data.completion_requested_at = new Date();
+    }
+    if (status === 'COMPLETED') {
+      data.completed_at = new Date();
+    }
     return await client.bookings.update({
       where: { id: bookingId },
-      data: {
-        status,
-        updated_at: new Date(),
-      },
+      data,
     });
   }
 
@@ -385,7 +398,7 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     tx?: any,
   ): Promise<any> {
     const client = tx || this.prisma;
-    return await client.booking_checklist_items.update({
+    return await client.booking_checklist_items.updateMany({
       where: { id: itemId },
       data: {
         status: data.status,

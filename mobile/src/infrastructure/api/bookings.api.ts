@@ -1,4 +1,8 @@
 import { apiClient } from './client';
+import {
+  getFallbackProviderBookings,
+  updateFallbackBookingStatus,
+} from '@/features/provider/data/mockProviderBookings';
 
 export interface ActiveBooking {
   id: string;
@@ -121,6 +125,12 @@ export interface BookingListItem {
         };
       };
     }>;
+  }>;
+  reviews?: Array<{
+    id: string;
+    rating: number;
+    comment?: string;
+    created_at?: string;
   }>;
 }
 
@@ -296,6 +306,10 @@ export const bookingsApi = {
   },
 
   getBookingById: async (id: string): Promise<BookingListItem> => {
+    if (id.startsWith('prov-bk-') || id.startsWith('bk-demo-')) {
+      const found = getFallbackProviderBookings().find((b) => b.id === id);
+      if (found) return found as unknown as BookingListItem;
+    }
     const { data } = await apiClient.get(`/bookings/${id}`);
     return data?.data !== undefined ? data.data : data;
   },
@@ -342,11 +356,19 @@ export const bookingsApi = {
   },
 
   providerAccept: async (bookingId: string): Promise<{ bookingId: string; status: string }> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'ACCEPTED');
+      return { bookingId, status: 'ACCEPTED' };
+    }
     const { data } = await apiClient.post(`/bookings/${bookingId}/provider-accept`);
     return data?.data !== undefined ? data.data : data;
   },
 
   providerReject: async (bookingId: string): Promise<{ bookingId: string; status: string }> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'REJECTED');
+      return { bookingId, status: 'REJECTED' };
+    }
     const { data } = await apiClient.post(`/bookings/${bookingId}/provider-reject`);
     return data?.data !== undefined ? data.data : data;
   },
@@ -371,6 +393,10 @@ export const bookingsApi = {
       }>;
     }
   ): Promise<{ bookingId: string; status: string; message?: string }> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'IN_PROGRESS');
+      return { bookingId, status: 'IN_PROGRESS', message: 'Dịch vụ đã bắt đầu.' };
+    }
     const { data } = await apiClient.post(`/bookings/${bookingId}/start-service`, dto || {});
     return data?.data !== undefined ? data.data : data;
   },
@@ -424,7 +450,19 @@ export const bookingsApi = {
       providerNote?: string;
     }
   ): Promise<any> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'AWAITING_CUSTOMER_CONFIRMATION');
+      return { bookingId, status: 'AWAITING_CUSTOMER_CONFIRMATION', success: true };
+    }
     const { data } = await apiClient.post(`/bookings/${bookingId}/complete`, dto);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  submitReview: async (
+    bookingId: string,
+    dto: { rating: number; comment?: string }
+  ): Promise<any> => {
+    const { data } = await apiClient.post(`/customer-care/bookings/${bookingId}/reviews`, dto);
     return data?.data !== undefined ? data.data : data;
   },
 };
