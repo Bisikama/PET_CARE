@@ -1,4 +1,8 @@
 import { apiClient } from './client';
+import {
+  getFallbackProviderBookings,
+  updateFallbackBookingStatus,
+} from '@/features/provider/data/mockProviderBookings';
 
 export interface ActiveBooking {
   id: string;
@@ -31,18 +35,51 @@ export interface ActiveBooking {
 
 export interface BookingListItem {
   id: string;
-  booking_code: string;
-  status: 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | string;
-  total_amount: number;
+  booking_code?: string;
+  status:
+    | 'PENDING'
+    | 'PENDING_PAYMENT'
+    | 'PENDING_PROVIDER_ACCEPTANCE'
+    | 'ACCEPTED'
+    | 'PROVIDER_ARRIVED'
+    | 'CHECKED_IN'
+    | 'IN_PROGRESS'
+    | 'AWAITING_CUSTOMER_CONFIRMATION'
+    | 'COMPLETED'
+    | 'CANCELLED'
+    | 'REJECTED'
+    | 'PROVIDER_TIMEOUT'
+    | string;
+  total_price?: number | string;
+  total_amount?: number;
   grand_total?: number;
+  discount_amount?: number | string;
   payment_method?: string;
   payment_status?: string;
+  requested_date?: string;
+  estimated_start_at?: string;
+  estimated_end_at?: string;
   booking_date?: string;
   start_time?: string;
   created_at: string;
   location_type?: string;
   notes?: string;
+  customer_note?: string | null;
+  provider_note?: string | null;
+  cancellation_reason?: string | null;
+  time_slots?: {
+    id?: string;
+    name?: string;
+    start_time?: string;
+    end_time?: string;
+    slot_order?: number;
+  };
+  address_snapshot?: any;
   customer_addresses?: {
+    id?: string;
+    label?: string;
+    receiver_name?: string;
+    phone?: string;
     address_line?: string;
     ward?: string;
     district?: string;
@@ -60,6 +97,12 @@ export interface BookingListItem {
     };
   };
   booking_pets?: Array<{
+    id?: string;
+    pet_name?: string;
+    species?: string;
+    breed?: string;
+    weight?: string | number;
+    avatar_url?: string;
     pets?: {
       id?: string;
       name?: string;
@@ -69,12 +112,103 @@ export interface BookingListItem {
       weight?: number;
     };
     booking_services?: Array<{
-      price?: number;
+      id?: string;
+      service_name?: string;
+      price?: number | string;
+      duration_minutes?: number;
       provider_services?: {
         services?: {
           id?: string;
           title?: string;
           name?: string;
+          duration_minutes?: number;
+        };
+      };
+    }>;
+  }>;
+  reviews?: Array<{
+    id: string;
+    rating: number;
+    comment?: string;
+    created_at?: string;
+  }>;
+}
+
+export interface ProviderBookingItem {
+  id: string;
+  customer_id?: string;
+  provider_id?: string;
+  booking_code?: string;
+  status:
+    | 'PENDING_PAYMENT'
+    | 'PENDING_PROVIDER_ACCEPTANCE'
+    | 'ACCEPTED'
+    | 'PROVIDER_ARRIVED'
+    | 'CHECKED_IN'
+    | 'IN_PROGRESS'
+    | 'AWAITING_CUSTOMER_CONFIRMATION'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'PROVIDER_TIMEOUT'
+    | 'CANCELLED'
+    | string;
+  total_price: number | string;
+  customer_note?: string | null;
+  provider_note?: string | null;
+  requested_date?: string;
+  estimated_start_at?: string;
+  estimated_end_at?: string;
+  service_duration_minutes?: number;
+  travel_duration_minutes?: number;
+  created_at: string;
+  updated_at?: string;
+  customer_addresses?: {
+    id?: string;
+    label?: string;
+    receiver_name?: string;
+    phone?: string;
+    address_line?: string;
+    ward?: string;
+    district?: string;
+    city?: string;
+    formatted_address?: string;
+    latitude?: string | number;
+    longitude?: string | number;
+  };
+  users?: {
+    id?: string;
+    fullName?: string;
+    full_name?: string;
+    avatarUrl?: string;
+    avatar_url?: string;
+    phone?: string;
+  };
+  booking_pets?: Array<{
+    id?: string;
+    pet_name?: string;
+    species?: string;
+    breed?: string;
+    weight?: string | number;
+    avatar_url?: string;
+    pets?: {
+      id?: string;
+      name?: string;
+      species?: string;
+      breed?: string;
+      weight?: string | number;
+      avatar_url?: string;
+    };
+    booking_services?: Array<{
+      id?: string;
+      service_name?: string;
+      price?: string | number;
+      duration_minutes?: number;
+      provider_services?: {
+        services?: {
+          id?: string;
+          name?: string;
+          title?: string;
+          duration_minutes?: number;
         };
       };
     }>;
@@ -172,6 +306,10 @@ export const bookingsApi = {
   },
 
   getBookingById: async (id: string): Promise<BookingListItem> => {
+    if (id.startsWith('prov-bk-') || id.startsWith('bk-demo-')) {
+      const found = getFallbackProviderBookings().find((b) => b.id === id);
+      if (found) return found as unknown as BookingListItem;
+    }
     const { data } = await apiClient.get(`/bookings/${id}`);
     return data?.data !== undefined ? data.data : data;
   },
@@ -215,5 +353,116 @@ export const bookingsApi = {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.data)) return data.data;
     return [];
+  },
+
+  providerAccept: async (bookingId: string): Promise<{ bookingId: string; status: string }> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'ACCEPTED');
+      return { bookingId, status: 'ACCEPTED' };
+    }
+    const { data } = await apiClient.post(`/bookings/${bookingId}/provider-accept`);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  providerReject: async (bookingId: string): Promise<{ bookingId: string; status: string }> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'REJECTED');
+      return { bookingId, status: 'REJECTED' };
+    }
+    const { data } = await apiClient.post(`/bookings/${bookingId}/provider-reject`);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  providerCancel: async (
+    bookingId: string,
+    dto: { reason: string; note?: string }
+  ): Promise<{ bookingId: string; status: string }> => {
+    const { data } = await apiClient.post(`/bookings/${bookingId}/provider-cancel`, dto);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  startService: async (
+    bookingId: string,
+    dto?: {
+      petConditionNote?: string;
+      evidenceMedias?: Array<{
+        mediaUrl: string;
+        mediaType?: 'IMAGE' | 'VIDEO';
+        category?: 'CHECK_IN' | 'CHECK_OUT' | 'IN_PROGRESS' | 'OTHER';
+        caption?: string;
+      }>;
+    }
+  ): Promise<{ bookingId: string; status: string; message?: string }> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'IN_PROGRESS');
+      return { bookingId, status: 'IN_PROGRESS', message: 'Dịch vụ đã bắt đầu.' };
+    }
+    const { data } = await apiClient.post(`/bookings/${bookingId}/start-service`, dto || {});
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  uploadEvidence: async (bookingId: string, file: any): Promise<{
+    success: boolean;
+    mediaUrl: string;
+    mediaType: string;
+    fileName: string;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post(`/bookings/${bookingId}/evidence-upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  getChecklist: async (bookingId: string): Promise<any> => {
+    const { data } = await apiClient.get(`/bookings/${bookingId}/checklist`);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  updateChecklistItem: async (
+    bookingId: string,
+    itemId: string,
+    dto: { status: 'PENDING' | 'DONE' | 'SKIPPED'; note?: string }
+  ): Promise<any> => {
+    const { data } = await apiClient.patch(`/bookings/${bookingId}/checklist/${itemId}`, dto);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  batchUpdateChecklist: async (
+    bookingId: string,
+    items: Array<{ itemId: string; status: 'PENDING' | 'DONE' | 'SKIPPED'; note?: string }>
+  ): Promise<any> => {
+    const { data } = await apiClient.patch(`/bookings/${bookingId}/checklist/batch`, { items });
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  completeBooking: async (
+    bookingId: string,
+    dto: {
+      evidenceMedias?: Array<{
+        mediaUrl: string;
+        mediaType?: 'IMAGE' | 'VIDEO';
+        category?: 'CHECK_IN' | 'CHECK_OUT' | 'IN_PROGRESS' | 'OTHER';
+        caption?: string;
+      }>;
+      checklistItems?: Array<{ checklistItemId: string; status: 'DONE' | 'SKIPPED'; note?: string }>;
+      providerNote?: string;
+    }
+  ): Promise<any> => {
+    if (bookingId.startsWith('prov-bk-') || bookingId.startsWith('bk-demo-')) {
+      updateFallbackBookingStatus(bookingId, 'AWAITING_CUSTOMER_CONFIRMATION');
+      return { bookingId, status: 'AWAITING_CUSTOMER_CONFIRMATION', success: true };
+    }
+    const { data } = await apiClient.post(`/bookings/${bookingId}/complete`, dto);
+    return data?.data !== undefined ? data.data : data;
+  },
+
+  submitReview: async (
+    bookingId: string,
+    dto: { rating: number; comment?: string }
+  ): Promise<any> => {
+    const { data } = await apiClient.post(`/customer-care/bookings/${bookingId}/reviews`, dto);
+    return data?.data !== undefined ? data.data : data;
   },
 };

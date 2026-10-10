@@ -13,7 +13,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import {
   CalendarDays,
   Calendar,
@@ -254,9 +254,19 @@ export default function BookingListScreen() {
     try {
       const res = await bookingsApi.getBookings({ limit: 50 });
       if (res && res.data && res.data.length > 0) {
-        setBookings(res.data);
+        const sorted = [...res.data].sort((a, b) => {
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return timeB - timeA;
+        });
+        setBookings(sorted);
       } else {
-        setBookings(fallbackBookings);
+        const sorted = [...fallbackBookings].sort((a, b) => {
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return timeB - timeA;
+        });
+        setBookings(sorted);
       }
     } catch (error) {
       setBookings(fallbackBookings);
@@ -266,13 +276,97 @@ export default function BookingListScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+  // Tự động tải lại danh sách mỗi khi quay lại màn hình này (sau khi nghiệm thu, đổi trạng thái)
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [fetchBookings])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchBookings();
+  };
+
+  // Status mapping helpers
+  const isUpcoming = (status: string) =>
+    ['PENDING', 'PENDING_PAYMENT', 'PENDING_PROVIDER_ACCEPTANCE', 'ACCEPTED'].includes(status);
+
+  const isInProgress = (status: string) =>
+    ['PROVIDER_ARRIVED', 'CHECKED_IN', 'IN_PROGRESS', 'AWAITING_CUSTOMER_CONFIRMATION'].includes(status);
+
+  const isCompleted = (status: string) => status === 'COMPLETED';
+
+  const isCancelled = (status: string) =>
+    ['CANCELLED', 'REJECTED', 'PROVIDER_TIMEOUT'].includes(status);
+
+  // Formatting helpers for DB data
+  const formatBookingDate = (item: BookingListItem) => {
+    if (item.booking_date) return item.booking_date;
+    const rawDate = item.requested_date || item.estimated_start_at || item.created_at;
+    if (!rawDate) return 'Hôm nay';
+    try {
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return 'Hôm nay';
+      return d.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return 'Hôm nay';
+    }
+  };
+
+  const formatBookingTime = (item: BookingListItem) => {
+    if (item.start_time) return item.start_time;
+    if (item.time_slots?.start_time) {
+      return `${item.time_slots.start_time}${item.time_slots.end_time ? ` - ${item.time_slots.end_time}` : ''}`;
+    }
+    if (item.estimated_start_at) {
+      try {
+        const d = new Date(item.estimated_start_at);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+        }
+      } catch {}
+    }
+    return '10:00 AM';
+  };
+
+  const getBookingCode = (item: BookingListItem) => {
+    if (item.booking_code) return item.booking_code;
+    if (item.id) {
+      const short = item.id.replace(/-/g, '').slice(0, 8).toUpperCase();
+      return `BK-${short}`;
+    }
+    return 'BK-2026';
+  };
+
+  const getBookingPrice = (item: BookingListItem): number => {
+    const raw = item.total_price ?? item.grand_total ?? item.total_amount ?? 0;
+    if (typeof raw === 'number') return raw;
+    const parsed = parseFloat(raw);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Định dạng giờ khởi tạo (chỉ hiện giờ và phút: HH:mm)
+  const formatCreatedTime = (item: BookingListItem) => {
+    const raw = item.created_at;
+    if (!raw) return '--:--';
+    try {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return '--:--';
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    } catch {
+      return '--:--';
+    }
   };
 
   // Tab Filtering logic
@@ -281,25 +375,27 @@ export default function BookingListScreen() {
       // Tab filter
       let matchesTab = true;
       if (activeTab === 'UPCOMING') {
-        matchesTab = item.status === 'PENDING' || item.status === 'ACCEPTED';
+        matchesTab = isUpcoming(item.status);
       } else if (activeTab === 'IN_PROGRESS') {
-        matchesTab = item.status === 'IN_PROGRESS';
+        matchesTab = isInProgress(item.status);
       } else if (activeTab === 'COMPLETED') {
-        matchesTab = item.status === 'COMPLETED';
+        matchesTab = isCompleted(item.status);
       } else if (activeTab === 'CANCELLED') {
-        matchesTab = item.status === 'CANCELLED' || item.status === 'REJECTED';
+        matchesTab = isCancelled(item.status);
       }
 
       // Search filter
       let matchesSearch = true;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
-        const code = item.booking_code?.toLowerCase() || '';
+        const code = (item.booking_code || getBookingCode(item)).toLowerCase();
         const provider = item.provider_profiles?.users?.fullName?.toLowerCase() || '';
-        const pet = item.booking_pets?.[0]?.pets?.name?.toLowerCase() || '';
+        const pet = (item.booking_pets?.[0]?.pets?.name || item.booking_pets?.[0]?.pet_name || '').toLowerCase();
         const service =
-          item.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services?.title?.toLowerCase() ||
-          '';
+          (item.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services?.title ||
+          item.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services?.name ||
+          item.booking_pets?.[0]?.booking_services?.[0]?.service_name ||
+          '').toLowerCase();
         matchesSearch =
           code.includes(query) ||
           provider.includes(query) ||
@@ -308,6 +404,10 @@ export default function BookingListScreen() {
       }
 
       return matchesTab && matchesSearch;
+    }).sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return timeB - timeA; // Sắp xếp theo ngày tạo mới nhất lên đầu
     });
   }, [bookings, activeTab, searchQuery]);
 
@@ -315,10 +415,10 @@ export default function BookingListScreen() {
   const tabCounts = useMemo(() => {
     return {
       ALL: bookings.length,
-      UPCOMING: bookings.filter((b) => b.status === 'PENDING' || b.status === 'ACCEPTED').length,
-      IN_PROGRESS: bookings.filter((b) => b.status === 'IN_PROGRESS').length,
-      COMPLETED: bookings.filter((b) => b.status === 'COMPLETED').length,
-      CANCELLED: bookings.filter((b) => b.status === 'CANCELLED' || b.status === 'REJECTED').length,
+      UPCOMING: bookings.filter((b) => isUpcoming(b.status)).length,
+      IN_PROGRESS: bookings.filter((b) => isInProgress(b.status)).length,
+      COMPLETED: bookings.filter((b) => isCompleted(b.status)).length,
+      CANCELLED: bookings.filter((b) => isCancelled(b.status)).length,
     };
   }, [bookings]);
 
@@ -326,8 +426,16 @@ export default function BookingListScreen() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
+      case 'PENDING_PAYMENT':
         return {
-          label: 'Chờ duyệt',
+          label: 'Chờ thanh toán',
+          bgColor: '#FEF3C7',
+          textColor: '#B45309',
+          dotColor: '#F59E0B',
+        };
+      case 'PENDING_PROVIDER_ACCEPTANCE':
+        return {
+          label: 'Chờ xác nhận',
           bgColor: '#FEF3C7',
           textColor: '#B45309',
           dotColor: '#F59E0B',
@@ -339,12 +447,27 @@ export default function BookingListScreen() {
           textColor: '#1D4ED8',
           dotColor: '#2563EB',
         };
+      case 'PROVIDER_ARRIVED':
+        return {
+          label: 'Chuyên viên đã đến',
+          bgColor: '#EDE9FE',
+          textColor: '#6D28D9',
+          dotColor: '#8B5CF6',
+        };
+      case 'CHECKED_IN':
       case 'IN_PROGRESS':
         return {
           label: 'Đang thực hiện',
           bgColor: '#EDE9FE',
           textColor: '#6D28D9',
           dotColor: '#8B5CF6',
+        };
+      case 'AWAITING_CUSTOMER_CONFIRMATION':
+        return {
+          label: 'Chờ nghiệm thu',
+          bgColor: '#E0F2FE',
+          textColor: '#0369A1',
+          dotColor: '#0284C7',
         };
       case 'COMPLETED':
         return {
@@ -353,8 +476,21 @@ export default function BookingListScreen() {
           textColor: '#15803D',
           dotColor: '#10B981',
         };
-      case 'CANCELLED':
       case 'REJECTED':
+        return {
+          label: 'Bị từ chối',
+          bgColor: '#FEE2E2',
+          textColor: '#B91C1C',
+          dotColor: '#EF4444',
+        };
+      case 'PROVIDER_TIMEOUT':
+        return {
+          label: 'Hết hạn nhận đơn',
+          bgColor: '#FEE2E2',
+          textColor: '#B91C1C',
+          dotColor: '#EF4444',
+        };
+      case 'CANCELLED':
         return {
           label: 'Đã hủy',
           bgColor: '#FEE2E2',
@@ -402,15 +538,52 @@ export default function BookingListScreen() {
   };
 
   const handleChat = (item: BookingListItem) => {
-    router.push('/(customer)/(tabs)/messages');
+    const isClosed = item.status === 'COMPLETED' || item.status === 'CANCELLED';
+    if (isClosed) {
+      Alert.alert('Thông báo', 'Dịch vụ đã hoàn tất nghiệm thu. Phòng chat đã đóng.');
+      return;
+    }
+    if (['PENDING', 'PENDING_PAYMENT', 'PENDING_PROVIDER_ACCEPTANCE'].includes(item.status)) {
+      Alert.alert(
+        'Chưa thể mở chat',
+        'Phòng chat chỉ mở sau khi đơn đặt lịch thành công và được đối tác chấp nhận.'
+      );
+      return;
+    }
+
+    const provider = item.provider_profiles?.users;
+    const pet = item.booking_pets?.[0]?.pets;
+    const service = item.booking_pets?.[0]?.booking_services?.[0];
+
+    router.push({
+      pathname: '/(customer)/chat/room',
+      params: {
+        bookingId: item.id,
+        partnerName: provider?.fullName,
+        partnerAvatar: provider?.avatarUrl,
+        partnerPhone: (provider as any)?.phone || (provider as any)?.phoneNumber,
+        petName: pet?.name || item.booking_pets?.[0]?.pet_name,
+        serviceTitle: service?.service_name,
+        isActive: 'true',
+      },
+    });
   };
 
+
+  const [isConfirmingId, setIsConfirmingId] = useState<string | null>(null);
+
   const handleReview = (item: BookingListItem) => {
-    Alert.alert(
-      'Đánh giá dịch vụ',
-      `Bạn đang mở form đánh giá 5 sao cho ${item.provider_profiles?.users?.fullName || 'chuyên viên'}.`,
-      [{ text: 'Đóng' }, { text: 'Gửi 5 Sao ⭐', onPress: () => Alert.alert('Cảm ơn bạn đã đánh giá!') }]
-    );
+    router.push({
+      pathname: '/(customer)/bookings/customer_rating',
+      params: { id: item.id, bookingData: JSON.stringify(item) },
+    });
+  };
+
+  const handleNavigateToReview = (item: BookingListItem) => {
+    router.push({
+      pathname: '/(customer)/bookings/customer_review_service',
+      params: { id: item.id, bookingData: JSON.stringify(item) },
+    });
   };
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -549,22 +722,33 @@ export default function BookingListScreen() {
             <View style={styles.listWrap}>
               {filteredBookings.map((item) => {
                 const statusBadge = getStatusBadge(item.status);
-                const pet = item.booking_pets?.[0]?.pets;
-                const service =
-                  item.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services;
+                const petName =
+                  item.booking_pets?.[0]?.pets?.name ||
+                  item.booking_pets?.[0]?.pet_name ||
+                  'Bé cưng';
+                const petBreed =
+                  item.booking_pets?.[0]?.pets?.breed ||
+                  item.booking_pets?.[0]?.breed ||
+                  '';
+                const serviceTitle =
+                  item.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services?.title ||
+                  item.booking_pets?.[0]?.booking_services?.[0]?.provider_services?.services?.name ||
+                  item.booking_pets?.[0]?.booking_services?.[0]?.service_name ||
+                  'Gói chăm sóc cao cấp';
                 const provider = item.provider_profiles?.users;
-                const price = item.grand_total || item.total_amount || 0;
+                const price = getBookingPrice(item);
+                const bookingCode = getBookingCode(item);
+                const formattedDate = formatBookingDate(item);
+                const formattedTime = formatBookingTime(item);
+                const formattedCreatedTime = formatCreatedTime(item);
 
                 return (
                   <View key={item.id} style={styles.bookingCard}>
                     {/* Card Header */}
                     <View style={styles.cardHeader}>
-                      <View style={styles.codeRow}>
-                        <Text style={styles.codeText}>#{item.booking_code || 'BK-2026'}</Text>
-                        <View style={styles.dotSeparator} />
-                        <Text style={styles.dateSmallText}>
-                          {item.booking_date || '20/09/2026'}
-                        </Text>
+                      <View style={styles.createdTimeRow}>
+                        <Clock size={13} color={theme.colors.text.secondary} />
+                        <Text style={styles.createdTimeText}>{formattedCreatedTime}</Text>
                       </View>
 
                       <View
@@ -617,7 +801,7 @@ export default function BookingListScreen() {
                               {item.provider_profiles?.rating || 4.9}
                             </Text>
                             <Text style={styles.locationTypeText}>
-                              • {item.location_type === 'HOME_VISIT' ? 'Tại nhà' : 'Tại Salon'}
+                              • {item.location_type === 'STUDIO' ? 'Tại Salon' : 'Tại nhà'}
                             </Text>
                           </View>
                         </View>
@@ -626,12 +810,12 @@ export default function BookingListScreen() {
                       {/* Service & Pet Details */}
                       <View style={styles.serviceBox}>
                         <Text style={styles.serviceTitle} numberOfLines={2}>
-                          {service?.title || service?.name || 'Gói chăm sóc cao cấp'}
+                          {serviceTitle}
                         </Text>
                         <View style={styles.petTagRow}>
                           <View style={styles.petTag}>
                             <Text style={styles.petTagText}>
-                              🐾 {pet?.name || 'Milo'} ({pet?.breed || 'Thú cưng'})
+                              🐾 {petName}{petBreed ? ` (${petBreed})` : ''}
                             </Text>
                           </View>
                         </View>
@@ -642,7 +826,7 @@ export default function BookingListScreen() {
                         <View style={styles.timeWrap}>
                           <Clock size={14} color={theme.colors.primary.navy} />
                           <Text style={styles.timeText}>
-                            {item.booking_date || '20/09/2026'} · {item.start_time || '10:30 AM'}
+                            {formattedDate} · {formattedTime}
                           </Text>
                         </View>
                         <Text style={styles.priceText}>{formatCurrency(price)} đ</Text>
@@ -651,7 +835,7 @@ export default function BookingListScreen() {
 
                     {/* Card Actions Footer */}
                     <View style={styles.cardActionsFooter}>
-                      {item.status === 'PENDING' || item.status === 'ACCEPTED' ? (
+                      {isUpcoming(item.status) ? (
                         <>
                           <TouchableOpacity
                             style={styles.cancelActionBtn}
@@ -661,16 +845,38 @@ export default function BookingListScreen() {
                             <Text style={styles.cancelActionText}>Hủy đơn</Text>
                           </TouchableOpacity>
 
+                          {item.status === 'ACCEPTED' && (
+                            <TouchableOpacity
+                              style={styles.chatActionBtn}
+                              onPress={() => handleChat(item)}
+                              activeOpacity={0.7}
+                            >
+                              <MessageSquare size={14} color={theme.colors.primary.navy} />
+                              <Text style={styles.chatActionText}>Nhắn tin</Text>
+                            </TouchableOpacity>
+                          )}
+                        </>
+                      ) : item.status === 'AWAITING_CUSTOMER_CONFIRMATION' ? (
+                        <>
                           <TouchableOpacity
                             style={styles.chatActionBtn}
                             onPress={() => handleChat(item)}
                             activeOpacity={0.7}
                           >
-                            <MessageSquare size={14} color={theme.colors.primary.navy} />
-                            <Text style={styles.chatActionText}>Nhắn tin</Text>
+                            <Phone size={14} color={theme.colors.primary.navy} />
+                            <Text style={styles.chatActionText}>Liên hệ</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.confirmActionBtn}
+                            onPress={() => handleNavigateToReview(item)}
+                            activeOpacity={0.85}
+                          >
+                            <CheckCircle2 size={14} color="white" />
+                            <Text style={styles.confirmActionText}>Nghiệm thu</Text>
                           </TouchableOpacity>
                         </>
-                      ) : item.status === 'IN_PROGRESS' ? (
+                      ) : isInProgress(item.status) ? (
                         <>
                           <View style={styles.liveIndicator}>
                             <View style={styles.livePulseDot} />
@@ -686,15 +892,29 @@ export default function BookingListScreen() {
                             <Text style={styles.callActionText}>Liên hệ</Text>
                           </TouchableOpacity>
                         </>
-                      ) : item.status === 'COMPLETED' ? (
+                      ) : isCompleted(item.status) ? (
                         <>
                           <TouchableOpacity
-                            style={styles.reviewActionBtn}
+                            style={[
+                              styles.reviewActionBtn,
+                              item.reviews && item.reviews.length > 0 ? { borderColor: '#A7F3D0', backgroundColor: '#ECFDF5' } : null,
+                            ]}
                             onPress={() => handleReview(item)}
                             activeOpacity={0.7}
                           >
-                            <Star size={14} color="#D97706" />
-                            <Text style={styles.reviewActionText}>Đánh giá</Text>
+                            <Star
+                              size={14}
+                              color={item.reviews && item.reviews.length > 0 ? '#059669' : '#D97706'}
+                              fill={item.reviews && item.reviews.length > 0 ? '#059669' : 'transparent'}
+                            />
+                            <Text
+                              style={[
+                                styles.reviewActionText,
+                                item.reviews && item.reviews.length > 0 ? { color: '#059669' } : null,
+                              ]}
+                            >
+                              {item.reviews && item.reviews.length > 0 ? 'Đã đánh giá' : 'Đánh giá'}
+                            </Text>
                           </TouchableOpacity>
 
                           <TouchableOpacity
@@ -947,25 +1167,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.subdued,
   },
-  codeRow: {
+  createdTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
-  codeText: {
+  createdTimeText: {
     fontSize: 13,
-    fontWeight: '800',
-    color: theme.colors.primary.navy,
-  },
-  dotSeparator: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: theme.colors.text.muted,
-  },
-  dateSmallText: {
-    fontSize: 11,
-    color: theme.colors.text.muted,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
   },
   statusPill: {
     flexDirection: 'row',
@@ -1141,6 +1351,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#8B5CF6',
   },
   callActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'white',
+  },
+  confirmActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: theme.radius.lg,
+    backgroundColor: '#0284C7',
+  },
+  confirmActionText: {
     fontSize: 12,
     fontWeight: '700',
     color: 'white',

@@ -26,9 +26,13 @@ export class CompleteBookingUseCase {
     }
 
     const assignedProviderUserId =
+      booking.provider_profiles?.user_id ||
       booking.provider_working_slots?.provider_working_days?.provider_profiles?.user_id;
 
-    if (assignedProviderUserId !== providerUserId) {
+    if (
+      (assignedProviderUserId && assignedProviderUserId !== providerUserId) &&
+      booking.provider_id !== providerUserId
+    ) {
       throw new ForbiddenException('Bạn không phải là đối tác được chỉ định cho đơn đặt lịch này.');
     }
 
@@ -60,6 +64,7 @@ export class CompleteBookingUseCase {
             uploaded_by: providerUserId,
             media_url: media.mediaUrl,
             media_type: media.mediaType || 'IMAGE',
+            category: media.category || 'CHECK_OUT',
             caption: media.caption || 'Ảnh chụp hoàn tất dịch vụ',
           })),
           tx,
@@ -74,8 +79,13 @@ export class CompleteBookingUseCase {
         );
       }
 
-      // 3. Update Booking status to COMPLETED
+      // 3. Update Booking status to next status
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
+
+      // 3.5 Deactivate Chat Room if completed
+      if (nextStatus === 'COMPLETED') {
+        await this.bookingRepo.updateChatRoomStatus(bookingId, false, tx);
+      }
 
       // 4. Add Status Log
       await this.bookingRepo.addBookingStatusLog(

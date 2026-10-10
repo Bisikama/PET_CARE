@@ -20,6 +20,7 @@ import { BookingCareAssurance } from '../components/BookingCareAssurance';
 import { BookingBottomActions } from '../components/BookingBottomActions';
 import { SelectablePet } from '../types/booking.types';
 import { petApi } from '@/features/pets/api/petApi';
+import { getPetAvatar } from '@/features/pets/utils/petAvatars';
 import { useBookingFlow } from '../context/BookingContext';
 
 export default function SelectPetScreen() {
@@ -71,12 +72,7 @@ export default function SelectPetScreen() {
             age: p.age || 2,
             weight: Number(p.weight) || 5,
             gender: (p.gender as any) || 'Male',
-            avatarUrl:
-              p.avatarUrl ||
-              p.avatar_url ||
-              (p.species === 'Cat'
-                ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=300&q=80'
-                : 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=300&q=80'),
+            avatarUrl: getPetAvatar(p),
             isVerified: true,
           }));
           setPets(mapped);

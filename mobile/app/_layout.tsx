@@ -66,7 +66,7 @@ function RootLayoutNav() {
 }
 
 function MainLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -74,15 +74,31 @@ function MainLayout() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inCustomerGroup = segments[0] === '(customer)';
+    const inProviderGroup = segments[0] === '(provider)';
     
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to login
       router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // Redirect to app
-      router.replace('/(customer)/(tabs)/home');
+    } else if (isAuthenticated) {
+      const isProvider = user?.role === 'PROVIDER';
+
+      if (inAuthGroup) {
+        // Redirect to appropriate landing screen after login
+        if (isProvider) {
+          router.replace('/(provider)/(tabs)/jobs' as any);
+        } else {
+          router.replace('/(customer)/(tabs)/home' as any);
+        }
+      } else if (isProvider && inCustomerGroup) {
+        // Redirect provider away from customer screens
+        router.replace('/(provider)/(tabs)/jobs' as any);
+      } else if (!isProvider && inProviderGroup) {
+        // Redirect customer away from provider screens
+        router.replace('/(customer)/(tabs)/home' as any);
+      }
     }
-  }, [isAuthenticated, isLoading, segments, router]);
+  }, [isAuthenticated, isLoading, user, segments, router]);
 
   return (
     <Stack>

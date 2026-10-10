@@ -37,15 +37,131 @@ export default function ScheduleTimeScreen() {
     petWeight?: string;
   }>();
 
-  const today = new Date();
-  const [selectedDay, setSelectedDay] = useState<number>(today.getDate());
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const maxBookingDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, []);
+
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    // If it's late in the day (after 20:00), default to tomorrow
+    const d = new Date();
+    if (d.getHours() >= 20) {
+      d.setDate(d.getDate() + 1);
+    }
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  const [viewDate, setViewDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
   const [timeSlots, setTimeSlots] = useState<TimeSlotOption[]>(defaultTimeSlots);
-  const [selectedSlotId, setSelectedSlotId] = useState<string>(
-    draft.slotId || defaultTimeSlots[0]?.id || 'b23b1234-abcd-4234-8f02-000000000001'
-  );
-  const [selectedSlotTime, setSelectedSlotTime] = useState<string>(
-    draft.timeSlot || defaultTimeSlots[0]?.time || '07:00 - 09:00'
-  );
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('');
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('');
+
+  const canPrevMonth = useMemo(() => {
+    return (
+      viewDate.getFullYear() > today.getFullYear() ||
+      viewDate.getMonth() > today.getMonth()
+    );
+  }, [viewDate, today]);
+
+  const canNextMonth = useMemo(() => {
+    return (
+      viewDate.getFullYear() < maxBookingDate.getFullYear() ||
+      viewDate.getMonth() < maxBookingDate.getMonth()
+    );
+  }, [viewDate, maxBookingDate]);
+
+  const handlePrevMonth = () => {
+    if (!canPrevMonth) return;
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      next.setMonth(next.getMonth() - 1);
+      return next;
+    });
+  };
+
+  const handleNextMonth = () => {
+    if (!canNextMonth) return;
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      next.setMonth(next.getMonth() + 1);
+      return next;
+    });
+  };
+
+  const isToday = useMemo(() => {
+    const now = new Date();
+    return (
+      selectedDate.getFullYear() === now.getFullYear() &&
+      selectedDate.getMonth() === now.getMonth() &&
+      selectedDate.getDate() === now.getDate()
+    );
+  }, [selectedDate]);
+
+  // Process time slots to mark past slots on today as isPast & isAvailable: false
+  const processedTimeSlots = useMemo(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    return timeSlots.map((ts) => {
+      let isAvailable = ts.isAvailable !== false;
+      let isPast = false;
+
+      if (isToday && ts.startTime) {
+        const [slotHour, slotMin] = ts.startTime.split(':').map(Number);
+        // Slot is in the past if slotHour < currentHour or within 15 min buffer
+        if (slotHour < currentHour || (slotHour === currentHour && (slotMin || 0) <= currentMinute + 15)) {
+          isAvailable = false;
+          isPast = true;
+        }
+      }
+
+      return {
+        ...ts,
+        isAvailable,
+        isPast,
+      };
+    });
+  }, [isToday, timeSlots]);
+
+  // Keep selected slot pointing to a valid future slot
+  useEffect(() => {
+    const currentSelected = processedTimeSlots.find(
+      (s) => s.id === selectedSlotId || s.time === selectedSlotTime
+    );
+
+    if (!currentSelected || !currentSelected.isAvailable || (currentSelected as any).isPast) {
+      const firstValid = processedTimeSlots.find((s) => s.isAvailable && !(s as any).isPast);
+      if (firstValid) {
+        setSelectedSlotId(firstValid.id);
+        setSelectedSlotTime(firstValid.time);
+      } else if (isToday) {
+        // No future slots left today! Move to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        setSelectedDate(tomorrow);
+        if (tomorrow.getMonth() !== viewDate.getMonth()) {
+          setViewDate(new Date(tomorrow.getFullYear(), tomorrow.getMonth(), 1));
+        }
+      }
+    }
+  }, [processedTimeSlots, selectedSlotId, selectedSlotTime, isToday, viewDate]);
 
   // Fetch real time slots from backend DB
   useEffect(() => {
@@ -65,12 +181,6 @@ export default function ScheduleTimeScreen() {
             isAvailable: true,
           }));
           setTimeSlots(mapped);
-          
-          // If no slot chosen or previously chosen slot not in list, pick the first
-          if (!draft.timeSlot && mapped[0]) {
-            setSelectedSlotTime(mapped[0].time);
-            setSelectedSlotId(mapped[0].id);
-          }
         }
       } catch (err) {
         // Fallback to defaultTimeSlots
@@ -92,24 +202,23 @@ export default function ScheduleTimeScreen() {
 
   // Compute selected full date string (YYYY-MM-DD)
   const selectedDateStr = useMemo(() => {
-    const d = new Date();
-    // If selected day is in current month or next
-    const targetDate = new Date(d.getFullYear(), d.getMonth(), selectedDay);
-    const yyyy = targetDate.getFullYear();
-    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(targetDate.getDate()).padStart(2, '0');
+    const yyyy = selectedDate.getFullYear();
+    const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(selectedDate.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
-  }, [selectedDay]);
+  }, [selectedDate]);
 
   const monthName = useMemo(() => {
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
+    const month = viewDate.getMonth() + 1;
+    const year = viewDate.getFullYear();
     return `Tháng ${month}, ${year}`;
-  }, []);
+  }, [viewDate]);
 
   const dateSlotText = useMemo(() => {
-    return `Ngày ${selectedDay} · ${selectedSlotTime}`;
-  }, [selectedDay, selectedSlotTime]);
+    const day = selectedDate.getDate();
+    const month = selectedDate.getMonth() + 1;
+    return `Ngày ${day}/${month} · ${selectedSlotTime}`;
+  }, [selectedDate, selectedSlotTime]);
 
   const handleSelectSlot = (time: string, slot?: TimeSlotOption) => {
     setSelectedSlotTime(time);
@@ -141,7 +250,7 @@ export default function ScheduleTimeScreen() {
         petBreed: params.petBreed || draft.petBreed,
         petAvatarUrl: petAvatar,
         petWeight: params.petWeight || (draft.petWeight ? `${draft.petWeight} kg` : undefined),
-        day: selectedDay.toString(),
+        day: selectedDate.getDate().toString(),
         date: selectedDateStr,
         slotTime: selectedSlotTime,
         slotId: selectedSlotId,
@@ -236,13 +345,25 @@ export default function ScheduleTimeScreen() {
         {/* 3. Monthly Calendar Picker */}
         <BookingCalendar
           currentMonthName={monthName}
-          selectedDay={selectedDay}
-          onSelectDay={setSelectedDay}
+          viewDate={viewDate}
+          selectedDate={selectedDate}
+          onSelectDate={(newDate) => {
+            setSelectedDate(newDate);
+            if (newDate.getMonth() !== viewDate.getMonth()) {
+              setViewDate(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
+            }
+          }}
+          minDate={today}
+          maxDate={maxBookingDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          canPrevMonth={canPrevMonth}
+          canNextMonth={canNextMonth}
         />
 
         {/* 4. Available Times Slots */}
         <TimeSlotGrid
-          slots={timeSlots}
+          slots={processedTimeSlots}
           selectedSlotTime={selectedSlotTime}
           onSelectSlot={handleSelectSlot}
           providerName={providerName}

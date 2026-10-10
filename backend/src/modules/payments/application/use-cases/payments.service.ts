@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 import * as qs from 'qs';
 import { PrismaService } from '../../../../database/prisma.service';
@@ -18,6 +19,40 @@ export class PaymentsService {
     private readonly subscriptionsService: SubscriptionsService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  /**
+   * Lấy tỷ lệ hoa hồng nền tảng (COMMISSION_RATE)
+   * Thứ tự ưu tiên: .env -> system_configs (DB) -> mặc định 10% (0.1)
+   */
+  async getCommissionRate(tx?: Prisma.TransactionClient): Promise<number> {
+    const envCommission = this.configService.get<string>('COMMISSION_RATE');
+    let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
+    if (isNaN(commissionRate)) {
+      const prismaClient = tx || this.prisma;
+      const config = await prismaClient.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+      commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+    }
+    return commissionRate;
+  }
+
+  /**
+   * Tính toán và xem trước phí hoa hồng / tiền thực nhận của mỗi đơn
+   */
+  async calculateCommissionPreview(amount: number) {
+    if (isNaN(amount) || amount < 0) {
+      throw new BadRequestException('Số tiền không hợp lệ');
+    }
+    const commissionRate = await this.getCommissionRate();
+    const platformFee = Math.round(amount * commissionRate);
+    const providerAmount = Math.max(0, amount - platformFee);
+    return {
+      amount,
+      commissionRate,
+      commissionPercent: Math.round(commissionRate * 100),
+      platformFee,
+      providerAmount,
+    };
+  }
 
   /**
    * Tạo URL thanh toán qua VNPay
@@ -98,10 +133,7 @@ export class PaymentsService {
       'VNP_URL',
       'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
     );
-    const returnUrl = this.configService.get<string>(
-      'VNP_RETURN_URL',
-      'http://localhost:3000/api/payments/vnpay-return',
-    );
+    const returnUrl = this.configService.getOrThrow<string>('VNP_RETURN_URL');
 
     const date = new Date();
     const createDate = this.formatDate(date);
@@ -227,13 +259,8 @@ export class PaymentsService {
         if (rspCode === '00') {
           confirmedPayment = payment;
 
-          // Lấy cấu hình phí hoa hồng (COMMISSION_RATE) từ .env trước, sau đó fallback DB, mặc định 10%
-          const envCommission = this.configService.get<string>('COMMISSION_RATE');
-          let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
-          if (isNaN(commissionRate)) {
-            const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
-            commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
-          }
+          // Lấy cấu hình phí hoa hồng (COMMISSION_RATE)
+          const commissionRate = await this.getCommissionRate(tx);
           const platformFee = Math.round(Number(payment.amount) * commissionRate);
           const providerAmount = Number(payment.amount) - platformFee;
 
@@ -422,13 +449,8 @@ export class PaymentsService {
         }
       }
 
-      // Lấy cấu hình phí hoa hồng (COMMISSION_RATE) từ .env trước, sau đó fallback DB, mặc định 10%
-      const envCommission = this.configService.get<string>('COMMISSION_RATE');
-      let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
-      if (isNaN(commissionRate)) {
-        const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
-        commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
-      }
+      // Lấy cấu hình phí hoa hồng (COMMISSION_RATE)
+      const commissionRate = await this.getCommissionRate(tx);
       const platformFee = Math.round(finalAmount * commissionRate);
       const providerAmount = finalAmount - platformFee;
 
@@ -483,6 +505,8 @@ export class PaymentsService {
           status: 'PAID_HELD_IN_ESCROW',
           transaction_code: `WALLET_${Date.now()}`,
           paid_at: new Date(),
+          platform_fee: platformFee,
+          provider_amount: providerAmount,
         },
         create: {
           booking_id: bookingId,
@@ -672,7 +696,9 @@ export class PaymentsService {
     
     const requestType = 'captureWallet';
     const orderInfo = `PetCare Booking ${bookingId}${promotionCode ? ` promo ${promotionCode}` : ''}`;
-    const backendUrl = this.configService.get<string>('BACKEND_URL', 'http://localhost:3000');
+    const backendUrl = this.configService
+      .getOrThrow<string>('BACKEND_URL')
+      .replace(/\/$/, '');
     const returnUrl = `${backendUrl}/api/payments/momo-return`;
     const ipnUrl = `${backendUrl}/api/payments/momo-ipn`;
     const extraData = promotionCode ? `promotionCode=${promotionCode}` : '';
@@ -795,12 +821,20 @@ export class PaymentsService {
         if (String(resultCode) === '0') { // 0 là thành công của Momo
           confirmedPayment = payment;
 
+          // Lấy cấu hình phí hoa hồng (COMMISSION_RATE)
+          const rawAmount = payment.amount != null ? Number(payment.amount) : (payment.bookings?.total_price != null ? Number(payment.bookings.total_price) : Number(amount));
+          const commissionRate = await this.getCommissionRate(tx);
+          const platformFee = Math.round(rawAmount * commissionRate);
+          const providerAmount = Math.max(0, rawAmount - platformFee);
+
           await tx.payments.update({
             where: { id: payment.id },
             data: {
               status: 'PAID_HELD_IN_ESCROW',
               paid_at: new Date(),
               idempotency_key: String(transId),
+              platform_fee: platformFee,
+              provider_amount: providerAmount,
             },
           });
 
@@ -822,10 +856,10 @@ export class PaymentsService {
               if (providerWallet) {
                 await this.walletsService.processTransaction(
                   providerWallet.id,
-                  Number(payment.bookings.total_price),
+                  providerAmount,
                   'ESCROW_HOLD',
                   payment.booking_id,
-                  'Ký quỹ thanh toán từ Momo',
+                  'Ký quỹ thanh toán từ Momo (đã trừ phí hoa hồng)',
                   tx,
                 );
               }

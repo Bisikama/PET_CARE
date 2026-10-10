@@ -148,10 +148,15 @@ export class CreateBookingRequestUseCase {
 
     const totalPrice = Math.max(0, subtotal + travelFee - discountAmount);
 
-    // Calculate dates & times
-    const dateStr = workDate.toISOString().split('T')[0];
-    const estimatedStartAt = new Date(`${dateStr}T${slot.time_slots.start_time}:00`);
-    const estimatedEndAt = new Date(`${dateStr}T${slot.time_slots.end_time}:00`);
+    // Calculate dates & times with explicit Vietnam timezone (+07:00)
+    let dateStr = workDate.toISOString().split('T')[0];
+    try {
+      dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(workDate);
+    } catch {
+      // fallback to workDate ISO date
+    }
+    const estimatedStartAt = new Date(`${dateStr}T${slot.time_slots.start_time}:00+07:00`);
+    const estimatedEndAt = new Date(`${dateStr}T${slot.time_slots.end_time}:00+07:00`);
 
     if (estimatedStartAt <= new Date()) {
       throw new BadRequestException('Thời gian bắt đầu ca làm việc phải ở tương lai.');

@@ -52,6 +52,7 @@ describe('PaymentsService', () => {
 
   const mockConfig = {
     get: jest.fn().mockReturnValue('mock-value'),
+    getOrThrow: jest.fn().mockReturnValue('https://backend.example.test'),
   };
 
   beforeEach(async () => {
@@ -332,10 +333,10 @@ describe('PaymentsService', () => {
       );
       expect(mockWalletsService.processTransaction).toHaveBeenCalledWith(
         'wallet-1',
-        100000,
+        90000,
         'ESCROW_HOLD',
         'booking-123',
-        'Ký quỹ thanh toán từ Momo',
+        'Ký quỹ thanh toán từ Momo (đã trừ phí hoa hồng)',
         mockPrisma
       );
     });

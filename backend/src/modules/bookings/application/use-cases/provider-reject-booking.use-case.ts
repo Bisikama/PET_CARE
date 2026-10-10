@@ -26,38 +26,50 @@ export class ProviderRejectBookingUseCase {
       throw new NotFoundException(`Booking with ID ${bookingId} not found`);
     }
 
-    // Load provider profile to verify user owns the booking
-    const slot = await this.bookingRepo.findProviderWorkingSlotById(
-      booking.provider_working_slot_id,
-    );
-    if (!slot) {
-      throw new NotFoundException('Working slot associated with this booking not found');
+    // 1. Verify provider authorization defensively
+    let slot: any = null;
+    if (booking.provider_working_slot_id) {
+      slot = await this.bookingRepo.findProviderWorkingSlotById(
+        booking.provider_working_slot_id,
+      );
+      if (!slot) {
+        throw new NotFoundException('Working slot associated with this booking not found');
+      }
     }
 
-    const providerProfile = slot.provider_working_days.provider_profiles;
-    if (providerProfile.user_id !== providerUserId) {
+    const slotProviderUserId =
+      slot?.provider_working_days?.provider_profiles?.user_id;
+    const bookingProviderUserId = booking.provider_profiles?.user_id;
+    const isAssignedProvider =
+      (bookingProviderUserId && bookingProviderUserId === providerUserId) ||
+      (slotProviderUserId && slotProviderUserId === providerUserId) ||
+      booking.provider_id === providerUserId;
+
+    if (!isAssignedProvider) {
       throw new ForbiddenException('Bạn không phải là đối tác được chỉ định cho yêu cầu này.');
     }
 
-    // Determine next state
+    // 2. Determine next state
     const nextStatus = this.stateMachine.providerReject(booking.status);
 
     const result = await this.unitOfWork.transaction(async (tx) => {
-      // 1. Update Booking status to REJECTED
+      // 2.1 Update Booking status to REJECTED
       await this.bookingRepo.updateBookingStatus(bookingId, nextStatus, tx);
 
-      // 2. Update Slot status to AVAILABLE
-      await this.bookingRepo.updateWorkingSlotStatus(
-        booking.provider_working_slot_id,
-        'AVAILABLE',
-        null,
-        tx,
-      );
+      // 2.2 Update Slot status to AVAILABLE if slot is linked
+      if (booking.provider_working_slot_id) {
+        await this.bookingRepo.updateWorkingSlotStatus(
+          booking.provider_working_slot_id,
+          'AVAILABLE',
+          null,
+          tx,
+        );
+      }
 
-      // 3. Log event
+      // 2.3 Log event
       await this.bookingRepo.addBookingEvent(
         bookingId,
-        providerProfile.user_id,
+        providerUserId,
         'PROVIDER_REJECTED',
         'Booking request rejected by provider',
         tx,

@@ -9,6 +9,7 @@ import { ROUTES } from '@/lib/constants';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
 import { MeModal, CustomerAddressModal, ProviderModal } from '@/features/me';
 import { PetModal } from '@/features/pet';
+import { GlobalChatButton } from '@/features/chat';
 
 export default function PrivateLayout({
   children,
@@ -67,6 +68,7 @@ export default function PrivateLayout({
       <CustomerAddressModal />
       <PetModal />
       <ProviderModal />
+      <GlobalChatButton />
     </div>
   );
 }

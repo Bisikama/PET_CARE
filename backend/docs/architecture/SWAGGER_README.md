@@ -1,7 +1,7 @@
 # 📖 Hướng Dẫn Sử Dụng và Thêm Mới API vào Swagger
 
 Dự án Pet Care Backend đã được tích hợp sẵn Swagger để tự động tạo tài liệu API.
-Bạn có thể truy cập để test API trực tiếp tại: **`http://localhost:3000/api/docs`** (chạy server bằng `npm run start:dev`).
+Bạn có thể truy cập để test API trực tiếp tại: **`${BACKEND_URL}/api/docs`**, trong đó `BACKEND_URL` được cấu hình trong `.env`.
 
 Để giữ cho tài liệu Swagger luôn gọn gàng, dễ đọc và không bị xung đột, các thành viên trong team vui lòng tuân thủ các bước sau khi tạo một Controller, API hay DTO mới.
 

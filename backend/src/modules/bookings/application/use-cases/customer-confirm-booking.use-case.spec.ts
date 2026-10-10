@@ -13,6 +13,7 @@ describe('CustomerConfirmBookingUseCase', () => {
     bookingRepo = {
       findBookingById: jest.fn(),
       updateBookingStatus: jest.fn(),
+      updateChatRoomStatus: jest.fn(),
       addBookingStatusLog: jest.fn(),
       addBookingEvent: jest.fn(),
     };

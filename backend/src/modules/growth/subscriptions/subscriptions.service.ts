@@ -42,7 +42,7 @@ export class SubscriptionsService {
     const tmnCode = this.configService.get<string>('VNP_TMN_CODE', 'DUMMY_TMN_CODE');
     const secretKey = this.configService.get<string>('VNP_HASH_SECRET', 'DUMMY_SECRET');
     const vnpUrl = this.configService.get<string>('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
-    const returnUrl = this.configService.get<string>('VNP_RETURN_URL', 'http://localhost:3000/api/payments/vnpay-return');
+    const returnUrl = this.configService.getOrThrow<string>('VNP_RETURN_URL');
 
     const date = new Date();
     const createDate = this.formatDate(date);

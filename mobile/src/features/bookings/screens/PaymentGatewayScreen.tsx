@@ -156,8 +156,17 @@ export default function PaymentGatewayScreen() {
   };
 
   const handlePay = async () => {
-    if (!petId || !serviceId || !addressId || !providerWorkingSlotId) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng hoàn tất các bước chọn thú cưng, địa chỉ và lịch trước khi thanh toán.');
+    const missing: string[] = [];
+    if (!petId) missing.push('thú cưng');
+    if (!serviceId) missing.push('dịch vụ');
+    if (!addressId) missing.push('địa chỉ nhận dịch vụ');
+    if (!providerWorkingSlotId) missing.push('ca làm việc chuyên viên');
+
+    if (missing.length > 0) {
+      Alert.alert(
+        'Thiếu thông tin đặt lịch',
+        `Đơn hẹn chưa đủ thông tin: ${missing.join(', ')}. Vui lòng hoàn tất trước khi thanh toán.`
+      );
       return;
     }
 
@@ -252,7 +261,24 @@ export default function PaymentGatewayScreen() {
         apiError?.response?.data?.message ||
         apiError?.message ||
         'Đã xảy ra lỗi khi tạo đơn hoặc thanh toán. Vui lòng thử lại.';
-      Alert.alert('Thanh toán chưa hoàn tất', msg);
+
+      if (typeof msg === 'string' && (msg.includes('tương lai') || msg.includes('Thời gian bắt đầu'))) {
+        Alert.alert(
+          'Khung giờ không hợp lệ',
+          'Khung giờ bạn chọn đã qua hoặc không còn khả dụng trong tương lai. Vui lòng chọn lại ngày hoặc giờ hẹn mới.',
+          [
+            {
+              text: 'Chọn lại giờ hẹn',
+              onPress: () => {
+                router.replace('/(customer)/bookings/schedule-time' as any);
+              },
+            },
+            { text: 'Đóng', style: 'cancel' },
+          ]
+        );
+      } else {
+        Alert.alert('Thanh toán chưa hoàn tất', msg);
+      }
     } finally {
       setIsProcessing(false);
     }

@@ -5,6 +5,7 @@ import { NotificationsService } from '../../../../growth/notifications/notificat
 import { message_type } from '@prisma/client';
 import * as crypto from 'crypto';
 import { ChatGateway } from '../../chat.gateway';
+import { ALLOWED_CHAT_STATUSES } from './get-chat-rooms.use-case';
 
 @Injectable()
 export class SendMessageUseCase {
@@ -27,6 +28,7 @@ export class SendMessageUseCase {
       include: {
         users_chat_rooms_customer_idTousers: { select: { fullName: true } },
         users_chat_rooms_provider_user_idTousers: { select: { fullName: true } },
+        bookings: { select: { status: true } },
       },
     });
 
@@ -38,8 +40,8 @@ export class SendMessageUseCase {
       throw new ForbiddenException('Bạn không có quyền tham gia phòng chat này');
     }
 
-    if (!room.is_active) {
-      throw new ForbiddenException('Phòng chat đã bị khóa (Booking đã hoàn thành hoặc hủy)');
+    if (!room.is_active || (room.bookings && !ALLOWED_CHAT_STATUSES.includes(room.bookings.status))) {
+      throw new ForbiddenException('Phòng chat đã bị khóa (Dịch vụ đã hoàn tất nghiệm thu hoặc chưa sẵn sàng)');
     }
 
     // 2. Upload file if exists
@@ -96,6 +98,15 @@ export class SendMessageUseCase {
         messageType: msgType,
       },
     }).catch(() => {});
+
+    // 5. Broadcast real-time message via WebSocket to the room
+    try {
+      if (this.chatGateway?.server) {
+        this.chatGateway.server.to(roomId).emit('newMessage', message);
+      }
+    } catch (err) {
+      console.warn('ChatGateway broadcast failed:', err);
+    }
 
     return message;
   }

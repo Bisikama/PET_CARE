@@ -66,34 +66,70 @@ export class SearchMatchingProvidersUseCase {
       const price = Number(service.price);
 
       // Extract matching slots for the target date
-      const searchDateStr = new Date(dto.date).toISOString().split('T')[0];
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      let todayStr = now.toISOString().split('T')[0];
+      try {
+        todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(now);
+      } catch {}
 
-      // Find working day matching searchDateStr, or fallback to the closest working day
+      let searchDateStr = dto.date;
+      try {
+        searchDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(dto.date));
+      } catch {}
+
+      // Find working day matching searchDateStr, or fallback to the closest FUTURE working day
       const targetWorkingDay =
-        provider.provider_working_days.find(
-          (pwd: any) =>
-            new Date(pwd.work_date).toISOString().split('T')[0] === searchDateStr,
-        ) || provider.provider_working_days[0];
+        provider.provider_working_days.find((pwd: any) => {
+          let pwdDate = new Date(pwd.work_date).toISOString().split('T')[0];
+          try {
+            pwdDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(pwd.work_date));
+          } catch {}
+          return pwdDate === searchDateStr;
+        }) ||
+        provider.provider_working_days.find((pwd: any) => {
+          let pwdDate = new Date(pwd.work_date).toISOString().split('T')[0];
+          try {
+            pwdDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(pwd.work_date));
+          } catch {}
+          return pwdDate >= todayStr;
+        });
 
       let rawSlots = targetWorkingDay?.provider_working_slots || [];
       if (rawSlots.length === 0) {
-        // Collect all available slots from all working days of this provider
-        rawSlots = provider.provider_working_days.flatMap(
-          (pwd: any) => pwd.provider_working_slots || [],
-        );
+        // Collect available slots from future working days of this provider
+        const futureDays = provider.provider_working_days.filter((pwd: any) => {
+          let pwdDate = new Date(pwd.work_date).toISOString().split('T')[0];
+          try {
+            pwdDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(pwd.work_date));
+          } catch {}
+          return pwdDate >= todayStr;
+        });
+        rawSlots = futureDays.flatMap((pwd: any) => pwd.provider_working_slots || []);
+      }
+
+      let slotDateStr = searchDateStr;
+      if (targetWorkingDay?.work_date) {
+        try {
+          slotDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(targetWorkingDay.work_date));
+        } catch {}
       }
 
       const slots = rawSlots
         .filter((pws: any) => {
           if (!pws.time_slots) return false;
-          if (searchDateStr < todayStr) return false;
-          if (searchDateStr === todayStr) {
-            const [startHour, startMinute] = pws.time_slots.start_time.split(':').map(Number);
-            const slotStartTime = new Date(now);
-            slotStartTime.setHours(startHour, startMinute, 0, 0);
-            return slotStartTime > now;
+          if (pws.status && pws.status !== 'AVAILABLE') return false;
+
+          let thisSlotDate = slotDateStr;
+          if (pws.provider_working_days?.work_date) {
+            try {
+              thisSlotDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(pws.provider_working_days.work_date));
+            } catch {}
+          }
+
+          if (thisSlotDate < todayStr) return false;
+          if (thisSlotDate === todayStr) {
+            const slotStart = new Date(`${thisSlotDate}T${pws.time_slots.start_time}:00+07:00`);
+            return slotStart > now;
           }
           return true;
         })

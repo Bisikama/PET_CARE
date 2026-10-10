@@ -19,11 +19,38 @@ export interface RecommendedProvider {
   userId: string;
   fullName: string;
   avatarUrl: string | null;
+  coverUrl?: string | null;
   bio: string | null;
   rating: number;
   totalReviews: number;
   baseAddress: string | null;
+  yearsExperience?: number;
+  completedJobs?: number;
+  trustScore?: number;
+  providerType?: string;
+  services?: Array<{
+    id: string;
+    serviceId: string;
+    name: string;
+    category: string;
+    price: number;
+    petSpecies: string;
+    minWeight?: number;
+    maxWeight?: number;
+    customDescription?: string | null;
+  }>;
+  workingDays?: Array<{
+    dayOfWeek: number;
+    isActive: boolean;
+    slots: Array<{ id: string; startTime: string; endTime: string; status: string }>;
+  }>;
+  trustBadges?: Array<{
+    id: string;
+    badgeName: string;
+    badgeIcon: string;
+  }>;
 }
+
 
 export interface PricingRule {
   id: string;

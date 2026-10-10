@@ -7,6 +7,7 @@ import {
   StatusBar,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -169,6 +170,20 @@ export default function ReviewSummaryScreen() {
   };
 
   const handleConfirmBooking = () => {
+    const missing: string[] = [];
+    if (!petId) missing.push('Thú cưng');
+    if (!serviceId) missing.push('Dịch vụ');
+    if (!addressId) missing.push('Địa chỉ nhận dịch vụ');
+    if (!providerWorkingSlotId) missing.push('Ca làm việc chuyên viên');
+
+    if (missing.length > 0) {
+      Alert.alert(
+        'Thiếu thông tin đặt lịch',
+        `Đơn hẹn chưa đủ thông tin: ${missing.join(', ')}. Vui lòng quay lại kiểm tra trước khi tiếp tục.`
+      );
+      return;
+    }
+
     // Update booking context draft
     updateDraft({
       customerNote: notes,
