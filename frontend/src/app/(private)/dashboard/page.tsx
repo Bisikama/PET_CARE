@@ -92,11 +92,6 @@ function DashboardContent() {
           <AdminPromotionsManager key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
-        ) : adminTab === 'chat' ? (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">Trò Chuyện & Nhắn Tin Hệ Thống</h2>
-            <ChatWindowModal isOpen={true} onClose={() => router.push('/dashboard?tab=dashboard')} />
-          </div>
         ) : adminTab === 'arbitration' ? (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Trọng Tài Tranh Chấp & Khiếu Nại</h2>
@@ -140,18 +135,6 @@ function DashboardContent() {
           {providerTab === 'active-cases' && (
             <div className="space-y-6">
                <BookingActionDetail bookingId={activeBookingId} />
-            </div>
-          )}
-
-          {providerTab === 'chat' && (
-            <div className="space-y-6">
-              <ChatWindowModal 
-                isOpen={true} 
-                onClose={() => {
-                  router.push('/dashboard?tab=active-cases');
-                  router.refresh();
-                }} 
-              />
             </div>
           )}
 
@@ -323,20 +306,6 @@ function DashboardContent() {
     );
   }
 
-  if (searchParams.get('tab') === 'chat') {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <ChatWindowModal 
-          isOpen={true} 
-          onClose={() => {
-            router.push('/dashboard');
-            router.refresh();
-          }} 
-        />
-      </div>
-    );
-  }
-
   if (searchParams.get('tab') === 'wallet') {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -349,10 +318,13 @@ function DashboardContent() {
   return (
     <div className="space-y-8">
       {/* Welcome Banner */}
-      <div className="relative bg-[#031625] p-8 md:p-10 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/60">
-        {/* Glow effects */}
-        <div className="absolute right-0 top-0 w-96 h-96 bg-[radial-gradient(circle_at_top_right,rgba(240,192,90,0.12),transparent_60%)] pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-[radial-gradient(circle_at_bottom,rgba(20,184,166,0.04),transparent_60%)] pointer-events-none" />
+      <div className="relative bg-[#031625] py-14 px-8 md:px-10 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/60 min-h-[220px] flex flex-col justify-center">
+        {/* Glow effects and Hero Banner Image */}
+        <div className="absolute inset-0 z-0">
+           <img src="/images/hero-banner-new.png" alt="Banner" className="w-full h-full object-cover opacity-30 mix-blend-overlay" />
+        </div>
+        <div className="absolute right-0 top-0 w-96 h-96 bg-[radial-gradient(circle_at_top_right,rgba(240,192,90,0.2),transparent_60%)] pointer-events-none z-0" />
+        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-[radial-gradient(circle_at_bottom,rgba(20,184,166,0.1),transparent_60%)] pointer-events-none z-0" />
         
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-3.5">
@@ -367,7 +339,7 @@ function DashboardContent() {
               Chào mừng trở lại,{' '}
               <span 
                 onClick={openProfileModal} 
-                className="cursor-pointer underline decoration-teal-400/60 decoration-wavy underline-offset-6 hover:text-teal-300 transition-all duration-200"
+                className="cursor-pointer hover:text-teal-300 transition-all duration-200"
               >
                 {user?.fullName || 'Người dùng'}
               </span>

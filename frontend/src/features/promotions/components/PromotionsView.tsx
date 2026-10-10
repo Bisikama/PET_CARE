@@ -86,7 +86,6 @@ export function PromotionsView() {
         <div className="flex items-center gap-2">
           <Ticket className="w-5 h-5 text-emerald-500" />
           <h3 className="text-sm font-black text-slate-800 tracking-tight">Áp dụng mã khuyến mãi</h3>
-          <code className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-mono text-[10px] font-bold">POST /promotions/apply</code>
         </div>
 
         <form onSubmit={handleApplyPromo} className="flex flex-col sm:flex-row gap-3">

@@ -136,9 +136,6 @@ export function AdminUserManagement() {
               <ShieldAlert className="w-5 h-5 text-rose-500" />
               Quản Lý Giới Hạn & Khóa Tài Khoản (User Control)
             </h3>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">
-              Sử dụng các API Admin Core: <code className="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-mono text-[11px]">PATCH /api/admin/users/:id/suspend</code> & <code className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-mono text-[11px]">PATCH /api/admin/users/:id/reactivate</code>
-            </p>
           </div>
 
           {/* Search Box */}
@@ -205,7 +202,7 @@ export function AdminUserManagement() {
                             {userObj.avatarUrl ? (
                               <img src={userObj.avatarUrl} alt={fullName} className="w-full h-full object-cover" />
                             ) : (
-                              fullName.charAt(0).toUpperCase()
+                              <img src="/images/avatar-provider.png" alt={fullName} className="w-full h-full object-cover" />
                             )}
                           </div>
                           <div>

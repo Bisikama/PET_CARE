@@ -47,7 +47,7 @@ Hệ thống sử dụng Prisma để giao tiếp với PostgreSQL. Dưới đâ
 | `npx prisma migrate dev --name <tên_migration>` | Tạo một file migration mới và áp dụng nó vào database phát triển (Development DB). Sử dụng khi bạn vừa thay đổi cấu trúc bảng trong file `schema.prisma`. |
 | `npm run db:seed` | Thực thi file seed dữ liệu tại `prisma/seed.ts` để nạp các bản ghi mẫu ban đầu (như Roles, danh mục dịch vụ mẫu...) vào database. |
 | `npm run db:reset` | Khôi phục database về trạng thái ban đầu: xóa sạch toàn bộ các bảng, chạy lại tất cả các tệp migrations từ đầu và tự động nạp lại dữ liệu seed mẫu. |
-| `npx prisma studio` | Khởi chạy một giao diện web trực quan (thường ở địa chỉ `http://localhost:5555`) để bạn trực tiếp xem, sửa đổi, thêm và xóa dữ liệu trong database một cách nhanh chóng. |
+| `npx prisma studio` | Khởi chạy một giao diện web cục bộ tại địa chỉ do CLI hiển thị để bạn trực tiếp xem, sửa đổi, thêm và xóa dữ liệu trong database một cách nhanh chóng. |
 
 ---
 

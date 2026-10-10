@@ -25,7 +25,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
       case 'SITTER':
       case 'PET_SITTING':
         return {
-          icon: Home,
+          iconUrl: '/icons/dog-sitting.svg',
           label: 'Chăm sóc tại nhà',
           colorClass: 'bg-teal-50 text-teal-600 border-teal-100/80',
           gradientBg: 'from-teal-500/5 to-teal-500/0',
@@ -34,7 +34,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
       case 'GROOMER':
       case 'GROOMING':
         return {
-          icon: Scissors,
+          iconUrl: '/icons/grooming.svg',
           label: 'Làm đẹp & Spa',
           colorClass: 'bg-amber-50 text-amber-600 border-amber-100/80',
           gradientBg: 'from-amber-500/5 to-amber-500/0',
@@ -42,7 +42,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
         };
       case 'VET':
         return {
-          icon: Stethoscope,
+          iconUrl: '/icons/vet.svg',
           label: 'Y tế & Bác sĩ thú y',
           colorClass: 'bg-rose-50 text-rose-600 border-rose-100/80',
           gradientBg: 'from-rose-500/5 to-rose-500/0',
@@ -50,7 +50,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
         };
       default:
         return {
-          icon: Heart,
+          iconUrl: '/icons/dog-walking.svg',
           label: service.category || 'Dịch vụ thú cưng',
           colorClass: 'bg-indigo-50 text-indigo-600 border-indigo-100/80',
           gradientBg: 'from-indigo-500/5 to-indigo-500/0',
@@ -60,7 +60,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
   };
 
   const config = getCategoryConfig(service.category);
-  const IconComponent = config.icon;
 
   return (
     <>
@@ -73,7 +72,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service }) => {
           <div className="flex items-start justify-between gap-4">
             {/* Category Icon */}
             <div className={`p-3.5 rounded-2xl border ${config.colorClass} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-              <IconComponent className="h-6 w-6 stroke-[2]" />
+              <img src={config.iconUrl} alt="Service Icon" className="h-6 w-6 object-contain" />
             </div>
             
             {/* Category Badge */}

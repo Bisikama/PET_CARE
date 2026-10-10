@@ -327,8 +327,8 @@ export function CustomerBookingList({
 
         {/* Empty state */}
         {filteredBookings.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
-            <div className="text-4xl mb-3">{bookings.length === 0 ? '🐾' : '🔍'}</div>
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 flex flex-col items-center">
+            <img src="/images/empty-booking.png" alt="Empty Booking" className="w-32 h-32 mb-4 object-contain opacity-80" />
             <h3 className="font-bold text-slate-700 text-base mb-1">
               {bookings.length === 0 ? 'Chưa có đặt lịch nào' : 'Không tìm thấy đơn đặt lịch nào'}
             </h3>

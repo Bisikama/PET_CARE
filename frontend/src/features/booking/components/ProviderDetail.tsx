@@ -50,11 +50,11 @@ export function ProviderDetail() {
         <div className="flex items-center gap-5">
           <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-amber-100 shadow-md">
             {provider.avatarUrl ? (
-              <img src={provider.avatarUrl} alt={provider.fullName} className="w-full h-full object-cover" />
+              <img src={provider.avatarUrl} alt={provider.fullName} className="w-full h-full object-cover" onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/images/avatar-provider.png';
+              }} />
             ) : (
-              <div className="w-full h-full bg-slate-100 flex items-center justify-center text-3xl font-bold text-slate-300">
-                {provider.fullName.charAt(0).toUpperCase()}
-              </div>
+              <img src="/images/avatar-provider.png" alt={provider.fullName} className="w-full h-full object-cover" />
             )}
           </div>
           <div className="space-y-1.5">
@@ -98,12 +98,21 @@ export function ProviderDetail() {
             <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-3">Bảo chứng năng lực đã xác minh:</h3>
             <div className="flex flex-wrap gap-3">
               {provider.trustBadges?.length > 0 ? (
-                provider.trustBadges.map((badge, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200/60">
-                    <ShieldCheck className="w-4 h-4" />
-                    {badge.name}
-                  </span>
-                ))
+                provider.trustBadges.map((badge, idx) => {
+                  let badgeImage = '/images/badge-petcare.png';
+                  if (badge.name.toLowerCase().includes('kyc') || badge.name.toLowerCase().includes('xác minh')) {
+                    badgeImage = '/images/badge-kyc.png';
+                  } else if (badge.name.toLowerCase().includes('top') || badge.name.toLowerCase().includes('xuất sắc')) {
+                    badgeImage = '/images/badge-top-provider.png';
+                  }
+                  
+                  return (
+                    <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200/60">
+                      <img src={badgeImage} alt="Badge" className="w-5 h-5 object-contain" />
+                      {badge.name}
+                    </span>
+                  );
+                })
               ) : (
                 <span className="text-sm font-semibold text-slate-500 italic">
                   Chưa có bảo chứng năng lực.

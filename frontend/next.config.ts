@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
-const backendUrl =
-  process.env.BACKEND_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
-  'http://localhost:3000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+if (!apiUrl) {
+  throw new Error('NEXT_PUBLIC_API_URL is required');
+}
+
+const backendUrl = apiUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 const nextConfig: NextConfig = {
   async rewrites() {

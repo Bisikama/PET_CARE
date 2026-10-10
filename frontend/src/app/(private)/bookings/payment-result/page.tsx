@@ -63,8 +63,8 @@ export default function PaymentResultPage() {
 
         {status === 'success' && (
           <div className="flex flex-col items-center">
-            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+            <div className="mb-6 flex justify-center">
+              <img src="/images/payment-success.png" alt="Payment Success" className="w-32 h-32 object-contain" />
             </div>
             <h2 className="text-2xl font-black text-slate-800 mb-2">Thanh toán thành công!</h2>
             <p className="text-slate-600 mb-8">{message}</p>
@@ -90,8 +90,8 @@ export default function PaymentResultPage() {
 
         {status === 'error' && (
           <div className="flex flex-col items-center">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
-              <XCircle className="w-10 h-10 text-red-600" />
+            <div className="mb-6 flex justify-center">
+              <img src="/images/payment-fail.png" alt="Payment Fail" className="w-32 h-32 object-contain" />
             </div>
             <h2 className="text-2xl font-black text-slate-800 mb-2">Giao dịch thất bại!</h2>
             <p className="text-slate-600 mb-8">{message}</p>

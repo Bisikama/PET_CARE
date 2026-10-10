@@ -74,7 +74,7 @@ export function PetList() {
         /* Pet Cards List */
         <div className="space-y-4">
           {pets.map((pet) => {
-            const avatarSrc = pet.avatarUrl || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&h=200&fit=crop&q=80';
+            const avatarSrc = pet.avatarUrl || '/images/avatar-pet.png';
             const speciesLabel = pet.species === 'Dog' ? 'CÚN' : 'MÈO';
 
             return (

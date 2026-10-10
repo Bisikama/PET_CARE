@@ -53,7 +53,6 @@ export const AppSidebar = () => {
         { name: 'Quản Lý Dịch Vụ', href: `${ROUTES.DASHBOARD}?tab=services-manager`, icon: HeartHandshake },
         { name: 'Giám Sát Ca Làm', href: `${ROUTES.DASHBOARD}?tab=monitor-shifts`, icon: Activity },
         { name: 'Quản Lý Escrow', href: `${ROUTES.DASHBOARD}?tab=escrow`, icon: ShieldCheck },
-        { name: 'Trò Chuyện & Nhắn Tin', href: `${ROUTES.DASHBOARD}?tab=chat`, icon: MessageSquare },
         { name: 'Trọng Tài Tranh Chấp', href: `${ROUTES.ADMIN_SUPPORT}?tab=disputes`, icon: Gavel },
         { name: 'Trung Tâm CSKH', href: ROUTES.ADMIN_SUPPORT, icon: Headphones },
         { name: 'Giới Hạn Tài Khoản', href: `${ROUTES.DASHBOARD}?tab=limits`, icon: BarChart3 },
@@ -63,7 +62,6 @@ export const AppSidebar = () => {
     : user?.role === 'PROVIDER'
     ? [
         { name: 'Ca Chăm Sóc Thực Tế', href: `${ROUTES.DASHBOARD}?tab=active-cases`, icon: Activity },
-        { name: 'Trò Chuyện & Nhắn Tin', href: `${ROUTES.DASHBOARD}?tab=chat`, icon: MessageSquare },
         { name: 'Lịch & Năng Lực Dịch Vụ', href: `${ROUTES.DASHBOARD}?tab=schedule`, icon: Calendar },
         { name: 'Ví Thu Nhập', href: `${ROUTES.DASHBOARD}?tab=wallet`, icon: Wallet },
         { name: 'Kho Ưu Đãi & Voucher', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
@@ -71,7 +69,6 @@ export const AppSidebar = () => {
       ]
     : [
         { name: 'Tổng quan', href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-        { name: 'Trò Chuyện & Nhắn Tin', href: `${ROUTES.DASHBOARD}?tab=chat`, icon: MessageSquare },
         { name: 'Dịch vụ thú cưng', href: ROUTES.SERVICES, icon: HeartHandshake },
         { name: 'Đặt người chăm sóc', href: ROUTES.BOOKINGS, icon: UserCheck },
         { name: 'Kho Ưu Đãi & Voucher', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
@@ -87,7 +84,7 @@ export const AppSidebar = () => {
   return (
     <aside className="w-64 bg-slate-950 text-slate-100 flex flex-col h-screen border-r border-slate-800 select-none shrink-0">
       {/* Brand Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900">
+      <div className="h-16 flex items-center px-6 bg-slate-900">
         <Link href={ROUTES.DASHBOARD} className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center font-bold text-slate-950">
            <img 

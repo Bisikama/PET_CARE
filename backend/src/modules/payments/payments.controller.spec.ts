@@ -4,6 +4,7 @@ import { PaymentsService } from './application/use-cases/payments.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('PaymentsController', () => {
+  const frontendUrl = 'https://frontend.example.test';
   let controller: PaymentsController;
   let mockPaymentsService: Partial<PaymentsService>;
   let mockConfigService: Partial<ConfigService>;
@@ -14,9 +15,9 @@ describe('PaymentsController', () => {
     };
 
     mockConfigService = {
-      get: jest.fn().mockImplementation((key, defaultValue) => {
-        if (key === 'FRONTEND_URL') return 'http://localhost:5000';
-        return defaultValue;
+      getOrThrow: jest.fn().mockImplementation((key) => {
+        if (key === 'FRONTEND_URL') return frontendUrl;
+        throw new Error(`Missing test config: ${key}`);
       }),
     };
 
@@ -40,9 +41,9 @@ describe('PaymentsController', () => {
 
       await controller.vnpayReturn(query, mockRes);
 
-      expect(mockConfigService.get).toHaveBeenCalledWith('FRONTEND_URL', expect.any(String));
+      expect(mockConfigService.getOrThrow).toHaveBeenCalledWith('FRONTEND_URL');
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5000/payment/result?status=success&orderId=BOOKING_123&method=VNPAY'
+        `${frontendUrl}/payment/result?status=success&orderId=BOOKING_123&method=VNPAY`,
       );
     });
 
@@ -55,7 +56,7 @@ describe('PaymentsController', () => {
       await controller.vnpayReturn(query, mockRes);
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5000/payment/result?status=failed&orderId=BOOKING_456&method=VNPAY'
+        `${frontendUrl}/payment/result?status=failed&orderId=BOOKING_456&method=VNPAY`,
       );
     });
   });
@@ -70,7 +71,7 @@ describe('PaymentsController', () => {
       await controller.momoReturn(query, mockRes);
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5000/payment/result?status=success&orderId=BOOKING_789&method=MOMO'
+        `${frontendUrl}/payment/result?status=success&orderId=BOOKING_789&method=MOMO`,
       );
     });
 
@@ -83,7 +84,7 @@ describe('PaymentsController', () => {
       await controller.momoReturn(query, mockRes);
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
-        'http://localhost:5000/payment/result?status=failed&orderId=BOOKING_999&method=MOMO'
+        `${frontendUrl}/payment/result?status=failed&orderId=BOOKING_999&method=MOMO`,
       );
     });
   });

@@ -63,7 +63,7 @@ export function usePayment() {
     setLoading(true);
     setError(null);
     try {
-      // Gọi thử IPN trực tiếp từ Frontend (hack cho môi trường dev local vì VNPAY không tự gọi về localhost được)
+      // Gọi IPN để đồng bộ trạng thái; backend xử lý callback theo cơ chế idempotent.
       try {
         await paymentService.triggerVnpayIpn(queryString);
       } catch (e) {

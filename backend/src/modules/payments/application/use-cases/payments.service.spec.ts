@@ -52,6 +52,7 @@ describe('PaymentsService', () => {
 
   const mockConfig = {
     get: jest.fn().mockReturnValue('mock-value'),
+    getOrThrow: jest.fn().mockReturnValue('https://backend.example.test'),
   };
 
   beforeEach(async () => {
