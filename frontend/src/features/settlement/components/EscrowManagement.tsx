@@ -33,7 +33,8 @@ export const EscrowManagement = () => {
     fetchAdminWallet();
   }, []);
 
-  const pendingRequests = payoutRequests.filter(r => r.status === 'PENDING');
+  const isPending = (status?: string) => status === 'PAYOUT_PENDING' || status === 'PENDING';
+  const pendingRequests = payoutRequests.filter(r => isPending(r.status));
   const pendingTotalAmount = pendingRequests.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   const formatCurrency = (val: number) => {
@@ -202,13 +203,31 @@ export const EscrowManagement = () => {
                   </div>
                   <div className="flex gap-2 justify-end mt-2">
                     <button 
-                      onClick={() => rejectPayout(req.id)}
+                      onClick={async () => {
+                        const reason = window.prompt('Nhập lý do từ chối (bắt buộc):', 'Thông tin ngân hàng không hợp lệ');
+                        if (!reason) return;
+                        try {
+                          await rejectPayout(req.id, reason);
+                          alert('Đã từ chối yêu cầu rút tiền thành công!');
+                        } catch (err: any) {
+                          alert(err.response?.data?.message || err.message || 'Lỗi khi từ chối yêu cầu');
+                        }
+                      }}
                       className="px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <XCircle size={14} /> Từ chối
                     </button>
                     <button 
-                      onClick={() => approvePayout(req.id)}
+                      onClick={async () => {
+                        if (!window.confirm(`Xác nhận duyệt giải ngân ${new Intl.NumberFormat('vi-VN').format(req.amount)} đ cho ${req.providerName || 'đối tác'}?`)) return;
+                        try {
+                          await approvePayout(req.id);
+                          alert('Duyệt giải ngân thành công!');
+                          fetchAdminWallet();
+                        } catch (err: any) {
+                          alert(err.response?.data?.message || err.message || 'Lỗi khi duyệt giải ngân');
+                        }
+                      }}
                       className="px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <CheckCircle size={14} /> Duyệt & Giải ngân
