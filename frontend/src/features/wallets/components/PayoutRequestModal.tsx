@@ -9,6 +9,7 @@ interface PayoutRequestModalProps {
 
 export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({ isOpen, onClose }) => {
   const [amount, setAmount] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { requestPayout, isLoading } = usePayoutRequests();
   const { wallet, refreshWallet } = useWallet();
   const { bankAccounts } = useBankAccounts();
@@ -25,17 +26,39 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({ isOpen, 
 
   const maxAmount = wallet?.balance || 0;
 
+  const handleClose = () => {
+    setErrorMsg(null);
+    setAmount('');
+    onClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
     const numAmount = Number(amount);
-    if (numAmount > 0 && numAmount <= maxAmount && selectedBankId) {
-      // In a real app we might pass selectedBankId to requestPayout
-      const success = await requestPayout(numAmount);
-      if (success) {
-        refreshWallet();
-        onClose();
-        setAmount('');
-      }
+
+    if (!selectedBankId) {
+      setErrorMsg('Vui lòng chọn tài khoản ngân hàng để rút tiền');
+      return;
+    }
+
+    if (numAmount < 10000) {
+      setErrorMsg('Số tiền rút tối thiểu là 10,000 đ');
+      return;
+    }
+
+    if (numAmount > maxAmount) {
+      setErrorMsg('Số dư khả dụng không đủ để rút tiền');
+      return;
+    }
+
+    const result = await requestPayout(numAmount, selectedBankId);
+    if (result.success) {
+      refreshWallet();
+      handleClose();
+      window.alert('Gửi yêu cầu rút tiền thành công! Vui lòng chờ hệ thống xử lý.');
+    } else {
+      setErrorMsg(result.message || 'Yêu cầu rút tiền thất bại');
     }
   };
 
@@ -43,7 +66,7 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({ isOpen, 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white rounded-[24px] w-full max-w-md p-6 md:p-8 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
         <button 
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -55,6 +78,12 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({ isOpen, 
             Số dư khả dụng: <span className="font-semibold text-emerald-600">{maxAmount.toLocaleString('vi-VN')} đ</span>
           </p>
         </div>
+
+        {errorMsg && (
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm font-medium animate-in fade-in">
+            {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

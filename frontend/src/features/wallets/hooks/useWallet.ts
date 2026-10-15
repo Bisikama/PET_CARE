@@ -124,15 +124,18 @@ export const usePayoutRequests = () => {
     fetchPayoutRequests();
   }, [fetchPayoutRequests]);
 
-  const requestPayout = async (amount: number) => {
+  const requestPayout = async (amount: number, bankAccountId: string) => {
     try {
       setLoading(true);
-      const data = await walletService.requestProviderPayout(amount);
+      setError(null);
+      const data = await walletService.requestProviderPayout(amount, bankAccountId);
       addPayoutRequest(data);
-      return true;
+      return { success: true };
     } catch (err: any) {
+      const msg = err.response?.data?.message || 'Yêu cầu rút tiền thất bại';
       console.error('Payout request error:', err);
-      return false;
+      setError(msg);
+      return { success: false, message: msg };
     } finally {
       setLoading(false);
     }

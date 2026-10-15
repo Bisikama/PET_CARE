@@ -80,9 +80,11 @@ export class WalletsController {
   async requestPayout(
     @GetCurrentUserId() userId: string,
     @Body('amount') amount: number,
-    @Body('bank_account_id') bankAccountId: string,
+    @Body('bank_account_id') bankAccountId?: string,
+    @Body('bankAccountId') bankAccountIdCamel?: string,
   ) {
-    return this.walletsService.createPayoutRequest(userId, amount, bankAccountId);
+    const finalBankAccountId = bankAccountId || bankAccountIdCamel;
+    return this.walletsService.createPayoutRequest(userId, amount, finalBankAccountId as string);
   }
 
   @Post('me/customer-payout-requests')
