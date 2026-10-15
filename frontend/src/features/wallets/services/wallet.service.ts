@@ -28,8 +28,12 @@ export const walletService = {
    * Provider gửi yêu cầu rút tiền về tài khoản ngân hàng
    * @param amount Số tiền muốn rút
    */
-  requestProviderPayout: async (amount: number): Promise<PayoutRequest> => {
-    const response = await axiosInstance.post('/wallets/me/payout-requests', { amount });
+  requestProviderPayout: async (amount: number, bankAccountId: string): Promise<PayoutRequest> => {
+    const response = await axiosInstance.post('/wallets/me/payout-requests', {
+      amount,
+      bank_account_id: bankAccountId,
+      bankAccountId: bankAccountId,
+    });
     return response.data.data || response.data;
   },
 
