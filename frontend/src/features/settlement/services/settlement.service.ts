@@ -4,7 +4,13 @@ import { PayoutRequest } from '../types';
 export const settlementService = {
   getPayoutRequests: async (): Promise<PayoutRequest[]> => {
     const response = await axiosInstance.get('/admin/settlements/payout-requests');
-    return response.data?.data || response.data || [];
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    if (response.data && Array.isArray((response.data as any).data)) {
+      return (response.data as any).data;
+    }
+    return [];
   },
 
   approvePayout: async (id: string): Promise<void> => {
