@@ -5,8 +5,14 @@ export const usePayoutRequests = () => {
   const { payoutRequests, isLoading, error, fetchPayoutRequests } = useSettlementStore();
 
   useEffect(() => {
-    fetchPayoutRequests();
+    fetchPayoutRequests(true);
   }, [fetchPayoutRequests]);
 
-  return { payoutRequests, isLoading, error, fetchPayoutRequests };
+  return { 
+    payoutRequests, 
+    isLoading, 
+    error, 
+    fetchPayoutRequests,
+    refreshPayoutRequests: () => fetchPayoutRequests(true)
+  };
 };

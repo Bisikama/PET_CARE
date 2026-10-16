@@ -4,17 +4,19 @@ import { PayoutRequest } from '../types';
 export const settlementService = {
   getPayoutRequests: async (): Promise<PayoutRequest[]> => {
     const response = await axiosInstance.get('/admin/settlements/payout-requests');
-    return response.data;
+    return response.data?.data || response.data || [];
   },
 
   approvePayout: async (id: string): Promise<void> => {
     const response = await axiosInstance.post(`/admin/settlements/payout-requests/${id}/approve`);
-    return response.data;
+    return response.data?.data || response.data;
   },
 
-  rejectPayout: async (id: string): Promise<void> => {
-    const response = await axiosInstance.post(`/admin/settlements/payout-requests/${id}/reject`);
-    return response.data;
+  rejectPayout: async (id: string, reason?: string): Promise<void> => {
+    const response = await axiosInstance.post(`/admin/settlements/payout-requests/${id}/reject`, {
+      reason: reason || 'Từ chối bởi Admin',
+    });
+    return response.data?.data || response.data;
   },
 
   releaseEscrow: async (bookingId: string): Promise<void> => {
