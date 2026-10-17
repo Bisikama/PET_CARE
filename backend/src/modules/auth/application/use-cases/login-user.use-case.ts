@@ -24,7 +24,7 @@ export class LoginUserUseCase {
     private readonly usersService: UsersService,
     private readonly supabaseAuthService: SupabaseAuthService,
     private readonly authSessionService: AuthSessionService,
-  ) {}
+  ) { }
 
   async execute(input: LoginUserInput) {
     if (!input.password) {
