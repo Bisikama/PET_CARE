@@ -7,39 +7,77 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { QrCode, Copy, Check, X, ShieldCheck, ArrowRight } from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
+import { QrCode, Copy, Check, X, AlertTriangle, Clock } from 'lucide-react-native';
 import { theme } from '@/core/theme';
 import { formatCurrency } from '@/core/utils/currency';
+import type { BankTransferCheckout } from '@/infrastructure/api/payments.api';
 
 interface PaymentVietQrModalProps {
   visible: boolean;
-  amount: number;
-  bookingCode?: string;
+  checkout: BankTransferCheckout | null;
+  /** Đang hỏi backend xem SePay đã báo có chưa */
+  isChecking?: boolean;
   onClose: () => void;
+  /** Khách bấm "Tôi đã chuyển khoản" -> kiểm tra ngay với backend (không tự xác nhận) */
   onConfirmPaid: () => void;
+}
+
+/** Đếm ngược tới hết thời gian giữ chỗ do backend trả về. */
+function HoldCountdown({ expiresAt }: { expiresAt: string }) {
+  const deadline = React.useMemo(() => new Date(expiresAt).getTime(), [expiresAt]);
+  const compute = React.useCallback(
+    () => Math.max(0, Math.floor((deadline - Date.now()) / 1000)),
+    [deadline]
+  );
+  const [secondsLeft, setSecondsLeft] = React.useState(compute);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setSecondsLeft(compute()), 1000);
+    return () => clearInterval(timer);
+  }, [compute]);
+
+  if (!Number.isFinite(deadline)) return null;
+
+  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+  const ss = String(secondsLeft % 60).padStart(2, '0');
+  const urgent = secondsLeft <= 5 * 60;
+  const until = new Date(deadline).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <View style={[styles.countdownRow, urgent && styles.countdownRowUrgent]}>
+      <View style={styles.countdownLabelWrap}>
+        <Clock size={14} color={urgent ? '#BE123C' : theme.colors.text.secondary} />
+        <Text style={[styles.countdownLabel, urgent && styles.countdownTextUrgent]}>
+          {secondsLeft > 0 ? `Giữ chỗ đến ${until}` : 'Đã hết thời gian giữ chỗ'}
+        </Text>
+      </View>
+      <Text style={[styles.countdownValue, urgent && styles.countdownTextUrgent]}>
+        {mm}:{ss}
+      </Text>
+    </View>
+  );
 }
 
 export function PaymentVietQrModal({
   visible,
-  amount,
-  bookingCode = 'BK-2026-9812',
+  checkout,
+  isChecking = false,
   onClose,
   onConfirmPaid,
 }: PaymentVietQrModalProps) {
-  const bankInfo = {
-    bankName: 'MB Bank (Quân Đội)',
-    accountNumber: '888899996688',
-    accountName: 'PETCARE VIETNAM JSC',
-    transferContent: `PETCARE ${bookingCode.replace(/[^A-Za-z0-9]/g, '')}`,
+  const handleCopy = async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
+    Alert.alert('Đã sao chép', `${label}: ${text}`);
   };
 
-  const handleCopy = (text: string, label: string) => {
-    Alert.alert('Đã sao chép', `Đã sao chép ${label}: ${text}`);
-  };
+  if (!checkout) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheetContainer}>
           {/* Header */}
@@ -53,84 +91,101 @@ export function PaymentVietQrModal({
             </TouchableOpacity>
           </View>
 
-          {/* QR Code Container */}
-          <View style={styles.qrCard}>
-            <View style={styles.qrImageWrap}>
-              <Image
-                source={{
-                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=vietqr_petcare_${bookingCode}_${amount}`,
-                }}
-                style={styles.qrImage}
-              />
-            </View>
-            <Text style={styles.qrSubtext}>
-              Mở ứng dụng Mobile Banking bất kỳ để quét mã
-            </Text>
-          </View>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
+            {checkout.expiresAt ? <HoldCountdown expiresAt={checkout.expiresAt} /> : null}
 
-          {/* Bank Account Details */}
-          <View style={styles.detailsCard}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ngân hàng</Text>
-              <Text style={styles.detailValue}>{bankInfo.bankName}</Text>
+            {/* QR Code Container */}
+            <View style={styles.qrCard}>
+              <View style={styles.qrImageWrap}>
+                <Image source={{ uri: checkout.qrImageUrl }} style={styles.qrImage} resizeMode="contain" />
+              </View>
+              <Text style={styles.qrSubtext}>
+                Mở ứng dụng ngân hàng bất kỳ để quét mã. Số tiền và nội dung đã được điền sẵn.
+              </Text>
             </View>
 
-            <View style={styles.divider} />
+            {/* Bank Account Details */}
+            <View style={styles.detailsCard}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Ngân hàng</Text>
+                <Text style={styles.detailValue}>{checkout.bankName}</Text>
+              </View>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Số tài khoản</Text>
-              <TouchableOpacity
-                style={styles.copyValueRow}
-                onPress={() => handleCopy(bankInfo.accountNumber, 'Số tài khoản')}
-              >
-                <Text style={styles.detailValueBold}>{bankInfo.accountNumber}</Text>
-                <Copy size={14} color={theme.colors.secondary.onContainer} />
-              </TouchableOpacity>
+              <View style={styles.divider} />
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Số tài khoản</Text>
+                <TouchableOpacity
+                  style={styles.copyValueRow}
+                  onPress={() => handleCopy(checkout.accountNumber, 'Số tài khoản')}
+                >
+                  <Text style={styles.detailValueBold}>{checkout.accountNumber}</Text>
+                  <Copy size={14} color={theme.colors.secondary.onContainer} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Tên người thụ hưởng</Text>
+                <Text style={styles.detailValueBold}>{checkout.accountName}</Text>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Số tiền</Text>
+                <TouchableOpacity
+                  style={styles.copyValueRow}
+                  onPress={() => handleCopy(String(checkout.amount), 'Số tiền')}
+                >
+                  <Text style={styles.detailValuePrice}>{formatCurrency(checkout.amount)} đ</Text>
+                  <Copy size={14} color="#059669" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Nội dung CK</Text>
+                <TouchableOpacity
+                  style={styles.copyValueRow}
+                  onPress={() => handleCopy(checkout.transferContent, 'Nội dung chuyển khoản')}
+                >
+                  <Text style={styles.detailValueContent}>{checkout.transferContent}</Text>
+                  <Copy size={14} color={theme.colors.secondary.onContainer} />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Tên người thụ hưởng</Text>
-              <Text style={styles.detailValueBold}>{bankInfo.accountName}</Text>
+            {/* Warning */}
+            <View style={styles.warningCard}>
+              <AlertTriangle size={16} color="#B45309" />
+              <Text style={styles.warningText}>
+                Giữ nguyên nội dung <Text style={styles.warningStrong}>{checkout.transferContent}</Text> và
+                đúng số tiền. Sai nội dung hệ thống sẽ không tự xác nhận được đơn. Nếu đơn hết hạn giữ chỗ
+                trước khi nhận được tiền, số tiền sẽ được hoàn vào Ví PetCare.
+              </Text>
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Số tiền</Text>
-              <TouchableOpacity
-                style={styles.copyValueRow}
-                onPress={() => handleCopy(String(amount), 'Số tiền')}
-              >
-                <Text style={styles.detailValuePrice}>{formatCurrency(amount)} đ</Text>
-                <Copy size={14} color="#059669" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Nội dung CK</Text>
-              <TouchableOpacity
-                style={styles.copyValueRow}
-                onPress={() => handleCopy(bankInfo.transferContent, 'Nội dung chuyển khoản')}
-              >
-                <Text style={styles.detailValueContent}>{bankInfo.transferContent}</Text>
-                <Copy size={14} color={theme.colors.secondary.onContainer} />
-              </TouchableOpacity>
-            </View>
-          </View>
+            {isChecking && (
+              <View style={styles.checkingRow}>
+                <ActivityIndicator size="small" color={theme.colors.secondary.onContainer} />
+                <Text style={styles.checkingText}>Đang chờ ngân hàng xác nhận giao dịch...</Text>
+              </View>
+            )}
+          </ScrollView>
 
           {/* Actions */}
           <View style={styles.actionsRow}>
             <TouchableOpacity
-              style={styles.confirmPaidBtn}
+              style={[styles.confirmPaidBtn, isChecking && styles.confirmPaidBtnDisabled]}
               onPress={onConfirmPaid}
+              disabled={isChecking}
               activeOpacity={0.85}
             >
               <Check size={18} color="white" />
-              <Text style={styles.confirmPaidBtnText}>Tôi đã chuyển khoản thành công</Text>
+              <Text style={styles.confirmPaidBtnText}>Tôi đã chuyển khoản</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -151,7 +206,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: theme.radius.xl,
     padding: theme.spacing[5],
     gap: theme.spacing[3],
-    maxHeight: '90%',
+    maxHeight: '92%',
+  },
+  body: {
+    gap: theme.spacing[3],
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -189,8 +247,8 @@ const styles = StyleSheet.create({
     ...theme.shadows.sm,
   },
   qrImage: {
-    width: 180,
-    height: 180,
+    width: 200,
+    height: 200,
   },
   qrSubtext: {
     ...theme.typography.bodySm,
@@ -252,8 +310,67 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: theme.colors.border.subdued,
   },
+  countdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.surface.subdued,
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
+  },
+  countdownRowUrgent: {
+    backgroundColor: '#FFF1F2',
+  },
+  countdownLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  countdownLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
+  },
+  countdownValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: theme.colors.text.primary,
+    fontVariant: ['tabular-nums'],
+  },
+  countdownTextUrgent: {
+    color: '#BE123C',
+  },
+  warningCard: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing[3],
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#92400E',
+  },
+  warningStrong: {
+    fontWeight: '800',
+  },
+  checkingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  checkingText: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+  },
   actionsRow: {
-    paddingTop: theme.spacing[2],
+    paddingTop: theme.spacing[1],
   },
   confirmPaidBtn: {
     backgroundColor: theme.colors.primary.navy,
@@ -264,6 +381,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     ...theme.shadows.sm,
+  },
+  confirmPaidBtnDisabled: {
+    opacity: 0.6,
   },
   confirmPaidBtnText: {
     ...theme.typography.label,

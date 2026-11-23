@@ -14,7 +14,26 @@ export interface CheckoutResponse {
   paymentUrl: string;
 }
 
+/** Thông tin chuyển khoản VietQR vào tài khoản MB (đối soát tự động qua SePay). */
+export interface BankTransferCheckout {
+  paymentCode: string;
+  amount: number;
+  bankName: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName: string;
+  transferContent: string;
+  qrImageUrl: string;
+  /** Hết thời gian giữ chỗ (ISO). Chuyển sau mốc này => tiền được hoàn vào ví. */
+  expiresAt: string;
+}
+
 export const paymentsApi = {
+  checkoutBankTransfer: async (dto: CheckoutWalletRequest): Promise<BankTransferCheckout> => {
+    const res = await apiClient.post('/payments/checkout-bank-transfer', dto);
+    return res.data?.data !== undefined ? res.data.data : res.data;
+  },
+
   getMyWallet: async (): Promise<WalletInfo> => {
     const res = await apiClient.get('/wallets/me');
     const data = res.data?.data !== undefined ? res.data.data : res.data;
@@ -22,11 +41,6 @@ export const paymentsApi = {
       balance: Number(data?.balance || 0),
       pendingBalance: Number(data?.pendingBalance || 0),
     };
-  },
-
-  topupWallet: async (amount: number): Promise<{ success: boolean; message: string }> => {
-    const res = await apiClient.post('/wallets/me/topup', { amount });
-    return res.data?.data !== undefined ? res.data.data : res.data;
   },
 
   checkoutWithWallet: async (dto: CheckoutWalletRequest): Promise<any> => {
