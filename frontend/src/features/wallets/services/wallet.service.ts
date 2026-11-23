@@ -42,15 +42,6 @@ export const walletService = {
   },
 
   /**
-   * Customer gửi yêu cầu rút tiền
-   * @param amount Số tiền muốn rút
-   */
-  requestCustomerPayout: async (amount: number): Promise<PayoutRequest> => {
-    const response = await axiosInstance.post('/wallets/me/customer-payout-requests', { amount });
-    return response.data.data || response.data;
-  },
-
-  /**
    * Admin rút tiền hoa hồng về ngân hàng
    */
   adminWithdraw: async (data: { amount: number; note?: string; bankDetails?: any }): Promise<any> => {
