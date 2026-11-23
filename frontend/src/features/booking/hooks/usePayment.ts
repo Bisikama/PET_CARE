@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { paymentService, CheckoutRequest } from '../services/payment.service';
+import { paymentService, CheckoutRequest, BankTransferCheckout } from '../services/payment.service';
 
 export function usePayment() {
   const [loading, setLoading] = useState(false);
@@ -39,6 +39,29 @@ export function usePayment() {
     } catch (err: any) {
       console.error('MoMo checkout error:', err);
       setError(err?.response?.data?.message || err.message || 'Không thể tạo phiên thanh toán MoMo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Lấy thông tin chuyển khoản VietQR (MB Bank + SePay). Trả null nếu lỗi. */
+  const createBankTransferCheckout = async (data: {
+    bookingId: string;
+    promotionCode?: string;
+  }): Promise<BankTransferCheckout | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const checkout = await paymentService.checkoutBankTransfer(data);
+      if (!checkout?.qrImageUrl || !checkout?.transferContent) {
+        throw new Error('Không lấy được thông tin chuyển khoản từ hệ thống');
+      }
+      return checkout;
+    } catch (err) {
+      console.error('Bank transfer checkout error:', err);
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(e?.response?.data?.message || e?.message || 'Không thể tạo mã chuyển khoản');
+      return null;
     } finally {
       setLoading(false);
     }
@@ -86,6 +109,7 @@ export function usePayment() {
     error,
     createCheckoutUrl,
     createMomoCheckoutUrl,
+    createBankTransferCheckout,
     checkoutWithWallet,
     verifyVNPayPayment
   };
