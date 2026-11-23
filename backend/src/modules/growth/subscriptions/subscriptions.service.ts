@@ -39,9 +39,9 @@ export class SubscriptionsService {
 
     const amount = this.TIER_PRICES[dto.tierName as string as keyof typeof this.TIER_PRICES] || 100000;
 
-    const tmnCode = this.configService.get<string>('VNP_TMN_CODE', 'DUMMY_TMN_CODE');
-    const secretKey = this.configService.get<string>('VNP_HASH_SECRET', 'DUMMY_SECRET');
-    const vnpUrl = this.configService.get<string>('VNP_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
+    const tmnCode = this.configService.getOrThrow<string>('VNP_TMN_CODE');
+    const secretKey = this.configService.getOrThrow<string>('VNP_HASH_SECRET');
+    const vnpUrl = this.configService.get<string>('VNP_URL') || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
     const returnUrl = this.configService.getOrThrow<string>('VNP_RETURN_URL');
 
     const date = new Date();

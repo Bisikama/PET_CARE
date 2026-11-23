@@ -6,61 +6,84 @@ import { WalletsService } from '../../../wallets/application/use-cases/wallets.s
 import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
 import { BadRequestException } from '@nestjs/common';
+import * as crypto from 'crypto';
+import * as qs from 'qs';
+
+const CONFIG: Record<string, string> = {
+  VNP_TMN_CODE: 'TMN',
+  VNP_HASH_SECRET: 'secret',
+  VNP_RETURN_URL: 'https://backend.example.test/api/payments/vnpay-return',
+  MOMO_PARTNER_CODE: 'MOMO',
+  MOMO_ACCESS_KEY: 'valid_access_key',
+  MOMO_SECRET_KEY: 'valid_secret_key',
+  BACKEND_URL: 'https://backend.example.test',
+  COMMISSION_RATE: '0.1',
+};
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
-  let prisma: PrismaService;
-  let config: ConfigService;
 
-  const mockPrisma = {
-    promotions: {
-      findUnique: jest.fn(),
-    },
-    payments: {
-      create: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      upsert: jest.fn(),
-    },
-    bookings: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    wallets: {
-      findUnique: jest.fn(),
-    },
-    provider_profiles: {
-      findUnique: jest.fn(),
-    },
-    system_configs: {
-      findUnique: jest.fn(),
-    },
+  const mockPrisma: any = {
+    promotions: { findUnique: jest.fn(), update: jest.fn() },
+    promotion_usages: { create: jest.fn() },
+    payments: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn(), upsert: jest.fn() },
+    bookings: { findUnique: jest.fn(), update: jest.fn() },
+    provider_working_slots: { update: jest.fn() },
+    wallets: { findUnique: jest.fn(), upsert: jest.fn() },
+    provider_profiles: { findUnique: jest.fn() },
+    system_configs: { findUnique: jest.fn() },
     $transaction: jest.fn(async (cb) => cb(mockPrisma)),
   };
 
-  const mockWalletsService = {
-    processTransaction: jest.fn(),
-  };
-
-  const mockSubscriptionsService = {
-    handleSubscriptionSuccess: jest.fn(),
-  };
-
-  const mockNotificationsService = {
-    sendNotification: jest.fn(),
-  };
-
+  const mockWalletsService = { processTransaction: jest.fn() };
+  const mockSubscriptionsService = { handleSubscriptionSuccess: jest.fn() };
+  const mockNotificationsService = { sendNotification: jest.fn() };
   const mockConfig = {
-    get: jest.fn().mockReturnValue('mock-value'),
-    getOrThrow: jest.fn().mockReturnValue('https://backend.example.test'),
+    get: jest.fn((key: string) => CONFIG[key]),
+    getOrThrow: jest.fn((key: string) => {
+      if (!(key in CONFIG)) throw new Error(`missing ${key}`);
+      return CONFIG[key];
+    }),
   };
+
+  const pendingBooking = {
+    id: 'booking-123',
+    customer_id: 'cust-1',
+    status: 'PENDING_PAYMENT',
+    total_price: 100000,
+    provider_id: 'provider-1',
+    provider_working_slot_id: 'slot-1',
+    payments: null,
+  };
+
+  const signVnp = (params: Record<string, any>) => {
+    const sorted = (service as any).sortObject(params);
+    const signData = qs.stringify(sorted, { encode: false });
+    return crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');
+  };
+
+  const signMomo = (p: any) => {
+    const raw = `accessKey=valid_access_key&amount=${p.amount}&extraData=${p.extraData}&message=${p.message}&orderId=${p.orderId}&orderInfo=${p.orderInfo}&orderType=${p.orderType}&partnerCode=${p.partnerCode}&payType=${p.payType}&requestId=${p.requestId}&responseTime=${p.responseTime}&resultCode=${p.resultCode}&transId=${p.transId}`;
+    return crypto.createHmac('sha256', 'valid_secret_key').update(Buffer.from(raw, 'utf-8')).digest('hex');
+  };
+
+  const pendingPayment = (overrides: any = {}) => ({
+    id: 'payment-1',
+    transaction_code: 'order-1',
+    status: 'PENDING',
+    booking_id: 'booking-123',
+    customer_id: 'cust-1',
+    amount: 100000,
+    idempotency_key: null,
+    bookings: { ...pendingBooking },
+    ...overrides,
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: ConfigService, useValue: mockConfig },
         { provide: WalletsService, useValue: mockWalletsService },
         { provide: SubscriptionsService, useValue: mockSubscriptionsService },
@@ -69,21 +92,18 @@ describe('PaymentsService', () => {
     }).compile();
 
     service = module.get<PaymentsService>(PaymentsService);
-    prisma = module.get<PrismaService>(PrismaService);
-    config = module.get<ConfigService>(ConfigService);
+
+    mockPrisma.provider_profiles.findUnique.mockResolvedValue({ id: 'provider-1', user_id: 'provider-user' });
+    mockPrisma.wallets.findUnique.mockResolvedValue({ id: 'provider-wallet', user_id: 'provider-user' });
+    mockPrisma.wallets.upsert.mockResolvedValue({ id: 'customer-wallet', user_id: 'cust-1' });
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('createVNPayUrl with Promotion', () => {
-    const bookingId = 'booking-123';
-    const amount = 100000;
-    const ipAddress = '127.0.0.1';
-    
-    it('should calculate discount and send reduced amount to VNPay, but record final amount in payments table', async () => {
-      // Nền tảng trợ giá 20%
+  describe('createVNPayUrl', () => {
+    it('applies promotion and records the discounted amount', async () => {
       mockPrisma.promotions.findUnique.mockResolvedValue({
         id: 'promo-1',
         code: 'SALE20',
@@ -95,162 +115,132 @@ describe('PaymentsService', () => {
         usage_limit: 100,
         used_count: 0,
       });
+      mockPrisma.bookings.findUnique.mockResolvedValue(pendingBooking);
 
-      mockPrisma.bookings.findUnique.mockResolvedValue({
-        id: bookingId,
-        customer_id: 'cust-1',
-        status: 'PENDING_PAYMENT',
-        payments: null,
-      });
+      const url = await service.createVNPayUrl('booking-123', 'cust-1', '127.0.0.1', 'SALE20');
 
-      const url = await service.createVNPayUrl(bookingId, amount, ipAddress, 'SALE20');
-
-      // 1. Kiểm tra URL gọi VNPay phải chứa giá đã giảm (80,000 VND -> 8,000,000)
       expect(url).toContain('vnp_Amount=8000000');
-
-      // 2. Kiểm tra DB ghi nhận Payment phải là giá đã giảm (80,000 VND) qua upsert
       expect(mockPrisma.payments.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { booking_id: bookingId },
+          where: { booking_id: 'booking-123' },
           update: expect.objectContaining({ amount: 80000 }),
-          create: expect.objectContaining({ amount: 80000, booking_id: bookingId, customer_id: 'cust-1' }),
-        })
+          create: expect.objectContaining({ amount: 80000, customer_id: 'cust-1' }),
+        }),
       );
     });
 
-    it('should throw BadRequestException if booking is not PENDING_PAYMENT', async () => {
-      mockPrisma.bookings.findUnique.mockResolvedValue({
-        id: bookingId,
-        customer_id: 'cust-1',
-        status: 'ACCEPTED',
-        payments: null,
-      });
-
-      await expect(service.createVNPayUrl(bookingId, amount, ipAddress)).rejects.toThrow(BadRequestException);
+    it('rejects a booking owned by another customer', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue(pendingBooking);
+      await expect(service.createVNPayUrl('booking-123', 'someone-else', '127.0.0.1')).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if payment already settled or held in escrow', async () => {
-      mockPrisma.bookings.findUnique.mockResolvedValue({
-        id: bookingId,
-        customer_id: 'cust-1',
-        status: 'PENDING_PAYMENT',
-        payments: {
-          status: 'PAID_HELD_IN_ESCROW',
-        },
-      });
-
-      await expect(service.createVNPayUrl(bookingId, amount, ipAddress)).rejects.toThrow(BadRequestException);
+    it('rejects a booking that is not PENDING_PAYMENT', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, status: 'ACCEPTED' });
+      await expect(service.createVNPayUrl('booking-123', 'cust-1', '127.0.0.1')).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if promotion is expired', async () => {
+    it('rejects a booking already paid', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, payments: { status: 'PAID_HELD_IN_ESCROW' } });
+      await expect(service.createVNPayUrl('booking-123', 'cust-1', '127.0.0.1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects an expired promotion', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue(pendingBooking);
       mockPrisma.promotions.findUnique.mockResolvedValue({
         id: 'promo-1',
         code: 'SALE20',
         is_active: true,
         start_date: new Date(Date.now() - 20000),
-        end_date: new Date(Date.now() - 10000), // Hết hạn
+        end_date: new Date(Date.now() - 10000),
       });
-
-      await expect(service.createVNPayUrl(bookingId, amount, ipAddress, 'SALE20')).rejects.toThrow(BadRequestException);
+      await expect(service.createVNPayUrl('booking-123', 'cust-1', '127.0.0.1', 'SALE20')).rejects.toThrow(BadRequestException);
     });
   });
 
-  describe('processPaymentCallback', () => {
-    const mockVnpPayload = {
-      vnp_TxnRef: 'booking-123',
+  describe('processPaymentCallback (VNPay)', () => {
+    const basePayload = {
+      vnp_TxnRef: 'order-1',
       vnp_ResponseCode: '00',
+      vnp_TransactionStatus: '00',
       vnp_TransactionNo: '123456',
+      vnp_Amount: '10000000',
       vnp_OrderInfo: 'Thanh toan booking booking-123',
-      vnp_SecureHash: 'valid_hash'
     };
 
-    it('should process subscription payment if orderInfo starts with SUB_', async () => {
-      mockConfig.get.mockImplementation((key: string) => {
-        if (key === 'VNP_HASH_SECRET') return 'secret';
-        return 'mock';
-      });
+    it('rejects a missing or invalid signature', async () => {
+      const result = await service.processPaymentCallback({ ...basePayload, vnp_SecureHash: 'bad' });
+      expect(result.RspCode).toBe('97');
+      expect(mockPrisma.payments.update).not.toHaveBeenCalled();
+    });
 
-      // generate signature
-      const crypto = require('crypto');
-      const qs = require('qs');
-      const payload = { ...mockVnpPayload, vnp_OrderInfo: 'SUB_user1_PREMIUM' };
-      delete (payload as any).vnp_SecureHash;
-      const sorted = (service as any).sortObject(payload);
-      const signData = qs.stringify(sorted, { encode: false });
-      const validHash = crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');
-      
-      const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: validHash });
-      
+    it('activates a subscription when orderInfo starts with SUB_', async () => {
+      const payload = { ...basePayload, vnp_OrderInfo: 'SUB_user1_PREMIUM' };
+      const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: signVnp(payload) });
+
       expect(result.RspCode).toBe('00');
       expect(mockSubscriptionsService.handleSubscriptionSuccess).toHaveBeenCalledWith('user1', 'PREMIUM');
     });
 
-    it('should process booking payment successfully and send notification', async () => {
-      mockConfig.get.mockImplementation((key: string) => {
-        if (key === 'VNP_HASH_SECRET') return 'secret';
-        return 'mock';
-      });
+    it('holds escrow minus commission and notifies on success', async () => {
+      mockPrisma.payments.findFirst.mockResolvedValue(pendingPayment());
+      mockPrisma.bookings.findUnique.mockResolvedValue({ id: 'booking-123', provider_profiles: { user_id: 'provider-user' } });
 
-      const crypto = require('crypto');
-      const qs = require('qs');
-      const payload = { ...mockVnpPayload };
-      delete (payload as any).vnp_SecureHash;
-      const sorted = (service as any).sortObject(payload);
-      const signData = qs.stringify(sorted, { encode: false });
-      const validHash = crypto.createHmac('sha512', 'secret').update(Buffer.from(signData, 'utf-8')).digest('hex');
-      
-      mockPrisma.payments.findFirst.mockResolvedValue({
-        id: 'payment-1',
-        transaction_code: 'booking-123',
-        status: 'PENDING',
-        booking_id: 'booking-123',
-        customer_id: 'cust-1',
-        amount: 100000,
-        idempotency_key: null,
-        bookings: {
-          provider_id: 'provider-1',
-          total_price: 100000,
-        },
-      });
-
-      mockPrisma.provider_profiles.findUnique.mockResolvedValue({
-        id: 'provider-1',
-        user_id: 'provider-1',
-      });
-
-      mockPrisma.system_configs.findUnique.mockResolvedValue({
-        key: 'COMMISSION_RATE',
-        value: '0.1',
-      });
-
-      mockPrisma.wallets.findUnique.mockResolvedValue({
-        id: 'wallet-1',
-        user_id: 'provider-1',
-      });
-
-      mockPrisma.bookings.findUnique.mockResolvedValue({
-        id: 'booking-123',
-        provider_profiles: { user_id: 'provider-1' }
-      });
-
-      const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: validHash });
+      const result = await service.processPaymentCallback({ ...basePayload, vnp_SecureHash: signVnp(basePayload) });
 
       expect(result.RspCode).toBe('00');
       expect(mockPrisma.payments.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            status: 'PAID_HELD_IN_ESCROW'
-          })
-        })
+          data: expect.objectContaining({ status: 'PAID_HELD_IN_ESCROW', platform_fee: 10000, provider_amount: 90000 }),
+        }),
+      );
+      expect(mockWalletsService.processTransaction).toHaveBeenCalledWith(
+        'provider-wallet', 90000, 'ESCROW_HOLD', 'booking-123', expect.any(String), mockPrisma,
       );
       expect(mockNotificationsService.sendNotification).toHaveBeenCalled();
+    });
+
+    it('rejects when the paid amount differs from the recorded amount', async () => {
+      mockPrisma.payments.findFirst.mockResolvedValue(pendingPayment({ amount: 200000 }));
+
+      const result = await service.processPaymentCallback({ ...basePayload, vnp_SecureHash: signVnp(basePayload) });
+
+      expect(result.RspCode).toBe('04');
+      expect(mockPrisma.payments.update).not.toHaveBeenCalled();
+    });
+
+    it('refunds to the customer wallet when the booking already expired', async () => {
+      mockPrisma.payments.findFirst.mockResolvedValue(
+        pendingPayment({ status: 'VOIDED', bookings: { ...pendingBooking, status: 'EXPIRED' } }),
+      );
+
+      const result = await service.processPaymentCallback({ ...basePayload, vnp_SecureHash: signVnp(basePayload) });
+
+      expect(result.RspCode).toBe('00');
+      expect(mockWalletsService.processTransaction).toHaveBeenCalledWith(
+        'customer-wallet', 100000, 'CREDIT', 'booking-123', expect.any(String), mockPrisma,
+      );
+      expect(mockPrisma.payments.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'REFUNDED' }) }),
+      );
+      expect(mockPrisma.bookings.update).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent for a repeated transaction', async () => {
+      mockPrisma.payments.findFirst.mockResolvedValue(
+        pendingPayment({ status: 'PAID_HELD_IN_ESCROW', idempotency_key: '123456' }),
+      );
+
+      const result = await service.processPaymentCallback({ ...basePayload, vnp_SecureHash: signVnp(basePayload) });
+
+      expect(result.RspCode).toBe('02');
+      expect(mockWalletsService.processTransaction).not.toHaveBeenCalled();
     });
   });
 
   describe('processMomoIPN', () => {
-    const mockMomoPayload = {
+    const momoPayload = {
       partnerCode: 'MOMO',
-      orderId: 'booking-123',
+      orderId: 'order-1',
       requestId: 'req-123',
       amount: 100000,
       orderInfo: 'Thanh toan booking',
@@ -261,65 +251,24 @@ describe('PaymentsService', () => {
       payType: 'qr',
       responseTime: 1616161616,
       extraData: '',
-      signature: '', // will be set dynamically
     };
 
-    it('should return 97 if signature is invalid', async () => {
-      mockConfig.get.mockImplementation((key: string) => {
-        if (key === 'MOMO_ACCESS_KEY') return 'valid_access_key';
-        if (key === 'MOMO_SECRET_KEY') return 'valid_secret_key';
-        return 'mock-value';
-      });
-
-      const payload = { ...mockMomoPayload, signature: 'invalid_signature' };
-      const result = await service.processMomoIPN(payload);
-
+    it('returns 97 if signature is invalid', async () => {
+      const result = await service.processMomoIPN({ ...momoPayload, signature: 'invalid_signature' });
       expect(result.RspCode).toBe('97');
-      expect(result.Message).toBe('Checksum failed');
     });
 
-    it('should process payment successfully and hold funds in escrow', async () => {
-      mockConfig.get.mockImplementation((key: string) => {
-        if (key === 'MOMO_ACCESS_KEY') return 'valid_access_key';
-        if (key === 'MOMO_SECRET_KEY') return 'valid_secret_key';
-        return 'mock-value';
-      });
+    it('returns 97 if signature is missing (forged success)', async () => {
+      const result = await service.processMomoIPN({ ...momoPayload });
+      expect(result.RspCode).toBe('97');
+      expect(mockPrisma.payments.findFirst).not.toHaveBeenCalled();
+    });
 
-      // Generate valid signature
-      const rawSignature = `accessKey=valid_access_key&amount=${mockMomoPayload.amount}&extraData=${mockMomoPayload.extraData}&message=${mockMomoPayload.message}&orderId=${mockMomoPayload.orderId}&orderInfo=${mockMomoPayload.orderInfo}&orderType=${mockMomoPayload.orderType}&partnerCode=${mockMomoPayload.partnerCode}&payType=${mockMomoPayload.payType}&requestId=${mockMomoPayload.requestId}&responseTime=${mockMomoPayload.responseTime}&resultCode=${mockMomoPayload.resultCode}&transId=${mockMomoPayload.transId}`;
-      const crypto = require('crypto');
-      const validSignature = crypto.createHmac('sha256', 'valid_secret_key').update(Buffer.from(rawSignature, 'utf-8')).digest('hex');
+    it('holds escrow minus commission on success', async () => {
+      mockPrisma.payments.findFirst.mockResolvedValue(pendingPayment());
+      mockPrisma.bookings.findUnique.mockResolvedValue({ id: 'booking-123', provider_profiles: { user_id: 'provider-user' } });
 
-      const payload = { ...mockMomoPayload, signature: validSignature };
-
-      mockPrisma.payments.findFirst.mockResolvedValue({
-        id: 'payment-1',
-        transaction_code: 'booking-123',
-        status: 'PENDING',
-        booking_id: 'booking-123',
-        idempotency_key: null,
-        bookings: {
-          provider_id: 'provider-1',
-          total_price: 100000,
-        },
-      });
-
-      mockPrisma.provider_profiles.findUnique.mockResolvedValue({
-        id: 'provider-1',
-        user_id: 'provider-1',
-      });
-
-      mockPrisma.system_configs.findUnique.mockResolvedValue({
-        key: 'COMMISSION_RATE',
-        value: '0.1',
-      });
-
-      mockPrisma.wallets.findUnique.mockResolvedValue({
-        id: 'wallet-1',
-        user_id: 'provider-1',
-      });
-
-      const result = await service.processMomoIPN(payload);
+      const result = await service.processMomoIPN({ ...momoPayload, signature: signMomo(momoPayload) });
 
       expect(result.RspCode).toBe('00');
       expect(mockPrisma.payments.update).toHaveBeenCalledWith(
@@ -328,16 +277,50 @@ describe('PaymentsService', () => {
           data: expect.objectContaining({
             status: 'PAID_HELD_IN_ESCROW',
             idempotency_key: '123456789',
-          })
-        })
+            platform_fee: 10000,
+            provider_amount: 90000,
+          }),
+        }),
       );
       expect(mockWalletsService.processTransaction).toHaveBeenCalledWith(
-        'wallet-1',
-        90000,
-        'ESCROW_HOLD',
-        'booking-123',
-        'Ký quỹ thanh toán từ Momo (đã trừ phí hoa hồng)',
-        mockPrisma
+        'provider-wallet', 90000, 'ESCROW_HOLD', 'booking-123', 'Ký quỹ thanh toán từ MoMo (đã trừ phí hoa hồng)', mockPrisma,
+      );
+    });
+  });
+
+  describe('calculateCommissionPreview', () => {
+    it('splits the amount using COMMISSION_RATE', async () => {
+      await expect(service.calculateCommissionPreview(200000)).resolves.toEqual({
+        amount: 200000,
+        commissionRate: 0.1,
+        commissionPercent: 10,
+        platformFee: 20000,
+        providerAmount: 180000,
+      });
+    });
+
+    it('rejects an invalid amount', async () => {
+      await expect(service.calculateCommissionPreview(-1)).rejects.toThrow(BadRequestException);
+      await expect(service.calculateCommissionPreview(NaN)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('checkoutWithWallet', () => {
+    it('stores platform_fee/provider_amount even when a payment row already exists', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, payments: { status: 'FAILED' } });
+      mockPrisma.wallets.findUnique.mockImplementation(({ where }: any) =>
+        where.user_id === 'cust-1'
+          ? { id: 'customer-wallet', balance: { lessThan: () => false } }
+          : { id: 'provider-wallet' },
+      );
+      mockPrisma.payments.upsert.mockResolvedValue({ amount: 100000 });
+
+      await service.checkoutWithWallet('cust-1', 'booking-123');
+
+      expect(mockPrisma.payments.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.objectContaining({ platform_fee: 10000, provider_amount: 90000 }),
+        }),
       );
     });
   });

@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../../../database/prisma.service';
 
+/** Thời gian giữ chỗ mặc định khi tạo booking (VNPay/MoMo/Ví). Chuyển khoản được gia hạn qua held_until. */
+export const DEFAULT_PAYMENT_HOLD_MINUTES = 10;
+
 @Injectable()
 export class ReleaseHeldSlotsCron {
   private readonly logger = new Logger(ReleaseHeldSlotsCron.name);
@@ -14,20 +17,19 @@ export class ReleaseHeldSlotsCron {
     this.logger.debug('Running ReleaseHeldSlotsCron to free up expired slots and bookings...');
 
     const now = new Date();
-    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+    const defaultHoldAgo = new Date(now.getTime() - DEFAULT_PAYMENT_HOLD_MINUTES * 60 * 1000);
 
     try {
-      // 1. Tìm các bookings đang PENDING_PAYMENT quá hạn 10 phút hoặc có slot held_until < now
+      // 1. Booking PENDING_PAYMENT hết hạn khi:
+      //    - slot giữ chỗ đã qua held_until (mốc chính — chuyển khoản được gia hạn mốc này), hoặc
+      //    - không có slot / slot không có held_until và đã quá thời gian giữ chỗ mặc định (dự phòng)
       const expiredBookings = await this.prisma.bookings.findMany({
         where: {
           status: 'PENDING_PAYMENT',
           OR: [
-            { created_at: { lt: tenMinutesAgo } },
-            {
-              provider_working_slots: {
-                held_until: { lt: now },
-              },
-            },
+            { provider_working_slots: { is: { held_until: { lt: now } } } },
+            { provider_working_slots: { is: { held_until: null } }, created_at: { lt: defaultHoldAgo } },
+            { provider_working_slot_id: null, created_at: { lt: defaultHoldAgo } },
           ],
         },
         include: {
@@ -40,19 +42,21 @@ export class ReleaseHeldSlotsCron {
 
         for (const booking of expiredBookings) {
           await this.prisma.$transaction(async (tx) => {
-            // Cập nhật trạng thái Booking -> EXPIRED
-            await tx.bookings.update({
-              where: { id: booking.id },
+            // Chỉ hết hạn nếu booking VẪN đang chờ thanh toán — tránh ghi đè đơn vừa được
+            // IPN/webhook xác nhận thanh toán giữa lúc quét và lúc cập nhật
+            const { count } = await tx.bookings.updateMany({
+              where: { id: booking.id, status: 'PENDING_PAYMENT' },
               data: {
                 status: 'EXPIRED',
                 updated_at: now,
               },
             });
+            if (count === 0) return;
 
             // Nếu có bản ghi payment đang PENDING -> Chuyển sang VOIDED
             if (booking.payments && booking.payments.status === 'PENDING') {
-              await tx.payments.update({
-                where: { id: booking.payments.id },
+              await tx.payments.updateMany({
+                where: { id: booking.payments.id, status: 'PENDING' },
                 data: {
                   status: 'VOIDED',
                 },
@@ -66,7 +70,7 @@ export class ReleaseHeldSlotsCron {
                 old_status: 'PENDING_PAYMENT',
                 new_status: 'EXPIRED',
                 changed_by: null,
-                note: 'Tự động hủy do quá hạn 10 phút chưa thanh toán',
+                note: 'Tự động hủy do quá thời gian giữ chỗ mà chưa thanh toán',
               },
             });
 
@@ -76,7 +80,7 @@ export class ReleaseHeldSlotsCron {
                 booking_id: booking.id,
                 actor_id: null,
                 event_type: 'CANCELLED',
-                note: 'Booking expired due to unpaid status after 10 minutes',
+                note: 'Booking expired: payment hold window elapsed without payment',
               },
             });
 

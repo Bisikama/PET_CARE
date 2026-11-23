@@ -12,6 +12,7 @@ import { CreateBookingDto } from '../../presentation/dto/create-booking.dto';
 import { PrismaService } from '../../../../database/prisma.service';
 import { GeoLocationHelper } from '../../../../common/utils/geo-location.helper';
 import { PaymentsService } from '../../../payments/application/use-cases/payments.service';
+import { DEFAULT_PAYMENT_HOLD_MINUTES } from '../../../provider-schedules/application/cron/release-held-slots.cron';
 
 @Injectable()
 export class CreateBookingRequestUseCase {
@@ -163,9 +164,10 @@ export class CreateBookingRequestUseCase {
     }
 
     // 7. Execute transaction with concurrency check
+    // Giữ chỗ mặc định; chọn chuyển khoản sẽ được gia hạn (SepayService)
+    const heldUntil = new Date(Date.now() + DEFAULT_PAYMENT_HOLD_MINUTES * 60 * 1000);
     const booking = await this.unitOfWork.transaction(async (tx) => {
       // Concurrency update: check if slot is AVAILABLE and update status to HELD_FOR_PAYMENT
-      const heldUntil = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes reservation
       const affectedRows = await this.bookingRepo.updateWorkingSlotStatus(
         dto.providerWorkingSlotId,
         'HELD_FOR_PAYMENT',
@@ -274,13 +276,15 @@ export class CreateBookingRequestUseCase {
     // 8. Generate VNPay URL outside the transaction to avoid holding DB lock during external logic
     const paymentUrl = await this.paymentsService.createVNPayUrl(
       booking.id,
-      Number(booking.total_price),
+      customerId,
       ipAddress,
     );
 
     return {
       booking,
       paymentUrl,
+      /** Hết thời gian giữ chỗ (ISO) — client đếm ngược theo mốc này */
+      holdExpiresAt: heldUntil.toISOString(),
     };
   }
 }
