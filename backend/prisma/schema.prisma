@@ -231,9 +231,48 @@ model payments {
   created_at        DateTime?          @default(now()) @db.Timestamp(6)
   updated_at        DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
   idempotency_key   String?            @unique @db.VarChar(255)
+  promotion_code    String?            @db.VarChar(50)
   bookings          bookings           @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   users             User               @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   provider_profiles provider_profiles? @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bank_transactions bank_transactions[]
+}
+
+/// Sổ ghi mọi giao dịch ngân hàng do SePay báo về (chuyển khoản VietQR vào tài khoản MB).
+/// external_id là `id` của SePay — unique để chống xử lý trùng khi SePay gửi lại webhook.
+model bank_transactions {
+  id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider         String                  @default("SEPAY") @db.VarChar(20)
+  external_id      String                  @db.VarChar(64)
+  gateway          String?                 @db.VarChar(100)
+  account_number   String?                 @db.VarChar(50)
+  transaction_date DateTime?               @db.Timestamp(6)
+  transfer_type    String                  @db.VarChar(10)
+  transfer_amount  Decimal                 @db.Decimal(14, 2)
+  content          String?
+  code             String?                 @db.VarChar(64)
+  reference_code   String?                 @db.VarChar(100)
+  status           bank_transaction_status
+  note             String?
+  payment_id       String?                 @db.Uuid
+  raw_payload      Json
+  resolved_by      String?                 @db.Uuid
+  resolved_at      DateTime?               @db.Timestamp(6)
+  created_at       DateTime                @default(now()) @db.Timestamp(6)
+  payments         payments?               @relation(fields: [payment_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  resolver         User?                   @relation("bank_transactions_resolver", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([provider, external_id])
+  @@index([status])
+  @@index([code])
+}
+
+enum bank_transaction_status {
+  MATCHED              // Khớp đơn, đã xác nhận thanh toán
+  REFUNDED_TO_WALLET   // Khớp đơn nhưng không xác nhận được (trễ/thiếu tiền/chuyển trùng) -> hoàn vào ví khách
+  UNMATCHED            // Không tìm thấy đơn theo nội dung CK -> admin xử lý thủ công
+  IGNORED              // Giao dịch tiền ra hoặc không liên quan
+  RESOLVED_MANUALLY    // Admin đã xử lý ngoài hệ thống (chuyển trả qua ngân hàng, khoản không liên quan...)
 }
 
 model pets {
@@ -432,6 +471,7 @@ model User {
   customer_addresses                            customer_addresses[]
   notifications                                 notifications[]
   payments                                      payments[]
+  resolved_bank_transactions                    bank_transactions[]             @relation("bank_transactions_resolver")
   pets                                          pets[]
   provider_profiles                             provider_profiles?
   refresh_tokens                                refresh_tokens[]
