@@ -13,7 +13,7 @@ import { AdminDisputeList } from '@/features/admin-care/components';
 import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
 import { ServiceDetailModal } from '@/features/services';
 import { ScheduleManager } from '@/features/schedule';
-import { EscrowManagement } from '@/features/settlement';
+import { EscrowManagement, BankTransactionsManager } from '@/features/settlement';
 import { AreaManager } from '@/features/areas';
 import { WalletOverview, TransactionHistory, BankAccountsManager } from '@/features/wallets';
 import { ChatWindowModal } from '@/features/chat';
@@ -92,6 +92,8 @@ function DashboardContent() {
           <AdminPromotionsManager key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
+        ) : adminTab === 'bank-transactions' ? (
+          <BankTransactionsManager key={adminRefreshKey} />
         ) : adminTab === 'chat' ? (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">Trò Chuyện & Nhắn Tin Hệ Thống</h2>
