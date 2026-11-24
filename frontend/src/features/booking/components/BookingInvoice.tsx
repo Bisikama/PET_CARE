@@ -7,6 +7,7 @@ import { bookingService } from '../services/booking.service';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useServicesStore } from '@/features/services/stores/services.store';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 interface PriceQuote {
   servicePrice: number;
@@ -179,7 +180,10 @@ export function BookingInvoice() {
     }
 
     if (!selectedPetId || !selectedAddressId || !selectedServiceId || !selectedSlotId) {
-      alert('Vui lòng quay lại chọn đầy đủ thú cưng, địa chỉ, dịch vụ và khung giờ làm việc.');
+      systemAlert('Vui lòng quay lại chọn đầy đủ thú cưng, địa chỉ, dịch vụ và khung giờ làm việc.', {
+        title: 'Thiếu thông tin đặt lịch',
+        type: 'warning',
+      });
       return;
     }
 
@@ -208,7 +212,12 @@ export function BookingInvoice() {
       }
     } catch (err: any) {
       console.error('Lỗi khi tạo đơn đặt lịch:', err);
-      alert(err?.response?.data?.message || err?.message || 'Không thể tạo đơn đặt lịch. Khung giờ có thể đã được người khác đặt trước.');
+      systemAlert(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Không thể tạo đơn đặt lịch. Khung giờ có thể đã được người khác đặt trước.',
+        { title: 'Không thể khởi tạo đơn', type: 'error' },
+      );
     } finally {
       setIsCreatingBooking(false);
     }
@@ -345,7 +354,7 @@ export function BookingInvoice() {
           </div>
           <div className="space-y-1">
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Địa chỉ thực hiện ca:</p>
-            <p className="text-red-500 font-bold text-sm">{addressString}</p>
+            <p className="text-slate-800 font-bold text-sm">{addressString}</p>
           </div>
           <div className="space-y-1">
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Thời gian lên lịch:</p>
@@ -354,12 +363,12 @@ export function BookingInvoice() {
         </div>
 
         {/* Escrow Terms */}
-        <div className="bg-[#ebf3ff] border border-blue-200 rounded-2xl p-5 flex items-start gap-3 mt-4">
-          <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex items-start gap-3 mt-4">
+          <ShieldCheck className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-sm font-bold text-slate-800 mb-1">Điều khoản bảo hộ Ký Quỹ Độc Quyền (Escrow-Pay):</h4>
+            <h4 className="text-sm font-bold text-[#08243D] mb-1">Điều khoản bảo hộ Ký Quỹ (Escrow-Pay):</h4>
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Hệ thống trung gian của PetCare sẽ đóng băng khoản thanh toán <strong className="text-slate-800">{formatPrice(finalTotal)}</strong>. {providerName} chỉ được nhận giải ngân khi và chỉ khi bạn chính tay xác nhận hoàn thành dịch vụ mỹ mãn.
+              Hệ thống trung gian của PetCare sẽ giữ an toàn khoản thanh toán <strong className="text-[#08243D]">{formatPrice(finalTotal)}</strong>. {providerName} chỉ nhận giải ngân sau khi bạn xác nhận hoàn thành dịch vụ.
             </p>
           </div>
         </div>
@@ -369,11 +378,11 @@ export function BookingInvoice() {
       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Ticket className="w-5 h-5 text-emerald-600" />
-            <h4 className="text-sm font-bold text-slate-800">Mã khuyến mãi / Voucher</h4>
+            <Ticket className="w-5 h-5 text-[#08243D]" />
+            <h4 className="text-sm font-bold text-[#08243D]">Mã khuyến mãi / Voucher</h4>
           </div>
           {appliedDiscount > 0 && (
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Đã giảm {formatPrice(appliedDiscount)}
             </span>
@@ -392,13 +401,13 @@ export function BookingInvoice() {
             type="text"
             value={promoInput}
             onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-            placeholder="Nhập mã khuyến mãi (VD: SIUU)"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 uppercase placeholder:normal-case placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+            placeholder="Nhập mã khuyến mãi (VD: SUMMER2026)"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 uppercase placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-[#08243D]"
           />
           <button
             type="submit"
             disabled={promoLoading || !promoInput.trim()}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
+            className="px-5 py-2.5 bg-[#08243D] hover:bg-[#0c3254] disabled:opacity-50 text-[#F7C948] text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer"
           >
             {promoLoading ? 'Đang kiểm tra...' : 'Áp dụng'}
           </button>
@@ -426,7 +435,7 @@ export function BookingInvoice() {
       <div className="space-y-2 px-2">
         {quoteLoading && !pricing ? (
           <div className="flex items-center gap-2 py-3 text-sm font-semibold text-slate-400">
-            <div className="w-4 h-4 border-2 border-slate-200 border-t-teal-500 rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-slate-200 border-t-[#08243D] rounded-full animate-spin" />
             Đang tính giá theo cân nặng & quãng đường...
           </div>
         ) : quoteError && !pricing ? (
@@ -453,11 +462,11 @@ export function BookingInvoice() {
                 <span>-{formatPrice(appliedDiscount)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">
-                Tổng tiền cần thanh toán ký quỹ:
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <h3 className="text-base font-bold text-[#08243D]">
+                Tổng thanh toán ký quỹ Escrow
               </h3>
-              <span className="text-2xl font-black text-slate-900 tracking-tight">{formatPrice(finalTotal)}</span>
+              <span className="text-2xl font-bold text-[#08243D] tracking-tight tabular-nums">{formatPrice(finalTotal)}</span>
             </div>
           </>
         ) : null}
@@ -467,7 +476,7 @@ export function BookingInvoice() {
       <div className="flex items-center justify-between pt-4 border-t border-slate-100">
         <button
           onClick={() => setStep(6)}
-          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
           Quay lại
@@ -475,17 +484,15 @@ export function BookingInvoice() {
         <button
           onClick={handleProceedPayment}
           disabled={isCreatingBooking || (!createdBookingId && !quote)}
-          className="flex items-center gap-2 px-8 py-3.5 bg-[#00a86b] hover:bg-[#00915c] disabled:opacity-50 text-white text-sm font-bold rounded-2xl transition-all shadow-lg shadow-teal-500/20 active:scale-95 cursor-pointer"
+          className="flex items-center gap-2 px-7 py-3.5 bg-[#08243D] hover:bg-[#0c3254] disabled:opacity-50 text-[#F7C948] text-sm font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
         >
           {isCreatingBooking ? (
             <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>ĐANG TẠO ĐƠN & KÝ QUỸ...</span>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-[#F7C948] rounded-full animate-spin"></div>
+              <span>Đang tạo đơn...</span>
             </>
           ) : (
-            <>
-              <span className="font-mono font-normal opacity-80 mr-1">$</span> TIẾN HÀNH KÝ QUỸ VÍ PETCARE
-            </>
+            <span>Xác nhận & Chọn phương thức thanh toán →</span>
           )}
         </button>
       </div>

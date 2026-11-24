@@ -1,9 +1,30 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
-import { Heart, Mail, Plus, Shield, User, AlertCircle, Check, HelpCircle, Briefcase, LayoutDashboard, ClipboardList, Database, ShieldCheck, Gavel, BarChart3, Activity, MessageSquare } from 'lucide-react';
+import { ROUTES } from '@/lib/constants';
+import {
+  Heart,
+  Mail,
+  Plus,
+  Shield,
+  User,
+  Briefcase,
+  ShieldCheck,
+  Sparkles,
+  CalendarCheck2,
+  Tag,
+  Crown,
+  ArrowUpRight,
+  MapPin,
+  FileText,
+  PlusCircle,
+  HeartHandshake,
+  Clock,
+  CheckCircle2,
+} from 'lucide-react';
 import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore, CustomerBookingAction } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal, BookingActionDetail, useProviderBookingStore } from '@/features/provider';
@@ -16,17 +37,14 @@ import { ScheduleManager } from '@/features/schedule';
 import { EscrowManagement, BankTransactionsManager } from '@/features/settlement';
 import { AreaManager } from '@/features/areas';
 import { WalletOverview, TransactionHistory, BankAccountsManager } from '@/features/wallets';
-import { ChatWindowModal } from '@/features/chat';
-import { Globe, Trash2, PlusCircle, FileText, Eye } from 'lucide-react';
 
 function DashboardContent() {
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { openModal: openProfileModal } = useMeStore();
-  const { openModal: openPetModal } = usePetStore();
+  const { openModal: openProfileModal, openAddressModal } = useMeStore();
+  const { openModal: openPetModal, pets } = usePetStore();
   const { openModal: openProviderModal } = useProvider();
-  const [providerTab, setProviderTab] = React.useState('active-cases');
   const adminTab = searchParams.get('tab') || 'verify-partners';
   
   const { activeBookingId } = useProviderBookingStore();
@@ -150,8 +168,6 @@ function DashboardContent() {
             </div>
           )}
 
-
-
           {providerTab === 'schedule' && (
             <div className="space-y-6">
               {/* Main content grid */}
@@ -188,7 +204,6 @@ function DashboardContent() {
                                   {item.pet_species === 'Dog' ? '🐶 Chó' : '🐱 Mèo'} ({item.min_weight} - {item.max_weight} kg)
                                 </span>
                               </div>
-                              {/* Giá do PetCare niêm yết theo cân nặng (xem trong chi tiết gói) — hiện trạng thái duyệt năng lực */}
                               <span
                                 className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border ${
                                   item.status === 'APPROVED'
@@ -343,110 +358,128 @@ function DashboardContent() {
     );
   }
 
+  const displayName = user?.fullName || 'Người dùng';
+
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="relative bg-[#031625] py-14 px-8 md:px-10 rounded-[32px] text-white shadow-xl overflow-hidden border border-slate-800/60 min-h-[220px] flex flex-col justify-center">
-        {/* Glow effects and Hero Banner Image */}
-        <div className="absolute inset-0 z-0">
-           <img src="/images/hero-banner-new.png" alt="Banner" className="w-full h-full object-cover opacity-30 mix-blend-overlay" />
-        </div>
-        <div className="absolute right-0 top-0 w-96 h-96 bg-[radial-gradient(circle_at_top_right,rgba(240,192,90,0.2),transparent_60%)] pointer-events-none z-0" />
-        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-[radial-gradient(circle_at_bottom,rgba(20,184,166,0.1),transparent_60%)] pointer-events-none z-0" />
-        
+    <div className="space-y-8 pb-8 animate-fade-in">
+      {/* 1. Minimalist Luxury Welcome Banner */}
+      <div className="relative bg-[#08243D] py-10 px-8 md:px-10 rounded-3xl text-white shadow-sm overflow-hidden border border-slate-800/80">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-[radial-gradient(circle_at_top_right,rgba(247,201,72,0.12),transparent_65%)] pointer-events-none" />
+
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-3.5">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/5 border border-amber-400/15 text-[#f0c05a] text-xs font-semibold uppercase tracking-wider">
-              <Heart className="w-3.5 h-3.5 fill-current" />
-              Khu vực chủ nuôi
-            </div>
-            
-            {/* Title */}
-            <h2 className="text-2xl md:text-3.5xl font-extrabold tracking-tight text-white leading-tight">
-              Chào mừng trở lại,{' '}
-              <span 
-                onClick={openProfileModal} 
-                className="cursor-pointer hover:text-teal-300 transition-all duration-200"
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#F7C948]">
+              Không gian chủ nuôi
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              Xin chào,{' '}
+              <button
+                type="button"
+                onClick={openProfileModal}
+                className="text-[#F7C948] hover:underline underline-offset-4 cursor-pointer"
               >
-                {user?.fullName || 'Người dùng'}
-              </span>
-              !
+                {displayName}
+              </button>
             </h2>
+            <p className="text-slate-300 text-sm max-w-lg">
+              Quản lý hồ sơ thú cưng và đặt lịch chăm sóc tại nhà an toàn qua hệ thống Escrow.
+            </p>
           </div>
 
-          {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button 
+            <button
+              type="button"
               onClick={openProviderModal}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/25 text-teal-300 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
             >
-              <Briefcase className="w-4 h-4" />
-              Đăng ký làm đối tác
+              <Briefcase className="w-4 h-4 text-teal-300" />
+              Đăng ký đối tác
             </button>
-            <button 
+
+            <button
+              type="button"
               onClick={openPetModal}
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl border border-slate-700/80 bg-slate-800/20 hover:bg-slate-800/40 text-white text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              Đăng ký bé cưng
+              <Plus className="w-4 h-4 text-[#F7C948]" />
+              Thêm thú cưng
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#f0c05a] hover:bg-[#e0b04a] text-slate-950 text-sm font-bold transition-all duration-200 active:scale-95 shadow-md shadow-amber-500/10">
+
+            <button
+              type="button"
+              onClick={() => router.push(ROUTES.BOOKINGS)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F7C948] hover:bg-[#f0be30] text-[#08243D] text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
               <Heart className="w-4 h-4 fill-current" />
-              Đặt người chăm sóc mới
+              Đặt lịch chăm sóc
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left column: Actions and My Pets List */}
-        <div className="lg:col-span-2 space-y-8">
+      {/* 2. Main 2-Column Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Left column: Active Booking Action & Pet List */}
+        <div className="lg:col-span-2 space-y-6">
           <CustomerBookingAction />
           <PetList />
         </div>
 
-        {/* Right column: Account Info Details */}
+        {/* Right column: Clean Account Information Card */}
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 md:p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-800">Thông tin tài khoản</h3>
-              <p className="text-slate-400 text-xs mt-0.5">Chi tiết tài khoản đăng nhập của bạn.</p>
+          <div className="bg-white p-6 md:p-7 rounded-3xl border border-slate-200/70 shadow-2xs space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-[#08243D]">Thông tin tài khoản</h3>
+                <p className="text-slate-400 text-xs mt-0.5">Hồ sơ cá nhân & địa chỉ</p>
+              </div>
+              <button
+                type="button"
+                onClick={openProfileModal}
+                className="text-xs font-semibold text-teal-600 hover:text-[#08243D] transition-colors cursor-pointer"
+              >
+                Chỉnh sửa
+              </button>
             </div>
 
-            <div className="space-y-4">
-              <div 
+            <div className="space-y-3">
+              <div
                 onClick={openProfileModal}
-                className="flex items-center gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer transition-all duration-200 active:scale-[0.99]"
+                className="flex items-center gap-3.5 p-3.5 bg-slate-50/70 hover:bg-slate-100/70 rounded-2xl border border-slate-100 cursor-pointer transition-colors"
               >
-                <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
-                  <User className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium">Họ và tên</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.fullName || 'N/A'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                  <Mail className="h-5 w-5" />
+                <div className="p-2.5 bg-white text-[#08243D] rounded-xl border border-slate-200/60 shadow-2xs">
+                  <User className="h-4.5 w-4.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-400 font-medium">Email</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5 truncate">{user?.email || 'N/A'}</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Họ và tên</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate">{displayName}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                  <Shield className="h-5 w-5" />
+              <div className="flex items-center gap-3.5 p-3.5 bg-slate-50/70 rounded-2xl border border-slate-100">
+                <div className="p-2.5 bg-white text-[#08243D] rounded-xl border border-slate-200/60 shadow-2xs">
+                  <Mail className="h-4.5 w-4.5" />
                 </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium">Vai trò hệ thống</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{user?.role || 'N/A'}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] text-slate-400 font-medium">Email</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate">{user?.email || 'N/A'}</p>
                 </div>
+              </div>
+
+              <div
+                onClick={openAddressModal}
+                className="flex items-center justify-between gap-3.5 p-3.5 bg-slate-50/70 hover:bg-slate-100/70 rounded-2xl border border-slate-100 cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="p-2.5 bg-white text-[#08243D] rounded-xl border border-slate-200/60 shadow-2xs">
+                    <MapPin className="h-4.5 w-4.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-slate-400 font-medium">Sổ địa chỉ</p>
+                    <p className="text-sm font-semibold text-slate-800 truncate">Địa chỉ nhận dịch vụ</p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-teal-600">Quản lý</span>
               </div>
             </div>
           </div>
@@ -470,3 +503,4 @@ export default function DashboardPage() {
     </React.Suspense>
   );
 }
+

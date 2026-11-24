@@ -147,7 +147,7 @@ export function ProviderSelection() {
         </div>
       ) : (
         /* Provider Cards List */
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {providers.map((p, index) => {
             const isSelected = selectedProviderId === p.id;
             const isRecommended = index === 0; // First provider has highest score
@@ -155,36 +155,26 @@ export function ProviderSelection() {
             return (
               <div
                 key={p.id}
+                style={{ animationDelay: `${index * 60}ms` }}
                 onClick={() => handleSelectProvider(p.id)}
-                className={`relative overflow-hidden rounded-[24px] bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 cursor-pointer transition-all duration-300 border-2 ${
+                className={`animate-stagger-card card-hover-lift relative overflow-hidden rounded-3xl bg-white p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 cursor-pointer transition-all duration-300 border-2 ${
                   isSelected 
-                    ? 'border-[#f0c05a] shadow-md bg-amber-50/5' 
-                    : 'border-slate-100 hover:border-slate-200'
+                    ? 'border-[#08243D] shadow-md bg-slate-50/60' 
+                    : 'border-slate-200/70 hover:border-slate-300'
                 }`}
               >
                 {/* Left Side: Avatar + Details */}
                 <div className="flex items-start gap-4 flex-1">
                   {/* Avatar */}
-                  <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-md bg-gradient-to-tr from-teal-600 via-emerald-500 to-cyan-600 flex items-center justify-center text-white font-extrabold text-xl uppercase tracking-wider">
-                    {p.avatarUrl ? (
-                      <img
-                        src={p.avatarUrl}
-                        alt={p.fullName}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/avatar-provider.png';
-                        }}
-                      />
-                    ) : (
-                      <img
-                        src="/images/avatar-provider.png"
-                        alt={p.fullName}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    <span className="select-none drop-shadow-sm">
-                      {p.fullName?.charAt(0) || 'P'}
-                    </span>
+                  <div className="relative shrink-0 w-16 h-16 rounded-2xl overflow-hidden border border-slate-200/80 shadow-xs bg-slate-100 flex items-center justify-center">
+                    <img
+                      src={p.avatarUrl || '/images/avatar-provider.png'}
+                      alt={p.fullName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = '/images/avatar-provider.png';
+                      }}
+                    />
                   </div>
 
                   {/* Info details */}

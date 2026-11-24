@@ -5,6 +5,7 @@ import { X, Loader2, MapPin, ChevronLeft, Navigation, Compass, Plus, Trash2, Edi
 import { useMeStore } from '../stores/me.store';
 import { useCustomerAddresses } from '../hooks/useCustomerAddresses';
 import { AddressSelector } from './AddressSelector';
+import { systemConfirm } from '@/components/ui/SystemDialogProvider';
 import { CustomerAddress, CreateAddressInput } from '../types';
 
 export function CustomerAddressModal() {
@@ -200,7 +201,14 @@ export function CustomerAddressModal() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) {
+    const ok = await systemConfirm({
+      title: 'Xóa địa chỉ nhận dịch vụ?',
+      message: 'Bạn có chắc chắn muốn xóa địa chỉ này khỏi sổ địa chỉ của mình không?',
+      confirmText: 'Xóa địa chỉ',
+      cancelText: 'Hủy bỏ',
+      variant: 'danger',
+    });
+    if (ok) {
       try {
         await deleteAddress(id);
       } catch (err) {

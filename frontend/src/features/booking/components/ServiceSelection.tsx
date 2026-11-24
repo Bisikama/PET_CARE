@@ -110,18 +110,19 @@ export function ServiceSelection() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {activeServices.map((service) => {
+          {activeServices.map((service, idx) => {
               const isSelected = selectedServiceId === service.id;
               const petPrice = prices[service.id];
 
               return (
                 <div
                   key={service.id}
+                  style={{ animationDelay: `${idx * 65}ms` }}
                   onClick={() => setSelectedServiceId(service.id)}
-                  className={`relative p-5 md:p-6 rounded-[24px] bg-white cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between min-h-[180px] group ${
+                  className={`animate-stagger-card card-hover-lift relative p-5 md:p-6 rounded-3xl bg-white cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between min-h-[180px] group ${
                     isSelected
-                      ? 'border-[#f0c05a] shadow-md'
-                      : 'border-slate-100 hover:border-slate-200 hover:shadow-sm'
+                      ? 'border-[#08243D] shadow-md bg-slate-50/50'
+                      : 'border-slate-200/70 hover:border-slate-300'
                   }`}
                 >
                   {/* Selected check indicator */}

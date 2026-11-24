@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePayoutRequests, useWallet } from '../hooks/useWallet';
 import { useBankAccounts } from '../../provider/hooks/useBankAccounts';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 interface PayoutRequestModalProps {
   isOpen: boolean;
@@ -56,7 +57,10 @@ export const PayoutRequestModal: React.FC<PayoutRequestModalProps> = ({ isOpen, 
     if (result.success) {
       refreshWallet();
       handleClose();
-      window.alert('Gửi yêu cầu rút tiền thành công! Vui lòng chờ hệ thống xử lý.');
+      systemAlert('Gửi yêu cầu rút tiền thành công! Vui lòng chờ hệ thống xử lý.', {
+        title: 'Đã gửi yêu cầu rút tiền',
+        type: 'success',
+      });
     } else {
       setErrorMsg(result.message || 'Yêu cầu rút tiền thất bại');
     }

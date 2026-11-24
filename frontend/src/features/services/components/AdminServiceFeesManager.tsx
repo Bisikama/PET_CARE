@@ -5,6 +5,7 @@ import { Car, Loader2, Plus, ReceiptText, Save, Trash2, Undo2 } from 'lucide-rea
 import { servicesService } from '../services/services.service';
 import type { ServiceFeeSettings } from '../types';
 import { formatSurchargeFee } from '../utils/pricing-display';
+import { systemConfirm } from '@/components/ui/SystemDialogProvider';
 
 type Row = { key: number; label: string; minFee: string; maxFee: string };
 
@@ -79,15 +80,17 @@ export function AdminServiceFeesManager() {
       surcharges.push({ label, minFee: min, maxFee: max });
     }
 
-    if (
-      saved &&
-      (free !== saved.travel.freeKm || rate !== saved.travel.perKm) &&
-      !window.confirm(
-        `Đổi phí di chuyển thành miễn phí ${free} km đầu, ${rate.toLocaleString('vi-VN')}đ/km vượt thêm?\n` +
-          'Mức mới áp dụng ngay cho các đơn báo giá / đặt lịch từ bây giờ.',
-      )
-    ) {
-      return;
+    if (saved && (free !== saved.travel.freeKm || rate !== saved.travel.perKm)) {
+      const ok = await systemConfirm({
+        title: 'Xác nhận đổi cấu hình phí di chuyển',
+        message:
+          `Đổi phí di chuyển thành miễn phí ${free} km đầu, ${rate.toLocaleString('vi-VN')}đ/km vượt thêm?\n\n` +
+          'Mức mới sẽ áp dụng ngay cho các đơn báo giá và đặt lịch từ bây giờ.',
+        confirmText: 'Lưu thay đổi',
+        cancelText: 'Hủy bỏ',
+        variant: 'warning',
+      });
+      if (!ok) return;
     }
 
     setIsSaving(true);

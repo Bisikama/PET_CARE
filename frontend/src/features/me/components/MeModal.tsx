@@ -89,14 +89,12 @@ export function MeModal() {
         ) : user ? (
           /* Main content when user data is available */
           <>
-            {/* Upper profile header with gradient */}
-            <div className="relative bg-gradient-to-br from-teal-800 to-slate-900 px-6 py-8 flex flex-col items-center text-center">
-              {/* Decorative elements */}
-              <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none" />
-              <div className="absolute left-0 bottom-0 w-24 h-24 bg-teal-500/10 rounded-full blur-lg pointer-events-none" />
+            {/* Upper profile header with Navy luxury theme */}
+            <div className="relative bg-[#08243D] px-6 py-8 flex flex-col items-center text-center">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-[#F7C948]/10 rounded-full blur-2xl pointer-events-none" />
 
               {/* Large Avatar */}
-              <div className="w-20 h-20 rounded-full bg-teal-100/10 border-2 border-white/30 flex items-center justify-center text-teal-200 font-bold text-3xl uppercase shadow-inner mb-4 overflow-hidden">
+              <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-[#F7C948]/40 flex items-center justify-center text-[#F7C948] font-bold text-3xl uppercase shadow-inner mb-4 overflow-hidden">
                 {user.avatarUrl || (user as any).avatar ? (
                   <img src={user.avatarUrl || (user as any).avatar} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
@@ -108,7 +106,7 @@ export function MeModal() {
               <h3 className="text-xl font-bold text-white tracking-tight">{displayName}</h3>
               
               {/* Role Badge */}
-              <span className="mt-2.5 inline-flex px-3 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold tracking-wider uppercase transition-colors">
+              <span className="mt-2.5 inline-flex px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#F7C948] text-xs font-semibold tracking-wider uppercase">
                 {getRoleBadge(user.role)}
               </span>
             </div>
@@ -201,13 +199,13 @@ export function MeModal() {
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-4">
                 <button
                   onClick={() => setIsUpdateModalOpen(true)}
-                  className="px-6 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer border border-transparent"
+                  className="px-5 py-2.5 rounded-xl bg-[#08243D] hover:bg-[#0c3254] text-[#F7C948] text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cập nhật hồ sơ
                 </button>
                 <button
                   onClick={closeModal}
-                  className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer border border-transparent"
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Đóng
                 </button>

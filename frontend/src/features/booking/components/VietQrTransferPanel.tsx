@@ -136,13 +136,13 @@ export function VietQrTransferPanel({ bookingId, checkout, onPaid, onBack }: Vie
   }
 
   return (
-    <div className="w-full max-w-3xl bg-white border border-slate-200 rounded-[24px] p-6 md:p-8 shadow-sm">
+    <div className="w-full max-w-3xl bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 shadow-2xs animate-scale-up">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-          <Landmark className="w-5 h-5 text-emerald-600" />
+        <div className="w-10 h-10 rounded-xl bg-[#08243D] flex items-center justify-center shrink-0">
+          <Landmark className="w-5 h-5 text-[#F7C948]" />
         </div>
         <div>
-          <h3 className="font-black text-slate-800">Chuyển khoản ngân hàng (VietQR)</h3>
+          <h3 className="font-bold text-[#08243D]">Chuyển khoản ngân hàng (VietQR)</h3>
           <p className="text-xs text-slate-500">Xác nhận tự động ngay khi ngân hàng báo có</p>
         </div>
       </div>
@@ -222,10 +222,10 @@ export function VietQrTransferPanel({ bookingId, checkout, onPaid, onBack }: Vie
             type="button"
             onClick={handleConfirmTransferred}
             disabled={isChecking}
-            className="mt-5 w-full flex items-center justify-center gap-2 bg-[#0a1128] text-white font-bold p-4 rounded-2xl hover:bg-slate-800 disabled:opacity-70 transition-all active:scale-[0.98]"
+            className="mt-5 w-full flex items-center justify-center gap-2 bg-[#08243D] text-[#F7C948] font-bold text-xs py-3.5 px-4 rounded-xl hover:bg-[#0c3254] disabled:opacity-70 transition-all cursor-pointer active:scale-[0.98]"
           >
-            {isChecking ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-            {isChecking ? 'Đang kiểm tra…' : 'Tôi đã chuyển khoản'}
+            {isChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {isChecking ? 'Đang kiểm tra giao dịch…' : 'Tôi đã chuyển khoản (Kiểm tra ngay)'}
           </button>
         </div>
       </div>
@@ -233,7 +233,7 @@ export function VietQrTransferPanel({ bookingId, checkout, onPaid, onBack }: Vie
       <button
         type="button"
         onClick={onBack}
-        className="mt-6 flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-slate-800 transition-colors"
+        className="mt-6 flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#08243D] transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
         Chọn phương thức khác
