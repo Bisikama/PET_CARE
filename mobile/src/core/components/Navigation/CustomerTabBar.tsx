@@ -13,7 +13,10 @@ import { theme } from '@/core/theme';
 interface CustomerTabBarProps {
   state: any;
   descriptors: any;
-  navigation: any;
+  emitter?: any;
+  navigateToTab?: (routeKey: string) => void;
+  navigation?: any;
+  insets?: any;
 }
 
 const tabIcons: Record<string, { label: string; Icon: any }> = {
@@ -27,6 +30,8 @@ const tabIcons: Record<string, { label: string; Icon: any }> = {
 export function CustomerTabBar({
   state,
   descriptors,
+  emitter,
+  navigateToTab,
   navigation,
 }: CustomerTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -58,19 +63,23 @@ export function CustomerTabBar({
             : theme.colors.text.muted;
 
           const onPress = () => {
-            const event = navigation.emit({
+            const event = (emitter ?? navigation)?.emit({
               type: 'tabPress',
               target: route.key,
               canPreventDefault: true,
             });
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
+            if (!isFocused && !event?.defaultPrevented) {
+              if (navigateToTab) {
+                navigateToTab(route.key);
+              } else {
+                navigation?.navigate(route.name, route.params);
+              }
             }
           };
 
           const onLongPress = () => {
-            navigation.emit({
+            (emitter ?? navigation)?.emit({
               type: 'tabLongPress',
               target: route.key,
             });

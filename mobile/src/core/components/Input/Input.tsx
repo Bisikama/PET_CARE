@@ -25,7 +25,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   inputStyle?: StyleProp<TextStyle>;
 }
 
-export const Input = forwardRef<TextInput, InputProps>(
+export const Input = forwardRef<React.ComponentRef<typeof TextInput>, InputProps>(
   (
     {
       label,

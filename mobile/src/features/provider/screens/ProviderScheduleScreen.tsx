@@ -654,7 +654,7 @@ export function ProviderScheduleScreen() {
 
   return (
     <Screen style={styles.screen} backgroundColor="#F8F9FF">
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
+      <StatusBar barStyle="dark-content" />
 
       {/* TOP HEADER */}
       <View style={styles.header}>
