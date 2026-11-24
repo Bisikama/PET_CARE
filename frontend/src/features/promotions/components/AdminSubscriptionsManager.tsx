@@ -4,6 +4,7 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight, Crown, Pencil, Plus, RefreshCw, Search } from 'lucide-react';
 import { adminSubscriptionService, getApiErrorMessage } from '../services/subscription.service';
 import { SubscriptionPlanFormModal } from './SubscriptionPlanFormModal';
+import { systemConfirm } from '@/components/ui/SystemDialogProvider';
 import type {
   AdminSubscriptionOrderList,
   AdminSubscriptionPlan,
@@ -117,7 +118,14 @@ export function AdminSubscriptionsManager() {
 
   const toggleActive = async (plan: AdminSubscriptionPlan) => {
     const next = !plan.isActive;
-    if (!window.confirm(`${next ? 'Mở bán lại' : 'Ngừng bán'} gói ${plan.name} (${plan.code})?`)) return;
+    const ok = await systemConfirm({
+      title: `${next ? 'Mở bán lại' : 'Ngừng bán'} gói hội viên?`,
+      message: `Xác nhận ${next ? 'mở bán lại' : 'ngừng bán'} gói ${plan.name} (${plan.code})?`,
+      confirmText: next ? 'Mở bán' : 'Ngừng bán',
+      cancelText: 'Hủy bỏ',
+      variant: next ? 'info' : 'warning',
+    });
+    if (!ok) return;
     try {
       await adminSubscriptionService.updatePlan(plan.id, { isActive: next });
       showFlash(`${next ? 'Đã mở bán' : 'Đã ngừng bán'} gói ${plan.code}. Khách đang dùng gói vẫn giữ nguyên quyền lợi.`);

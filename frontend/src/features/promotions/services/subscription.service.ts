@@ -32,6 +32,11 @@ export const subscriptionService = {
     return response.data;
   },
 
+  cancelMyOrder: async (orderId: string): Promise<SubscriptionOrder> => {
+    const response = await axiosInstance.post<SubscriptionOrder>(`/subscriptions/my-orders/${orderId}/cancel`);
+    return response.data;
+  },
+
   checkoutBankTransfer: async (dto: SubscriptionCheckoutDto): Promise<SubscriptionBankTransferCheckout> => {
     const response = await axiosInstance.post<SubscriptionBankTransferCheckout>(
       '/subscriptions/checkout-bank-transfer',
