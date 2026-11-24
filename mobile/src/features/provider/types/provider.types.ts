@@ -28,12 +28,12 @@ export interface AddServiceAreaDto {
   longitude: number;
 }
 
+/** Khớp RegisterCapabilityDto của backend. Giá do PetCare niêm yết nên đối tác không gửi giá. */
 export interface RegisterCapabilityDto {
   serviceId: string;
-  basePrice: number;
-  maxPets: number;
-  isAvailable: boolean;
-  notes?: string;
+  petSpecies: 'Dog' | 'Cat';
+  minWeight: number;
+  maxWeight: number;
 }
 
 export interface SubmitKycDto {

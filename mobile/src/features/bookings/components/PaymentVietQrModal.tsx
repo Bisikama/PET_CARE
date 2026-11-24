@@ -16,9 +16,16 @@ import { theme } from '@/core/theme';
 import { formatCurrency } from '@/core/utils/currency';
 import type { BankTransferCheckout } from '@/infrastructure/api/payments.api';
 
+/** Đơn mua gói hội viên không giữ chỗ nên không có `expiresAt`. */
+type VietQrCheckout = Omit<BankTransferCheckout, 'expiresAt'> & { expiresAt?: string };
+
 interface PaymentVietQrModalProps {
   visible: boolean;
-  checkout: BankTransferCheckout | null;
+  checkout: VietQrCheckout | null;
+  /** Mặc định: "Quét mã VietQR Chuyển khoản" */
+  title?: string;
+  /** Thay đoạn cảnh báo mặc định (dành cho đơn đặt lịch) */
+  warning?: React.ReactNode;
   /** Đang hỏi backend xem SePay đã báo có chưa */
   isChecking?: boolean;
   onClose: () => void;
@@ -66,6 +73,8 @@ export function PaymentVietQrModal({
   visible,
   checkout,
   isChecking = false,
+  title = 'Quét mã VietQR Chuyển khoản',
+  warning,
   onClose,
   onConfirmPaid,
 }: PaymentVietQrModalProps) {
@@ -84,7 +93,7 @@ export function PaymentVietQrModal({
           <View style={styles.sheetHeader}>
             <View style={styles.titleWrap}>
               <QrCode size={20} color={theme.colors.secondary.onContainer} />
-              <Text style={styles.sheetTitle}>Quét mã VietQR Chuyển khoản</Text>
+              <Text style={styles.sheetTitle}>{title}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={theme.colors.text.muted} />
@@ -163,8 +172,9 @@ export function PaymentVietQrModal({
               <AlertTriangle size={16} color="#B45309" />
               <Text style={styles.warningText}>
                 Giữ nguyên nội dung <Text style={styles.warningStrong}>{checkout.transferContent}</Text> và
-                đúng số tiền. Sai nội dung hệ thống sẽ không tự xác nhận được đơn. Nếu đơn hết hạn giữ chỗ
-                trước khi nhận được tiền, số tiền sẽ được hoàn vào Ví PetCare.
+                đúng số tiền.{' '}
+                {warning ??
+                  'Sai nội dung hệ thống sẽ không tự xác nhận được đơn. Nếu đơn hết hạn giữ chỗ trước khi nhận được tiền, số tiền sẽ được hoàn vào Ví PetCare.'}
               </Text>
             </View>
 
@@ -283,6 +293,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 1,
+    marginLeft: 12,
   },
   detailValueBold: {
     ...theme.typography.label,
@@ -298,6 +310,8 @@ const styles = StyleSheet.create({
   },
   detailValueContent: {
     ...theme.typography.label,
+    flexShrink: 1,
+    textAlign: 'right',
     fontSize: 12,
     fontWeight: '700',
     color: theme.colors.primary.navy,

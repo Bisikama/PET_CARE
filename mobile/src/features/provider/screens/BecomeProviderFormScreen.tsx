@@ -13,6 +13,8 @@ import { Button } from '../../../core/components/Button';
 import { theme } from '../../../core/theme';
 import { providerApi } from '../api/providerApi';
 import { useProviderStore } from '../store/useProviderStore';
+import { SystemPriceTable } from '../components/SystemPriceTable';
+import { servicesApi, type ServiceCategory } from '../../../infrastructure/api/services.api';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const DEFAULT_REGION: Region = {
@@ -54,10 +56,22 @@ export default function BecomeProviderFormScreen() {
   const [areaName, setAreaName] = useState('');
   const [areaRadius, setAreaRadius] = useState('5');
 
-  // -- Step 5: Capabilities --
+  // -- Step 5: Capabilities (giá do PetCare niêm yết, đối tác không nhập giá) --
+  const [serviceOptions, setServiceOptions] = useState<ServiceCategory[]>([]);
   const [serviceId, setServiceId] = useState('');
-  const [basePrice, setBasePrice] = useState('');
-  const [maxPets, setMaxPets] = useState('1');
+  const [capSpecies, setCapSpecies] = useState<'Dog' | 'Cat'>('Dog');
+  const [capMinWeight, setCapMinWeight] = useState('0');
+  const [capMaxWeight, setCapMaxWeight] = useState('30');
+
+  useEffect(() => {
+    if (currentStep !== 5 || serviceOptions.length > 0) return;
+    servicesApi.getAllServices().then((all) => {
+      // Chỉ các gói đang mở bán
+      const list = all.filter((svc) => svc.isActive !== false);
+      setServiceOptions(list);
+      if (list.length > 0) setServiceId((prev) => prev || list[0].id);
+    });
+  }, [currentStep, serviceOptions.length]);
 
   // Setup current step based on Profile status
   useEffect(() => {
@@ -205,17 +219,23 @@ export default function BecomeProviderFormScreen() {
   };
 
   const handleStep5Submit = async () => {
-    if (!serviceId || !basePrice || !maxPets) {
-      Alert.alert('Lỗi', 'Vui lòng điền đủ thông tin gói dịch vụ.');
+    const minWeight = Number(capMinWeight.replace(',', '.'));
+    const maxWeight = Number(capMaxWeight.replace(',', '.'));
+    if (!serviceId) {
+      Alert.alert('Lỗi', 'Vui lòng chọn gói dịch vụ.');
+      return;
+    }
+    if (!Number.isFinite(minWeight) || minWeight < 0 || !Number.isFinite(maxWeight) || maxWeight <= minWeight) {
+      Alert.alert('Lỗi', 'Cân nặng tối đa phải lớn hơn cân nặng tối thiểu (từ 0 kg).');
       return;
     }
     setLoading(true);
     try {
       await providerApi.registerCapability({
         serviceId,
-        basePrice: Number(basePrice),
-        maxPets: Number(maxPets),
-        isAvailable: true,
+        petSpecies: capSpecies,
+        minWeight,
+        maxWeight,
       });
       // Hoàn tất, chuyển về Intro hoặc check lại Profile
       await fetchProfile();
@@ -557,9 +577,66 @@ export default function BecomeProviderFormScreen() {
   const renderStep5 = () => (
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>BƯỚC 5: GÓI DỊCH VỤ</Text>
-      <Input placeholder="ID Dịch vụ (VD: GROOMING_01)" value={serviceId} onChangeText={setServiceId} />
-      <Input placeholder="Giá cơ bản (VNĐ)" keyboardType="numeric" value={basePrice} onChangeText={setBasePrice} style={{marginTop: 12}} />
-      <Input placeholder="Số thú cưng tối đa" keyboardType="numeric" value={maxPets} onChangeText={setMaxPets} style={{marginTop: 12}} />
+
+      <Text style={styles.capLabel}>Gói dịch vụ bạn nhận làm</Text>
+      {serviceOptions.length === 0 ? (
+        <ActivityIndicator color={theme.colors.primary.navy} style={{ marginVertical: 12 }} />
+      ) : (
+        <View style={styles.capChipRow}>
+          {serviceOptions.map((svc) => {
+            const active = serviceId === svc.id;
+            return (
+              <TouchableOpacity
+                key={svc.id}
+                style={[styles.capChip, active && styles.capChipActive]}
+                onPress={() => setServiceId(svc.id)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.capChipText, active && styles.capChipTextActive]}>{svc.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      <Text style={styles.capLabel}>Loài thú cưng</Text>
+      <View style={styles.capChipRow}>
+        {([
+          { key: 'Dog', label: 'Chó 🐶' },
+          { key: 'Cat', label: 'Mèo 🐱' },
+        ] as const).map((sp) => {
+          const active = capSpecies === sp.key;
+          return (
+            <TouchableOpacity
+              key={sp.key}
+              style={[styles.capChip, active && styles.capChipActive]}
+              onPress={() => setCapSpecies(sp.key)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.capChipText, active && styles.capChipTextActive]}>{sp.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <Text style={styles.capLabel}>Khoảng cân nặng nhận chăm sóc (kg)</Text>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Input placeholder="Tối thiểu" keyboardType="decimal-pad" value={capMinWeight} onChangeText={setCapMinWeight} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Input placeholder="Tối đa" keyboardType="decimal-pad" value={capMaxWeight} onChangeText={setCapMaxWeight} />
+        </View>
+      </View>
+
+      <View style={{ marginTop: 16 }}>
+        <SystemPriceTable
+          serviceId={serviceId}
+          petSpecies={capSpecies}
+          fallbackPrice={serviceOptions.find((svc) => svc.id === serviceId)?.basePrice}
+        />
+      </View>
+
       <Button label="Hoàn tất Đăng ký" onPress={handleStep5Submit} isLoading={loading} style={{marginTop: 20}} />
     </View>
   );
@@ -596,6 +673,38 @@ export default function BecomeProviderFormScreen() {
 }
 
 const styles = StyleSheet.create({
+  capLabel: {
+    ...theme.typography.label,
+    color: theme.colors.text.secondary,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  capChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  capChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border.default,
+    backgroundColor: theme.colors.surface.lowest,
+  },
+  capChipActive: {
+    borderColor: theme.colors.primary.navy,
+    backgroundColor: theme.colors.primary.navy,
+  },
+  capChipText: {
+    ...theme.typography.bodySm,
+    color: theme.colors.text.primary,
+    fontWeight: '600',
+  },
+  capChipTextActive: {
+    color: 'white',
+  },
   container: { backgroundColor: '#F8FAFC' },
   scrollContent: { padding: 16, paddingBottom: 100 },
   stepperHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 20 },
