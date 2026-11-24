@@ -1,10 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId, type ComponentProps } from 'react';
 import { usePayoutRequests } from '../hooks/usePayoutRequests';
 import { useSettlementActions } from '../hooks/useSettlementActions';
-import { ShieldCheck, CheckCircle, XCircle, Search, DollarSign, Wallet, Clock, Lock, ArrowUpRight, Landmark } from 'lucide-react';
+import type { PayoutRequest } from '../types';
+import { CheckCircle, XCircle, Search, DollarSign, Wallet, Clock, Lock, ArrowUpRight, Landmark } from 'lucide-react';
+import { ModalDialog, SuccessDialog } from '@/components/ui/ModalDialog';
 import { adminService } from '@/features/admin/services/admin.service';
 import { walletService } from '@/features/wallets/services/wallet.service';
-import { Wallet as WalletData } from '@/features/wallets/types/wallet.types';
+import type { Wallet as WalletData } from '@/features/wallets/types/wallet.types';
+import { getApiErrorMessage } from '@/lib/api-error';
+
+type SettlementAction =
+  | { kind: 'approve' | 'reject'; request: PayoutRequest }
+  | { kind: 'release' | 'refund'; bookingId: string };
+
+const actionLabels = {
+  approve: { title: 'Xác nhận duyệt giải ngân', confirm: 'Duyệt & Giải ngân', error: 'Duyệt giải ngân thất bại. Vui lòng thử lại.' },
+  reject: { title: 'Từ chối yêu cầu rút tiền', confirm: 'Xác nhận từ chối', error: 'Từ chối yêu cầu thất bại. Vui lòng thử lại.' },
+  release: { title: 'Xác nhận giải phóng ký quỹ', confirm: 'Giải phóng ký quỹ', error: 'Giải phóng ký quỹ thất bại. Vui lòng thử lại.' },
+  refund: { title: 'Xác nhận hoàn tiền', confirm: 'Hoàn tiền', error: 'Hoàn tiền thất bại. Vui lòng thử lại.' },
+};
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
 export const EscrowManagement = () => {
   const { payoutRequests, isLoading, error } = usePayoutRequests();
@@ -13,10 +30,12 @@ export const EscrowManagement = () => {
   const [stats, setStats] = useState<{ totalRevenue?: number; totalBookings?: number } | null>(null);
   const [adminWallet, setAdminWallet] = useState<WalletData | null>(null);
   
-  // Modal State for Admin Withdrawal
+  const [feedback, setFeedback] = useState<Omit<ComponentProps<typeof SuccessDialog>, 'onClose'> | null>(null);
+  const [settlementAction, setSettlementAction] = useState<SettlementAction | null>(null);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawNote, setWithdrawNote] = useState('');
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const fetchAdminWallet = () => {
@@ -37,43 +56,43 @@ export const EscrowManagement = () => {
   const pendingRequests = payoutRequests.filter(r => isPending(r.status));
   const pendingTotalAmount = pendingRequests.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-  };
-
-  const handleRelease = async () => {
-    if (!bookingIdInput) return;
-    try {
-      await releaseEscrow(bookingIdInput);
-      alert('Giải phóng Escrow thành công');
+  const handleSettlementAction = async (action: SettlementAction, reason: string) => {
+    if ('request' in action) {
+      const { request, kind } = action;
+      if (kind === 'approve') {
+        await approvePayout(request.id);
+      } else {
+        await rejectPayout(request.id, reason);
+      }
+      setFeedback({
+        title: kind === 'approve' ? 'Đã duyệt giải ngân' : 'Đã từ chối yêu cầu rút tiền',
+        message: `Yêu cầu rút ${formatCurrency(request.amount)} của ${request.providerName || 'đối tác'} đã được xử lý.`,
+      });
+    } else {
+      const { bookingId, kind } = action;
+      const isRelease = kind === 'release';
+      await (isRelease ? releaseEscrow : refundCustomer)(bookingId, reason);
       setBookingIdInput('');
-      fetchAdminWallet();
-    } catch (e) {
-      alert('Lỗi giải phóng Escrow. Vui lòng kiểm tra lại ID.');
+      setFeedback({
+        title: isRelease ? 'Đã giải phóng ký quỹ' : 'Đã hoàn tiền cho khách hàng',
+        message: `Đã cập nhật giao dịch cho booking ${bookingId}.`,
+      });
     }
-  };
-
-  const handleRefund = async () => {
-    if (!bookingIdInput) return;
-    try {
-      await refundCustomer(bookingIdInput);
-      alert('Hoàn tiền cho Customer thành công');
-      setBookingIdInput('');
-      fetchAdminWallet();
-    } catch (e) {
-      alert('Lỗi hoàn tiền. Vui lòng kiểm tra lại ID.');
-    }
+    setSettlementAction(null);
+    fetchAdminWallet();
   };
 
   const handleAdminWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isWithdrawing) return;
+    setWithdrawError(null);
     const amountNum = Number(withdrawAmount);
-    if (!amountNum || amountNum <= 0) {
-      alert('Vui lòng nhập số tiền hợp lệ');
+    if (!Number.isInteger(amountNum) || amountNum < 1000) {
+      setWithdrawError('Vui lòng nhập số tiền nguyên từ 1.000 đ trở lên.');
       return;
     }
     if (adminWallet && amountNum > adminWallet.balance) {
-      alert('Số tiền rút vượt quá số dư ví hoa hồng khả dụng');
+      setWithdrawError('Số tiền rút vượt quá số dư ví hoa hồng khả dụng.');
       return;
     }
 
@@ -83,13 +102,16 @@ export const EscrowManagement = () => {
         amount: amountNum,
         note: withdrawNote || 'Admin rút doanh thu hoa hồng về ngân hàng',
       });
-      alert('Rút tiền hoa hồng về ngân hàng thành công!');
       setShowWithdrawModal(false);
       setWithdrawAmount('');
       setWithdrawNote('');
       fetchAdminWallet();
-    } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || 'Lỗi khi rút tiền');
+      setFeedback({
+        title: 'Đã rút tiền hoa hồng',
+        message: `Giao dịch rút ${formatCurrency(amountNum)} từ ví hoa hồng đã được xử lý.`,
+      });
+    } catch (error) {
+      setWithdrawError(getApiErrorMessage(error, 'Rút tiền hoa hồng thất bại. Vui lòng thử lại.'));
     } finally {
       setIsWithdrawing(false);
     }
@@ -129,7 +151,10 @@ export const EscrowManagement = () => {
                 {adminWallet ? formatCurrency(adminWallet.balance || 0) : '0 đ'}
               </div>
               <button
-                onClick={() => setShowWithdrawModal(true)}
+                onClick={() => {
+                  setWithdrawError(null);
+                  setShowWithdrawModal(true);
+                }}
                 className="text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-sm"
               >
                 Rút Tiền <ArrowUpRight size={12} />
@@ -203,31 +228,13 @@ export const EscrowManagement = () => {
                   </div>
                   <div className="flex gap-2 justify-end mt-2">
                     <button 
-                      onClick={async () => {
-                        const reason = window.prompt('Nhập lý do từ chối (bắt buộc):', 'Thông tin ngân hàng không hợp lệ');
-                        if (!reason) return;
-                        try {
-                          await rejectPayout(req.id, reason);
-                          alert('Đã từ chối yêu cầu rút tiền thành công!');
-                        } catch (err: any) {
-                          alert(err.response?.data?.message || err.message || 'Lỗi khi từ chối yêu cầu');
-                        }
-                      }}
+                      onClick={() => setSettlementAction({ kind: 'reject', request: req })}
                       className="px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <XCircle size={14} /> Từ chối
                     </button>
                     <button 
-                      onClick={async () => {
-                        if (!window.confirm(`Xác nhận duyệt giải ngân ${new Intl.NumberFormat('vi-VN').format(req.amount)} đ cho ${req.providerName || 'đối tác'}?`)) return;
-                        try {
-                          await approvePayout(req.id);
-                          alert('Duyệt giải ngân thành công!');
-                          fetchAdminWallet();
-                        } catch (err: any) {
-                          alert(err.response?.data?.message || err.message || 'Lỗi khi duyệt giải ngân');
-                        }
-                      }}
+                      onClick={() => setSettlementAction({ kind: 'approve', request: req })}
                       className="px-3 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <CheckCircle size={14} /> Duyệt & Giải ngân
@@ -263,8 +270,8 @@ export const EscrowManagement = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <button 
-                onClick={handleRelease}
-                disabled={!bookingIdInput}
+                onClick={() => setSettlementAction({ kind: 'release', bookingId: bookingIdInput.trim() })}
+                disabled={!bookingIdInput.trim()}
                 className="flex flex-col items-center justify-center p-5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 rounded-2xl gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <DollarSign size={24} />
@@ -273,8 +280,8 @@ export const EscrowManagement = () => {
               </button>
 
               <button 
-                onClick={handleRefund}
-                disabled={!bookingIdInput}
+                onClick={() => setSettlementAction({ kind: 'refund', bookingId: bookingIdInput.trim() })}
+                disabled={!bookingIdInput.trim()}
                 className="flex flex-col items-center justify-center p-5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-2xl gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <DollarSign size={24} />
@@ -294,34 +301,35 @@ export const EscrowManagement = () => {
         </div>
       </div>
 
-      {/* Admin Withdrawal Modal */}
+      {settlementAction && (
+        <SettlementActionDialog
+          action={settlementAction}
+          onClose={() => setSettlementAction(null)}
+          onConfirm={(reason) => handleSettlementAction(settlementAction, reason)}
+        />
+      )}
+
+      {feedback && <SuccessDialog {...feedback} onClose={() => setFeedback(null)} />}
+
       {showWithdrawModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                <Landmark className="w-5 h-5 text-emerald-600" />
-                Rút Tiền Hoa Hồng Sàn
-              </h3>
-              <button 
-                onClick={() => setShowWithdrawModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-sm cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+        <ModalDialog
+          title="Rút tiền hoa hồng sàn"
+          onClose={() => setShowWithdrawModal(false)}
+          isBusy={isWithdrawing}
+        >
+          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex justify-between items-center">
+            <span className="text-xs font-semibold text-emerald-800">Số dư ví Admin khả dụng:</span>
+            <span className="text-base font-black text-emerald-700">
+              {adminWallet ? formatCurrency(adminWallet.balance) : '0 đ'}
+            </span>
+          </div>
 
-            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex justify-between items-center">
-              <span className="text-xs font-semibold text-emerald-800">Số dư ví Admin khả dụng:</span>
-              <span className="text-base font-black text-emerald-700">
-                {adminWallet ? formatCurrency(adminWallet.balance) : '0 đ'}
-              </span>
-            </div>
-
-            <form onSubmit={handleAdminWithdraw} className="space-y-4">
+          <form onSubmit={handleAdminWithdraw} className="mt-4" noValidate>
+            <fieldset disabled={isWithdrawing} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Số tiền rút (VNĐ)</label>
+                <label htmlFor="commission-withdraw-amount" className="text-xs font-bold text-slate-700">Số tiền rút (VNĐ)</label>
                 <input
+                  id="commission-withdraw-amount"
                   type="number"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
@@ -333,8 +341,9 @@ export const EscrowManagement = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700">Ghi chú / Lý do rút</label>
+                <label htmlFor="commission-withdraw-note" className="text-xs font-bold text-slate-700">Ghi chú / Lý do rút</label>
                 <input
+                  id="commission-withdraw-note"
                   type="text"
                   value={withdrawNote}
                   onChange={(e) => setWithdrawNote(e.target.value)}
@@ -342,6 +351,8 @@ export const EscrowManagement = () => {
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
               </div>
+
+              {withdrawError && <p role="alert" className="text-sm font-medium text-rose-700">{withdrawError}</p>}
 
               <div className="flex gap-3 pt-2">
                 <button
@@ -353,16 +364,96 @@ export const EscrowManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isWithdrawing}
                   className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50 cursor-pointer shadow-md"
                 >
                   {isWithdrawing ? 'Đang xử lý...' : 'Xác Nhận Rút'}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+            </fieldset>
+          </form>
+        </ModalDialog>
       )}
     </div>
   );
 };
+
+interface SettlementActionDialogProps {
+  action: SettlementAction;
+  onClose: () => void;
+  onConfirm: (reason: string) => Promise<void>;
+}
+
+function SettlementActionDialog({ action, onClose, onConfirm }: SettlementActionDialogProps) {
+  const { kind } = action;
+  const needsReason = kind !== 'approve';
+  const isDestructive = kind === 'reject' || kind === 'refund';
+  const labels = actionLabels[kind];
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const reasonId = useId();
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (isSubmitting || (needsReason && !reason.trim())) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onConfirm(reason.trim());
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, labels.error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <ModalDialog title={labels.title} onClose={onClose} isBusy={isSubmitting}>
+      <p className="mb-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+        {'request' in action ? (
+          <>Yêu cầu rút <strong>{formatCurrency(action.request.amount)}</strong> của{' '}
+            <strong>{action.request.providerName || 'đối tác'}</strong>.</>
+        ) : (
+          <>Mã booking <strong>{action.bookingId}</strong></>
+        )}
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {needsReason && (
+          <div className="space-y-2">
+            <label htmlFor={reasonId} className="block text-sm font-semibold text-slate-700">
+              {kind === 'reject' ? 'Lý do từ chối (bắt buộc)' : 'Lý do thực hiện (bắt buộc)'}
+            </label>
+            <textarea
+              id={reasonId}
+              required
+              rows={3}
+              value={reason}
+              disabled={isSubmitting}
+              onChange={(event) => setReason(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+            />
+          </div>
+        )}
+        {error && <p role="alert" className="text-sm font-medium text-rose-700">{error}</p>}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 rounded-xl bg-slate-100 px-3 py-2.5 text-sm font-semibold hover:bg-slate-200 disabled:opacity-50"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || (needsReason && !reason.trim())}
+            className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${isDestructive ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+          >
+            {isSubmitting ? 'Đang xử lý...' : labels.confirm}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
+  );
+}

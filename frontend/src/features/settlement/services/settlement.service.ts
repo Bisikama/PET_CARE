@@ -19,13 +19,13 @@ export const settlementService = {
     return response.data?.data || response.data;
   },
 
-  releaseEscrow: async (bookingId: string): Promise<void> => {
-    const response = await axiosInstance.post(`/admin/settlements/payments/${bookingId}/release-escrow`);
+  releaseEscrow: async (bookingId: string, reason: string): Promise<void> => {
+    const response = await axiosInstance.post(`/admin/settlements/payments/${bookingId}/release-escrow`, { reason });
     return response.data;
   },
 
-  refundCustomer: async (bookingId: string): Promise<void> => {
-    const response = await axiosInstance.post(`/admin/settlements/payments/${bookingId}/refund`);
+  refundCustomer: async (bookingId: string, reason: string): Promise<void> => {
+    const response = await axiosInstance.post(`/admin/settlements/payments/${bookingId}/refund`, { reason });
     return response.data;
   }
 };
