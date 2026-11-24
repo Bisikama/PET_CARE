@@ -11,12 +11,18 @@ export interface CreateProviderProfileDto {
 }
 
 export interface UpdateProviderAddressDto {
-  baseAddressLine: string;
+  baseAddressLine?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
   baseWard?: string;
   baseDistrict?: string;
   baseCity?: string;
-  baseLatitude: number;
-  baseLongitude: number;
+  baseLatitude?: number;
+  baseLongitude?: number;
   baseFormatted?: string;
   serviceRadiusKm?: number;
 }
@@ -28,19 +34,21 @@ export interface AddServiceAreaDto {
   longitude: number;
 }
 
+/** Khớp RegisterCapabilityDto của backend. Giá do PetCare niêm yết nên đối tác không gửi giá. */
 export interface RegisterCapabilityDto {
   serviceId: string;
-  basePrice: number;
-  maxPets: number;
-  isAvailable: boolean;
-  notes?: string;
+  petSpecies: 'Dog' | 'Cat';
+  minWeight: number;
+  maxWeight: number;
 }
 
 export interface SubmitKycDto {
   idNumber: string;
   fullName: string;
-  dob: string;
-  issueDate: string;
+  dob?: string;
+  dateOfBirth?: string;
+  issueDate?: string;
+  nationality?: string;
 }
 
 export interface SubmitDocumentsDto {

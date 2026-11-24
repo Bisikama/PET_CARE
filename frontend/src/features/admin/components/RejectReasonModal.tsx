@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Portal } from '@/components/ui/Portal';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 interface RejectReasonModalProps {
   show: boolean;
@@ -32,7 +33,7 @@ export function RejectReasonModal({
 
   const handleConfirmClick = () => {
     if (!reason.trim()) {
-      alert('Vui lòng nhập lý do.');
+      systemAlert('Vui lòng nhập lý do từ chối.', { type: 'warning' });
       return;
     }
     onConfirm(reason);

@@ -1,6 +1,7 @@
- import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { SystemDialogProvider } from '@/components/ui/SystemDialogProvider';
 import './globals.css';
 
 const inter = Inter({
@@ -22,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${inter.variable} h-full antialiased`}>
       <body className="font-sans min-h-full flex flex-col bg-slate-50 text-slate-900">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <SystemDialogProvider />
+        </AuthProvider>
       </body>
     </html>
   );

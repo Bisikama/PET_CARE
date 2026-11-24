@@ -3,6 +3,7 @@ import { useAreas } from '../hooks/useAreas';
 import { useAreaActions } from '../hooks/useAreaActions';
 import { MapPin, Trash2, Edit2, Check, X } from 'lucide-react';
 import { AddressSelector } from '@/features/me/components/AddressSelector';
+import { systemAlert, systemConfirm } from '@/components/ui/SystemDialogProvider';
 
 export const AreaManager = () => {
   const { areas, isLoading, error } = useAreas();
@@ -22,7 +23,7 @@ export const AreaManager = () => {
 
   const handleSave = async () => {
     if (!formData.province || !formData.district) {
-      alert('Vui lòng chọn đầy đủ Tỉnh/Thành phố và Quận/Huyện');
+      systemAlert('Vui lòng chọn đầy đủ Tỉnh/Thành phố và Quận/Huyện', { type: 'warning' });
       return;
     }
     
@@ -42,7 +43,7 @@ export const AreaManager = () => {
       }
       setFormData({ province: '', district: '', ward: '' });
     } catch (err) {
-      alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+      systemAlert('Đã có lỗi xảy ra. Vui lòng thử lại.', { type: 'error' });
     }
   };
 
@@ -53,11 +54,18 @@ export const AreaManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa khu vực này?')) {
+    const ok = await systemConfirm({
+      title: 'Xóa khu vực hoạt động?',
+      message: 'Bạn có chắc chắn muốn xóa khu vực phục vụ này không?',
+      confirmText: 'Xóa khu vực',
+      cancelText: 'Hủy bỏ',
+      variant: 'danger',
+    });
+    if (ok) {
       try {
         await deleteArea(id);
       } catch (err) {
-        alert('Xóa thất bại.');
+        systemAlert('Xóa khu vực thất bại.', { type: 'error' });
       }
     }
   };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Compass, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useStartService } from '../hooks/useStartService';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 interface BookingGPSCheckInProps {
   bookingId: string;
@@ -36,13 +37,19 @@ export const BookingGPSCheckIn: React.FC<BookingGPSCheckInProps> = ({
         (error) => {
           setIsGettingLocation(false);
           console.error("Lỗi lấy định vị:", error);
-          alert('Không thể lấy được vị trí GPS. Vui lòng cho phép quyền truy cập vị trí trên trình duyệt của bạn.');
+          systemAlert(
+            'Không thể lấy được vị trí GPS. Vui lòng cho phép quyền truy cập vị trí trên trình duyệt của bạn.',
+            { title: 'Cần quyền truy cập định vị GPS', type: 'warning' },
+          );
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       setIsGettingLocation(false);
-      alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
+      systemAlert('Trình duyệt của bạn không hỗ trợ định vị GPS.', {
+        title: 'Không hỗ trợ GPS',
+        type: 'error',
+      });
     }
   };
 

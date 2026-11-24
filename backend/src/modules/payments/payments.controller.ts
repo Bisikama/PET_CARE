@@ -194,7 +194,10 @@ export class PaymentsController {
 
     // Chỉ báo thành công khi chữ ký hợp lệ và giao dịch đã được ghi nhận
     const status = query.vnp_ResponseCode === '00' && ['00', '02'].includes(rspCode) ? 'success' : 'failed';
-    return res.redirect(`${frontendUrl}/payment/result?status=${status}&orderId=${orderId}&method=VNPAY`);
+    const typeParam = String(query.vnp_OrderInfo || '').startsWith('SUB_') ? '&type=subscription' : '';
+    return res.redirect(
+      `${frontendUrl}/payment/result?status=${status}&orderId=${encodeURIComponent(orderId)}&method=VNPAY${typeParam}`,
+    );
   }
 
   @Public()

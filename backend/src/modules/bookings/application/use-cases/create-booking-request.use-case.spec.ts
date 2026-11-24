@@ -30,6 +30,8 @@ describe('CreateBookingRequestUseCase', () => {
     mockPrisma = {
       provider_profiles: { findUnique: jest.fn() },
       promotions: { findUnique: jest.fn() },
+      // Gói chưa có bảng giá => dùng giá đối tác
+      service_pricing_rules: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     mockPaymentsService = {

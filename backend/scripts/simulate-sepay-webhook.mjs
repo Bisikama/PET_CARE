@@ -6,6 +6,7 @@
  *
  * Ví dụ:
  *   node --env-file=.env scripts/simulate-sepay-webhook.mjs PCX7K2M9QA4B 100000
+ *   node --env-file=.env scripts/simulate-sepay-webhook.mjs "PCX7K2M9QA4B Thanh toan goi BASIC" 99000   # mua gói hội viên
  *   node --env-file=.env scripts/simulate-sepay-webhook.mjs "chuyen tien an trua" 50000      # => UNMATCHED
  *   node --env-file=.env scripts/simulate-sepay-webhook.mjs PCX7K2M9QA4B 100000 --id=12345  # gửi lại cùng id => DUPLICATE
  *

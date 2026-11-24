@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import { SepayService, SepayWebhookPayload } from './sepay.service';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../../../../database/prisma.service';
+import { SubscriptionsService } from '../../../growth/subscriptions/subscriptions.service';
 
 const CONFIG: Record<string, string> = {
   BANK_ACCOUNT_NUMBER: '0123456789',
@@ -30,6 +31,8 @@ describe('SepayService', () => {
       groupBy: jest.fn(),
     },
     payments: { findFirst: jest.fn(), upsert: jest.fn(), update: jest.fn() },
+    subscription_orders: { findUnique: jest.fn() },
+    booking_services: { findMany: jest.fn() },
     provider_working_slots: { findUnique: jest.fn(), updateMany: jest.fn() },
     user: { findUnique: jest.fn() },
     audit_logs: { create: jest.fn() },
@@ -43,6 +46,12 @@ describe('SepayService', () => {
     creditCustomerWallet: jest.fn(),
     sendPaymentSuccessNotifications: jest.fn(),
     safeNotify: jest.fn(),
+    effectivePromoCode: jest.fn((booking: any, code?: string) => (booking.promotion_id ? undefined : code)),
+  };
+
+  const mockSubscriptionsService = {
+    applyBankTransfer: jest.fn(),
+    notifyFollowUp: jest.fn(),
   };
 
   const mockConfig = {
@@ -96,11 +105,14 @@ describe('SepayService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: ConfigService, useValue: mockConfig },
         { provide: PaymentsService, useValue: mockPaymentsService },
+        { provide: SubscriptionsService, useValue: mockSubscriptionsService },
       ],
     }).compile();
 
     service = module.get(SepayService);
     mockPrisma.bank_transactions.findUnique.mockResolvedValue(null);
+    mockPrisma.subscription_orders.findUnique.mockResolvedValue(null);
+    mockPrisma.booking_services.findMany.mockResolvedValue([]);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -210,13 +222,13 @@ describe('SepayService', () => {
       const result = await service.createBankTransferCheckout('booking-1', 'cust-1', 'SALE');
 
       expect(result.paymentCode).toMatch(/^PC[A-Z2-9]{10}$/);
-      expect(result.transferContent).toBe(result.paymentCode);
+      expect(result.transferContent).toBe(`${result.paymentCode} Thanh toan dat lich PetCare`);
       expect(result.amount).toBe(100000);
       expect(result.accountNumber).toBe('0123456789');
       expect(result.qrImageUrl).toContain('acc=0123456789');
       expect(result.qrImageUrl).toContain('bank=MBBank');
       expect(result.qrImageUrl).toContain('amount=100000');
-      expect(result.qrImageUrl).toContain(`des=${result.paymentCode}`);
+      expect(result.qrImageUrl).toContain(`des=${result.paymentCode}+Thanh+toan`);
       expect(mockPrisma.payments.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: expect.objectContaining({
@@ -227,6 +239,16 @@ describe('SepayService', () => {
           }),
         }),
       );
+    });
+
+    it('names the booked service package in the transfer content', async () => {
+      mockPrisma.booking_services.findMany.mockResolvedValue([
+        { service_name: 'Clean Care' },
+        { service_name: 'Clean Care' },
+      ]);
+      const result = await service.createBankTransferCheckout('booking-1', 'cust-1');
+      expect(result.transferContent).toBe(`${result.paymentCode} Thanh toan goi Clean Care`);
+      expect(result.transferContent.length).toBeLessThanOrEqual(50);
     });
 
     it('rejects a 0đ order', async () => {
@@ -362,6 +384,38 @@ describe('SepayService', () => {
       mockPrisma.payments.findFirst.mockResolvedValue(null);
       const result = await service.handleWebhook(webhook());
       expect(result.status).toBe('UNMATCHED');
+    });
+
+    it('routes a code belonging to a subscription order to SubscriptionsService', async () => {
+      const order = { id: 'order-1', plan_code: 'BASIC', payment_code: CODE, status: 'PENDING' };
+      const followUp = { kind: 'ACTIVATED', userId: 'cust-1', planName: 'Gói Cơ Bản', endDate: new Date(), orderId: 'order-1' };
+      mockPrisma.payments.findFirst.mockResolvedValue(null);
+      mockPrisma.subscription_orders.findUnique.mockResolvedValue(order);
+      mockSubscriptionsService.applyBankTransfer.mockResolvedValue({ status: 'MATCHED', followUp });
+
+      const result = await service.handleWebhook(
+        webhook({ content: `${CODE} Thanh toan goi BASIC`, transferAmount: 99000 }),
+      );
+
+      expect(result.status).toBe('MATCHED');
+      expect(mockSubscriptionsService.applyBankTransfer).toHaveBeenCalledWith(
+        mockPrisma,
+        order,
+        99000,
+        'SEPAY_92704',
+      );
+      expect(mockPrisma.bank_transactions.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'MATCHED',
+            code: CODE,
+            payment_id: null,
+            subscription_order_id: 'order-1',
+          }),
+        }),
+      );
+      expect(mockPaymentsService.confirmPaidPayment).not.toHaveBeenCalled();
+      expect(mockSubscriptionsService.notifyFollowUp).toHaveBeenCalledWith(followUp);
     });
 
     it('ignores outgoing transfers and other accounts', async () => {

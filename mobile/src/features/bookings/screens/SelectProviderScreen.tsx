@@ -122,7 +122,7 @@ export default function SelectProviderScreen() {
           const mapped: MatchedProviderItem[] = list.map((p, idx) => {
             const matchedSlot = p.slots?.find((s: any) => {
               const fullTime = `${s.startTime} - ${s.endTime}`;
-              return fullTime === slotTime || s.startTime === slotTime.split(' - ')[0] || s.slotId === params.slotId || s.slotId === draft.slotId;
+              return fullTime === slotTime || s.startTime === slotTime.split(' - ')[0] || s.slotId === (params as any)?.slotId || s.slotId === draft.slotId;
             }) || p.slots?.[0];
 
             return {

@@ -109,3 +109,16 @@ export interface CreateCancellationPolicyData {
 
 
 
+
+/** Phí di chuyển (hệ thống tự tính) & phụ phí tham khảo — admin cấu hình */
+export interface ServiceSurcharge {
+  label: string;
+  minFee: number;
+  /** null = mức cố định */
+  maxFee: number | null;
+}
+
+export interface ServiceFeeSettings {
+  travel: { freeKm: number; perKm: number };
+  surcharges: ServiceSurcharge[];
+}

@@ -66,8 +66,8 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
     <Portal>
       <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
       <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative border border-slate-100 overflow-hidden">
-        {/* Top gradient bar */}
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-amber-400"></div>
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-[#08243D]"></div>
 
         {/* Close Button */}
         <button
@@ -91,7 +91,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               </span>
             )}
           </div>
-          <h3 className="text-xl font-bold text-slate-800">{ticket?.title || 'Đang tải thông tin...'}</h3>
+          <h3 className="text-xl font-bold text-[#08243D]">{ticket?.title || 'Đang tải thông tin...'}</h3>
           <p className="text-slate-500 text-xs mt-1 flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" /> Tạo lúc: {ticket?.created_at ? new Date(ticket.created_at).toLocaleString('vi-VN') : ''}
           </p>
@@ -106,9 +106,9 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
           ) : (
             <>
               {/* Ticket Initial Description */}
-              <div className="bg-blue-50/60 p-4 rounded-2xl border border-blue-100 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
-                  <User className="w-4 h-4 text-blue-600" />
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/70 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#08243D]">
+                  <User className="w-4 h-4 text-teal-600" />
                   Nội dung yêu cầu ban đầu:
                 </div>
                 <p className="text-sm text-slate-700 whitespace-pre-wrap">{ticket?.description}</p>
@@ -146,7 +146,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                       <div
                         className={`p-4 rounded-2xl max-w-[85%] text-sm whitespace-pre-wrap ${
                           isUserSender
-                            ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-500/10'
+                            ? 'bg-[#08243D] text-white rounded-tr-none shadow-sm'
                             : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200'
                         }`}
                       >
@@ -173,12 +173,12 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 placeholder="Nhập nội dung phản hồi..."
-                className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm text-slate-800"
+                className="flex-1 px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:border-[#08243D] text-sm text-slate-800"
               />
               <Button
                 type="submit"
                 disabled={replyLoading || !replyContent.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-5 rounded-2xl shrink-0"
+                className="bg-[#08243D] hover:bg-[#0c3254] text-[#F7C948] font-bold h-11 px-5 rounded-2xl shrink-0"
               >
                 <Send className="w-4 h-4 mr-1" />
                 {replyLoading ? 'Đang gửi...' : 'Gửi'}

@@ -96,8 +96,9 @@ export class PrismaProvidersRepository implements IProvidersRepository {
   }
 
   async getBasePriceByServiceId(serviceId: string): Promise<number | null> {
-    const service = await this.prisma.services.findUnique({
-      where: { id: serviceId },
+    // Chỉ gói đang mở bán mới đăng ký năng lực được
+    const service = await this.prisma.services.findFirst({
+      where: { id: serviceId, is_active: true, deleted_at: null },
       select: { base_price: true },
     });
     return service ? Number(service.base_price) : null;
