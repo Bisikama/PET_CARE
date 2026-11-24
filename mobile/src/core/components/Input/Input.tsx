@@ -20,7 +20,7 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   leftIcon?: IconName;
   rightIcon?: IconName;
   onRightIconPress?: () => void;
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle | TextStyle>;
   containerStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
 }
@@ -95,7 +95,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               backgroundColor: getBackgroundColor(),
               borderWidth: isFocused ? 2 : 1,
             },
-            style,
+            style as any,
           ]}
         >
           {leftIcon && (

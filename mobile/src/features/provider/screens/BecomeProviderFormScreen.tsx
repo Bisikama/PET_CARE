@@ -15,6 +15,7 @@ import { providerApi } from '../api/providerApi';
 import { useProviderStore } from '../store/useProviderStore';
 import { SystemPriceTable } from '../components/SystemPriceTable';
 import { servicesApi, type ServiceCategory } from '../../../infrastructure/api/services.api';
+import { ProviderType } from '../types/provider.types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const DEFAULT_REGION: Region = {
@@ -1014,6 +1015,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 8,
     marginTop: 8,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A',
+    marginBottom: 6,
   },
   btnUpdateText: {
     fontSize: 14,

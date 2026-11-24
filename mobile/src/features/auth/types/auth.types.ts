@@ -4,9 +4,11 @@ export interface UserProfile {
   id: string;
   email: string;
   full_name: string;
+  fullName?: string;
   role: 'CUSTOMER' | 'PROVIDER' | 'ADMIN';
   status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'DELETED';
   avatar_url?: string;
+  avatarUrl?: string;
   created_at: string;
 }
 
