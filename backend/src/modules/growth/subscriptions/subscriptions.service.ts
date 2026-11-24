@@ -116,6 +116,30 @@ export class SubscriptionsService {
     return this.toOrderView(order);
   }
 
+  /** Khách chủ động huỷ đơn mua gói đang chờ thanh toán (PENDING -> CANCELLED). */
+  async cancelMyOrder(userId: string, orderId: string) {
+    const order = await this.prisma.subscription_orders.findFirst({
+      where: { id: orderId, user_id: userId },
+    });
+    if (!order) throw new NotFoundException('Không tìm thấy đơn mua gói');
+    if (order.status === 'PAID') {
+      throw new ConflictException('Đơn mua gói đã được thanh toán, không thể huỷ');
+    }
+    if (order.status === 'CANCELLED') {
+      return this.toOrderView(order);
+    }
+
+    await this.prisma.subscription_orders.updateMany({
+      where: { id: orderId, user_id: userId, status: 'PENDING' },
+      data: { status: 'CANCELLED' },
+    });
+
+    const updated = await this.prisma.subscription_orders.findUniqueOrThrow({
+      where: { id: orderId },
+    });
+    return this.toOrderView(updated);
+  }
+
   /**
    * Tạo đơn mua gói bằng chuyển khoản VietQR. Nội dung CK: "<mã> Thanh toan goi <MÃ GÓI>".
    * Webhook SePay dò theo mã để kích hoạt gói tự động.

@@ -64,4 +64,13 @@ export class SubscriptionsController {
   async getMyOrder(@GetCurrentUserId() userId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.subscriptionsService.getMyOrder(userId, id);
   }
+
+  @Post('my-orders/:id/cancel')
+  @ApiOperation({ summary: 'Huỷ một đơn mua gói đang chờ thanh toán (PENDING)' })
+  @ApiResponse({ status: 201, description: 'Đã huỷ đơn mua gói đang chờ thanh toán.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn mua gói.' })
+  @ApiResponse({ status: 409, description: 'Đơn đã thanh toán, không thể huỷ.' })
+  async cancelMyOrder(@GetCurrentUserId() userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.subscriptionsService.cancelMyOrder(userId, id);
+  }
 }
