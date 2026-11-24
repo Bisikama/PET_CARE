@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ShieldCheck, Ticket, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, Ticket, CheckCircle2, AlertCircle, Crown, Sparkles } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { bookingService } from '../services/booking.service';
 import { usePetStore } from '@/features/pet/stores/pet.store';
@@ -16,6 +16,13 @@ interface PriceQuote {
   discountAmount: number;
   promoCode: string | null;
   totalPrice: number;
+  memberDiscount?: {
+    tierName: string;
+    tierLabel: string;
+    discountPercent: number;
+    discountAmount: number;
+  };
+  voucherDiscountAmount?: number;
 }
 
 const apiMessage = (err: any, fallback: string): string => {
@@ -32,6 +39,13 @@ function toPriceQuote(res: any): PriceQuote {
     discountAmount: Number(res?.discount?.discountAmount ?? 0),
     promoCode: res?.discount?.promoCode ?? null,
     totalPrice: Number(res?.totalPrice ?? 0),
+    memberDiscount: res?.discount?.memberDiscount ? {
+      tierName: String(res.discount.memberDiscount.tierName),
+      tierLabel: String(res.discount.memberDiscount.tierLabel),
+      discountPercent: Number(res.discount.memberDiscount.discountPercent),
+      discountAmount: Number(res.discount.memberDiscount.discountAmount),
+    } : undefined,
+    voucherDiscountAmount: res?.discount?.voucherDiscountAmount != null ? Number(res.discount.voucherDiscountAmount) : undefined,
   };
 }
 
@@ -41,6 +55,9 @@ function priceFromBooking(booking: any): PriceQuote {
   const total = Number(booking?.total_price ?? booking?.totalPrice ?? snap.finalPrice ?? 0);
   const discount = Number(snap.discountAmount ?? booking?.discount_amount ?? 0);
   const travel = Number(snap.travelFee ?? 0);
+  const memberDiscountAmount = Number(snap.memberDiscountAmount ?? 0);
+  const memberTier = snap.memberTier;
+
   return {
     servicePrice: Number(snap.servicePrice ?? total - travel + discount),
     travelFee: travel,
@@ -48,6 +65,13 @@ function priceFromBooking(booking: any): PriceQuote {
     discountAmount: discount,
     promoCode: snap.promoCode ?? null,
     totalPrice: total,
+    memberDiscount: memberDiscountAmount > 0 && memberTier ? {
+      tierName: memberTier,
+      tierLabel: memberTier === 'PREMIUM' ? 'Gói VIP Pro' : memberTier === 'YEARLY' ? 'Gói Tiết Kiệm Năm' : 'Gói Cơ Bản',
+      discountPercent: memberTier === 'BASIC' ? 5 : 15,
+      discountAmount: memberDiscountAmount,
+    } : undefined,
+    voucherDiscountAmount: snap.voucherDiscountAmount != null ? Number(snap.voucherDiscountAmount) : undefined,
   };
 }
 
@@ -362,6 +386,35 @@ export function BookingInvoice() {
           </div>
         </div>
 
+        {/* Member Discount Banner */}
+        {pricing?.memberDiscount && (
+          <div className="bg-linear-to-r from-amber-500/10 via-amber-400/5 to-transparent border border-[#F7C948]/40 rounded-2xl p-4 flex items-center justify-between mt-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#08243D] text-[#F7C948] flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <Crown className="w-5 h-5 text-[#F7C948]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#08243D]">
+                    Đặc quyền {pricing.memberDiscount.tierLabel}
+                  </span>
+                  <span className="text-[10px] font-bold bg-[#F7C948] text-[#08243D] px-2 py-0.5 rounded-full">
+                    Hội viên Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Đã tự động áp dụng giảm {pricing.memberDiscount.discountPercent}% giá dịch vụ & miễn 100% phí nền tảng
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-bold text-amber-700 tabular-nums">
+                -{formatPrice(pricing.memberDiscount.discountAmount)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Escrow Terms */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex items-start gap-3 mt-4">
           <ShieldCheck className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
@@ -456,10 +509,26 @@ export function BookingInvoice() {
               </span>
               <span>{pricing.travelFee > 0 ? formatPrice(pricing.travelFee) : 'Miễn phí'}</span>
             </div>
-            {appliedDiscount > 0 && (
+            {pricing.memberDiscount && (
+              <div className="flex items-center justify-between text-sm font-bold text-amber-700">
+                <span className="flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-[#F7C948]" />
+                  Đặc quyền {pricing.memberDiscount.tierLabel} (-{pricing.memberDiscount.discountPercent}%)
+                </span>
+                <span>-{formatPrice(pricing.memberDiscount.discountAmount)}</span>
+              </div>
+            )}
+            {((pricing.voucherDiscountAmount != null && pricing.voucherDiscountAmount > 0) ||
+              (appliedDiscount > (pricing.memberDiscount?.discountAmount ?? 0))) && (
               <div className="flex items-center justify-between text-sm font-bold text-emerald-600">
-                <span>Giảm giá khuyến mãi{pricing.promoCode ? ` (${pricing.promoCode})` : ''}</span>
-                <span>-{formatPrice(appliedDiscount)}</span>
+                <span>Voucher giảm giá{pricing.promoCode ? ` (${pricing.promoCode})` : ''}</span>
+                <span>
+                  -{formatPrice(
+                    pricing.voucherDiscountAmount != null
+                      ? pricing.voucherDiscountAmount
+                      : appliedDiscount - (pricing.memberDiscount?.discountAmount ?? 0),
+                  )}
+                </span>
               </div>
             )}
             <div className="flex items-center justify-between pt-3 border-t border-slate-100">

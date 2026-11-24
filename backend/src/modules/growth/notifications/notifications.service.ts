@@ -76,25 +76,49 @@ export class NotificationsService {
     this.notificationGateway.sendToUser(params.userId, 'notification:new', {
       id: created.id,
       userId: created.user_id,
+      user_id: created.user_id,
       type: created.type,
       title: created.title,
+      message: created.content,
       content: created.content,
       actionUrl: created.action_url,
+      link: created.action_url,
       metadata: created.metadata,
       relatedBookingId: created.related_booking_id,
-      isRead: created.is_read,
-      createdAt: created.created_at,
+      isRead: created.is_read ?? false,
+      is_read: created.is_read ?? false,
+      createdAt: created.created_at ? created.created_at.toISOString() : new Date().toISOString(),
+      created_at: created.created_at,
     });
 
     return created;
   }
 
   async getMyNotifications(userId: string, limit = 50) {
-    return this.prisma.notifications.findMany({
+    const list = await this.prisma.notifications.findMany({
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
       take: limit,
     });
+
+    return list.map((n) => ({
+      id: n.id,
+      userId: n.user_id,
+      user_id: n.user_id,
+      type: n.type,
+      title: n.title,
+      message: n.content ?? '',
+      content: n.content ?? '',
+      actionUrl: n.action_url,
+      action_url: n.action_url,
+      link: n.action_url,
+      isRead: n.is_read ?? false,
+      is_read: n.is_read ?? false,
+      createdAt: n.created_at ? n.created_at.toISOString() : new Date().toISOString(),
+      created_at: n.created_at,
+      metadata: n.metadata,
+      relatedBookingId: n.related_booking_id,
+    }));
   }
 
   async getUnreadCount(userId: string): Promise<{ unreadCount: number }> {
