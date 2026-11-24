@@ -78,11 +78,11 @@ export class ProvidersService {
     try {
       basePrice = await this.providersRepository.getBasePriceByServiceId(dto.serviceId);
       if (basePrice === null) {
-        throw new NotFoundException('Service not found in the system');
+        throw new NotFoundException('Gói dịch vụ không tồn tại hoặc đã ngừng bán');
       }
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
-      throw new NotFoundException('Service not found in the system');
+      throw new NotFoundException('Gói dịch vụ không tồn tại hoặc đã ngừng bán');
     }
 
     try {

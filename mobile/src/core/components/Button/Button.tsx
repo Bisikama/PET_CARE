@@ -23,6 +23,7 @@ export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
   isFullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  labelStyle?: StyleProp<TextStyle>;
 }
 
 export const Button = forwardRef<any, ButtonProps>(
@@ -37,11 +38,13 @@ export const Button = forwardRef<any, ButtonProps>(
       disabled,
       style,
       textStyle,
+      labelStyle,
       onPress,
       ...props
     },
     ref
   ) => {
+    const finalTextStyle = labelStyle ? [textStyle, labelStyle] : textStyle;
     const getContainerStyles = (): ViewStyle => {
       let variantStyles: ViewStyle = {};
       switch (variant) {
@@ -132,7 +135,7 @@ export const Button = forwardRef<any, ButtonProps>(
               <Icon name={leftIcon} size={theme.dimensions.icon.md} color={textColor} style={styles.leftIcon} />
             )}
             {label && (
-              <Text style={[theme.typography.button, { color: textColor }, textStyle]}>
+              <Text style={[theme.typography.button, { color: textColor }, finalTextStyle]}>
                 {label}
               </Text>
             )}

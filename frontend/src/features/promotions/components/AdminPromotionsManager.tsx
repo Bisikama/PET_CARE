@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Promotion, CreatePromotionInput, UpdatePromotionLimitsInput } from '../types';
 import { promotionsService } from '../services/promotions.service';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 import { Portal } from '@/components/ui/Portal';
 
 export function AdminPromotionsManager() {
@@ -152,7 +153,9 @@ export function AdminPromotionsManager() {
       await fetchPromotions();
     } catch (err: any) {
       console.error('Error toggling active:', err);
-      alert(err?.response?.data?.message || err?.message || 'Không thể cập nhật trạng thái mã.');
+      systemAlert(err?.response?.data?.message || err?.message || 'Không thể cập nhật trạng thái mã.', {
+        type: 'error',
+      });
     }
   };
 
@@ -206,7 +209,9 @@ export function AdminPromotionsManager() {
       await fetchPromotions();
     } catch (err: any) {
       console.error('Error updating promotion:', err);
-      alert(err?.response?.data?.message || err?.message || 'Không thể cập nhật mã.');
+      systemAlert(err?.response?.data?.message || err?.message || 'Không thể cập nhật mã.', {
+        type: 'error',
+      });
       setEditModal(p => ({ ...p, submitting: false }));
     }
   };

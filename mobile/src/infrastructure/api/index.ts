@@ -5,3 +5,4 @@ export * from './payments.api';
 export * from './provider-schedules.api';
 export * from './chat.api';
 export * from './wallet.api';
+export * from './subscriptions.api';

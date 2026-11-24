@@ -36,7 +36,7 @@ describe('PaymentsService', () => {
   };
 
   const mockWalletsService = { processTransaction: jest.fn() };
-  const mockSubscriptionsService = { handleSubscriptionSuccess: jest.fn() };
+  const mockSubscriptionsService = { handleVnpayIpn: jest.fn() };
   const mockNotificationsService = { sendNotification: jest.fn() };
   const mockConfig = {
     get: jest.fn((key: string) => CONFIG[key]),
@@ -129,6 +129,17 @@ describe('PaymentsService', () => {
       );
     });
 
+    it('does not apply the promotion again when the booking was created with it', async () => {
+      // total_price đã được trừ giảm giá lúc tạo đơn
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, promotion_id: 'promo-1', total_price: 80000 });
+
+      const url = await service.createVNPayUrl('booking-123', 'cust-1', '127.0.0.1', 'SALE20');
+
+      expect(url).toContain('vnp_Amount=8000000');
+      expect(url).not.toContain('promo');
+      expect(mockPrisma.promotions.findUnique).not.toHaveBeenCalled();
+    });
+
     it('rejects a booking owned by another customer', async () => {
       mockPrisma.bookings.findUnique.mockResolvedValue(pendingBooking);
       await expect(service.createVNPayUrl('booking-123', 'someone-else', '127.0.0.1')).rejects.toThrow(BadRequestException);
@@ -173,12 +184,23 @@ describe('PaymentsService', () => {
       expect(mockPrisma.payments.update).not.toHaveBeenCalled();
     });
 
-    it('activates a subscription when orderInfo starts with SUB_', async () => {
-      const payload = { ...basePayload, vnp_OrderInfo: 'SUB_user1_PREMIUM' };
+    it('delegates subscription orders (orderInfo starts with SUB_) to SubscriptionsService', async () => {
+      mockSubscriptionsService.handleVnpayIpn.mockResolvedValue('00');
+      const payload = {
+        ...basePayload,
+        vnp_TxnRef: 'PCABCDEFGH23',
+        vnp_OrderInfo: 'SUB_PCABCDEFGH23 Thanh toan goi PREMIUM',
+      };
       const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: signVnp(payload) });
 
       expect(result.RspCode).toBe('00');
-      expect(mockSubscriptionsService.handleSubscriptionSuccess).toHaveBeenCalledWith('user1', 'PREMIUM');
+      expect(mockSubscriptionsService.handleVnpayIpn).toHaveBeenCalledWith({
+        paymentCode: 'PCABCDEFGH23',
+        success: true,
+        paidAmount: 100000,
+        transactionNo: '123456',
+      });
+      expect(mockPrisma.payments.update).not.toHaveBeenCalled();
     });
 
     it('holds escrow minus commission and notifies on success', async () => {
@@ -322,6 +344,23 @@ describe('PaymentsService', () => {
           update: expect.objectContaining({ platform_fee: 10000, provider_amount: 90000 }),
         }),
       );
+    });
+
+    it('charges the already-discounted total and does not record the promotion twice', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, promotion_id: 'promo-1', total_price: 80000 });
+      mockPrisma.wallets.findUnique.mockImplementation(({ where }: any) =>
+        where.user_id === 'cust-1'
+          ? { id: 'customer-wallet', balance: { lessThan: () => false } }
+          : { id: 'provider-wallet' },
+      );
+      mockPrisma.payments.upsert.mockResolvedValue({ amount: 80000 });
+
+      await service.checkoutWithWallet('cust-1', 'booking-123', 'SALE20');
+
+      expect(mockPrisma.payments.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ update: expect.objectContaining({ amount: 80000 }) }),
+      );
+      expect(mockPrisma.promotions.findUnique).not.toHaveBeenCalled();
     });
   });
 });

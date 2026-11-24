@@ -43,7 +43,8 @@ describe('CalculateDistanceUseCase', () => {
     expect(result.estimatedRoadDistanceKm).toBeCloseTo(3.61 * 1.3, 1);
     expect(result.roadFactor).toBe(1.3);
     expect(result.estimatedDurationMinutes).toBeGreaterThan(0);
-    expect(result.travelSurcharge).toBeGreaterThan(0);
+    // ~4,7 km đường đi < 5 km miễn phí => không phụ phí
+    expect(result.travelSurcharge).toBe(0);
   });
 
   it('should calculate distance using addressId and providerId from database', async () => {

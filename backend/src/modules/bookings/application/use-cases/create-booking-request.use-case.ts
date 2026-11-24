@@ -11,6 +11,8 @@ import type { UnitOfWorkPort } from '../ports/unit-of-work.port';
 import { CreateBookingDto } from '../../presentation/dto/create-booking.dto';
 import { PrismaService } from '../../../../database/prisma.service';
 import { GeoLocationHelper } from '../../../../common/utils/geo-location.helper';
+import { resolveBookableServicePrice } from '../../../services/domain/service-pricing';
+import { loadTravelPolicy } from '../../../services/domain/service-fees';
 import { PaymentsService } from '../../../payments/application/use-cases/payments.service';
 import { DEFAULT_PAYMENT_HOLD_MINUTES } from '../../../provider-schedules/application/cron/release-held-slots.cron';
 
@@ -88,13 +90,24 @@ export class CreateBookingRequestUseCase {
           longitude: Number(providerProfile.base_longitude),
         },
         serviceRadiusKm,
+        await loadTravelPolicy(this.prisma),
       );
       travelFee = distanceResult.travelSurcharge;
       travelDurationMinutes = distanceResult.estimatedDurationMinutes;
       distanceKm = distanceResult.estimatedRoadDistanceKm;
     }
 
-    const servicePrice = Number(providerService.price);
+    // Giá niêm yết của hệ thống theo cân nặng (gói chưa có bảng giá => giá đối tác)
+    const { price: servicePrice, durationMinutes: serviceDurationMinutes } =
+      await resolveBookableServicePrice(this.prisma, {
+        serviceId: dto.serviceId,
+        species: pet.species,
+        weight: Number(pet.weight) || 0,
+        fallback: {
+          price: Number(providerService.price),
+          durationMinutes: providerService.services.duration_minutes || 60,
+        },
+      });
     const subtotal = servicePrice;
 
     // 6. Validate & Calculate Promotion Discount if promoCode is provided
@@ -192,7 +205,7 @@ export class CreateBookingRequestUseCase {
       };
 
       const priceSnapshot = {
-        basePrice: Number(providerService.services.basePrice || providerService.price),
+        basePrice: servicePrice,
         servicePrice,
         travelFee,
         distanceKm,
@@ -210,7 +223,7 @@ export class CreateBookingRequestUseCase {
           providerWorkingSlotId: dto.providerWorkingSlotId,
           requestedSlotId: slot.slot_id,
           requestedDate: workDate,
-          serviceDurationMinutes: providerService.services.duration_minutes,
+          serviceDurationMinutes,
           travelDurationMinutes,
           estimatedStartAt,
           estimatedEndAt,
@@ -237,8 +250,8 @@ export class CreateBookingRequestUseCase {
         {
           providerServiceId: providerService.id,
           serviceId: dto.serviceId,
-          price: Number(providerService.price),
-          durationMinutes: providerService.services.duration_minutes,
+          price: servicePrice,
+          durationMinutes: serviceDurationMinutes,
           serviceName: providerService.services.name,
           serviceDescription: providerService.services.description || undefined,
           serviceCategory: providerService.services.category || undefined,

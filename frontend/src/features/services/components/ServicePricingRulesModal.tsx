@@ -282,7 +282,7 @@ export const ServicePricingRulesModal: React.FC<ServicePricingRulesModalProps> =
                 <input
                   type="number"
                   name="minWeight"
-                  step="0.5"
+                  step="0.01"
                   min="0"
                   value={formData.minWeight}
                   onChange={handleInputChange}
@@ -297,7 +297,7 @@ export const ServicePricingRulesModal: React.FC<ServicePricingRulesModalProps> =
                 <input
                   type="number"
                   name="maxWeight"
-                  step="0.5"
+                  step="0.01"
                   min="0"
                   value={formData.maxWeight}
                   onChange={handleInputChange}
@@ -306,6 +306,10 @@ export const ServicePricingRulesModal: React.FC<ServicePricingRulesModalProps> =
                 />
               </div>
             </div>
+            <p className="text-[11px] text-slate-500 -mt-1">
+              Khoảng cân nặng tính cả 2 đầu. Để tránh trùng biên, đặt dòng sau bắt đầu lớn hơn dòng trước 0,01 kg (VD: 0–4,99 · 5–10 · 10,01–15).
+              Thú cưng không khớp dòng nào sẽ được báo &quot;liên hệ báo giá riêng&quot; và không đặt online được.
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
               {/* Price */}

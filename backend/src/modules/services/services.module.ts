@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma.module';
 import { ServicesController } from './services.controller';
 import { CancellationPoliciesController } from './cancellation-policies.controller';
+import { ServiceFeesController } from './service-fees.controller';
+import { ManageServiceFeesUseCase } from './application/use-cases/manage-service-fees.use-case';
 import { CreateServiceUseCase } from './application/use-cases/create-service.use-case';
 import { UpdateServiceUseCase } from './application/use-cases/update-service.use-case';
 import { DeleteServiceUseCase } from './application/use-cases/delete-service.use-case';
@@ -15,7 +17,7 @@ import { PrismaServicesRepository } from './infrastructure/persistence/prisma-se
 
 @Module({
   imports: [PrismaModule],
-  controllers: [ServicesController, CancellationPoliciesController],
+  controllers: [ServicesController, CancellationPoliciesController, ServiceFeesController],
   providers: [
     CreateServiceUseCase,
     UpdateServiceUseCase,
@@ -25,6 +27,7 @@ import { PrismaServicesRepository } from './infrastructure/persistence/prisma-se
     ManageChecklistTemplateUseCase,
     ManageCancellationPolicyUseCase,
     CreateServiceSuggestionUseCase,
+    ManageServiceFeesUseCase,
     {
       provide: SERVICES_REPOSITORY,
       useClass: PrismaServicesRepository,

@@ -44,7 +44,7 @@ export default function ProviderAddressStepScreen() {
         longitude: coordinate.longitude,
       });
       
-      router.push('/(customer)/become-provider/step-kyc');
+      router.push('/(customer)/become-provider/step-kyc' as any);
     } catch (err: any) {
       setError(err?.message || 'Failed to update address. Please try again.');
     } finally {

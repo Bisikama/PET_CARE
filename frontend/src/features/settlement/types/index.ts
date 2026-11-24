@@ -47,6 +47,16 @@ export interface BankTransaction {
   created_at: string;
   resolver: { id: string; fullName: string; email: string } | null;
   payments: { booking_id: string; amount: string | number; status: string } | null;
+  /** Giao dịch thanh toán gói hội viên (thay cho payments của booking) */
+  subscription_order?: {
+    id: string;
+    plan_code: string;
+    plan_name: string;
+    amount: string | number;
+    status: string;
+    payment_code: string;
+    user: { email: string; fullName: string } | null;
+  } | null;
 }
 
 export interface BankTransactionList {

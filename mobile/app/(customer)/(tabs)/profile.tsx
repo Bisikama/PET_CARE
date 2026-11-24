@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronRight,
   Briefcase,
+  Crown,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
@@ -56,6 +57,20 @@ export default function ProfileRoute() {
                 <Dog size={20} color={theme.colors.primary.navy} />
               </View>
               <Text style={styles.menuTitle}>Hồ sơ thú cưng</Text>
+            </View>
+            <ChevronRight size={18} color={theme.colors.text.muted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => router.push('/(customer)/membership' as any)}
+          >
+            <View style={styles.menuLeft}>
+              <View style={styles.iconBox}>
+                <Crown size={20} color={theme.colors.secondary.onContainer} />
+              </View>
+              <Text style={styles.menuTitle}>Gói hội viên</Text>
             </View>
             <ChevronRight size={18} color={theme.colors.text.muted} />
           </TouchableOpacity>

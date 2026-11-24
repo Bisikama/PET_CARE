@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle, Loader2 } from 'lucide-react';
 import { useCancelBooking } from '../hooks/useCustomerBookings';
 import { Booking, CancelReason } from '../types';
@@ -49,18 +50,18 @@ export function CancelBookingModal({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-950/55 backdrop-blur-xs animate-fade-in"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/70 animate-scale-up">
         {/* Header */}
         <div className="bg-rose-50 px-6 pt-6 pb-5 flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -178,6 +179,7 @@ export function CancelBookingModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

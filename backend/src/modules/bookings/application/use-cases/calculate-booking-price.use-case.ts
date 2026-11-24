@@ -6,6 +6,8 @@ import {
 import { PrismaService } from '../../../../database/prisma.service';
 import { GeoLocationHelper } from '../../../../common/utils/geo-location.helper';
 import { CalculateBookingPriceDto } from '../../presentation/dto/calculate-booking-price.dto';
+import { resolveBookableServicePrice } from '../../../services/domain/service-pricing';
+import { loadTravelPolicy } from '../../../services/domain/service-fees';
 
 export interface BookingPriceCalculationResult {
   item: {
@@ -107,8 +109,19 @@ export class CalculateBookingPriceUseCase {
       );
     }
 
-    const servicePrice = Number(providerService.price);
-    const serviceDuration = providerService.services.duration_minutes || 60;
+    // Giá niêm yết của hệ thống theo cân nặng (gói chưa có bảng giá => giá đối tác)
+    const { price: servicePrice, durationMinutes: serviceDuration } = await resolveBookableServicePrice(
+      this.prisma,
+      {
+        serviceId: providerService.service_id,
+        species: pet.species,
+        weight: petWeight,
+        fallback: {
+          price: Number(providerService.price),
+          durationMinutes: providerService.services.duration_minutes || 60,
+        },
+      },
+    );
     const subtotal = servicePrice;
 
     // 5. Tính toán khoảng cách và phụ phí di chuyển qua GeoLocationHelper
@@ -117,6 +130,7 @@ export class CalculateBookingPriceUseCase {
       { latitude: Number(address.latitude), longitude: Number(address.longitude) },
       { latitude: Number(provider.base_latitude), longitude: Number(provider.base_longitude) },
       serviceRadiusKm,
+      await loadTravelPolicy(this.prisma),
     );
 
     const travelFee = distanceResult.travelSurcharge;
