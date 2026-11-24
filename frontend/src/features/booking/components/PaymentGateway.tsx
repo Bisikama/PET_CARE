@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronRight, ShieldCheck, CreditCard, QrCode, ArrowLeft, Landmark } from 'lucide-react';
+import { ChevronRight, ShieldCheck, CreditCard, QrCode, ArrowLeft, Landmark, Crown } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { usePayment } from '../hooks/usePayment';
 import { bookingService } from '../services/booking.service';
@@ -25,6 +25,7 @@ export function PaymentGateway() {
   const router = useRouter();
   // Số tiền thật của đơn (đã gồm phí di chuyển, đã trừ giảm giá lúc tạo đơn). null = chưa tải được
   const [totalAmount, setTotalAmount] = React.useState<number | null>(null);
+  const [memberInfo, setMemberInfo] = React.useState<{ tierLabel: string; discountAmount: number } | null>(null);
   const [isFetchingBooking, setIsFetchingBooking] = React.useState(true);
 
   // Chuyển khoản VietQR: giữ lại mã đã tạo để mở lại không sinh mã mới
@@ -43,6 +44,18 @@ export function PaymentGateway() {
         const fetchedBooking = bookingDetails?.data?.booking || bookingDetails?.data || bookingDetails;
         if (isMounted && fetchedBooking?.total_price !== undefined && fetchedBooking?.total_price !== null) {
           setTotalAmount(Number(fetchedBooking.total_price));
+        }
+        const snap = fetchedBooking?.price_snapshot || fetchedBooking?.priceSnapshot || {};
+        if (isMounted && snap?.memberDiscountAmount) {
+          setMemberInfo({
+            tierLabel:
+              snap.memberTier === 'PREMIUM'
+                ? 'Gói VIP Pro'
+                : snap.memberTier === 'YEARLY'
+                ? 'Gói Tiết Kiệm Năm'
+                : 'Gói Cơ Bản',
+            discountAmount: Number(snap.memberDiscountAmount),
+          });
         }
       } catch (err) {
         console.error('Failed to fetch booking amount for payment gateway', err);
@@ -152,6 +165,26 @@ export function PaymentGateway() {
         />
       ) : (
         <div className="w-full max-w-lg bg-slate-50/60 border border-slate-200/80 rounded-3xl p-6 md:p-7">
+          {/* Active Member Badge if applied */}
+          {memberInfo && (
+            <div className="flex items-center justify-between bg-amber-50/90 border border-[#F7C948]/50 rounded-2xl px-4 py-2.5 mb-4 text-xs shadow-2xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-lg bg-[#08243D] text-[#F7C948] flex items-center justify-center shrink-0">
+                  <Crown className="w-3.5 h-3.5 text-[#F7C948]" />
+                </div>
+                <div>
+                  <span className="font-bold text-[#08243D]">
+                    Đặc quyền {memberInfo.tierLabel}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block">Miễn phí nền tảng & giảm giá dịch vụ</span>
+                </div>
+              </div>
+              <span className="font-bold text-amber-700 tabular-nums">
+                Đã giảm {formatPrice(memberInfo.discountAmount)}
+              </span>
+            </div>
+          )}
+
           {/* Amount Summary */}
           <div className="flex justify-between items-center bg-white border border-slate-200/70 rounded-2xl px-5 py-4 mb-5">
             <span className="text-slate-500 font-semibold text-xs uppercase tracking-wider">

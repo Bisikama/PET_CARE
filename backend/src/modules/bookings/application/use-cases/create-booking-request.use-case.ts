@@ -110,8 +110,26 @@ export class CreateBookingRequestUseCase {
       });
     const subtotal = servicePrice;
 
-    // 6. Validate & Calculate Promotion Discount if promoCode is provided
-    let discountAmount = 0;
+    // 6. Validate & Calculate Membership Discount & Promotion Discount
+    let memberDiscountAmount = 0;
+    let memberTier: string | undefined;
+
+    const activeSubscription = await this.prisma.subscriptions?.findFirst?.({
+      where: {
+        user_id: customerId,
+        status: 'ACTIVE',
+        end_date: { gt: new Date() },
+      },
+      orderBy: { end_date: 'desc' },
+    });
+
+    if (activeSubscription) {
+      memberTier = activeSubscription.tier_name.toUpperCase();
+      const discountPercent = (memberTier === 'PREMIUM' || memberTier === 'YEARLY') ? 15 : 5;
+      memberDiscountAmount = Math.round((subtotal * discountPercent) / 100);
+    }
+
+    let voucherDiscountAmount = 0;
     let appliedPromoCode: string | undefined;
     let promotionId: string | undefined;
 
@@ -147,19 +165,19 @@ export class CreateBookingRequestUseCase {
       }
 
       if (promo.discount_percent) {
-        discountAmount = (subtotal * promo.discount_percent) / 100;
+        voucherDiscountAmount = (subtotal * promo.discount_percent) / 100;
         if (promo.max_discount_amount) {
-          discountAmount = Math.min(discountAmount, Number(promo.max_discount_amount));
+          voucherDiscountAmount = Math.min(voucherDiscountAmount, Number(promo.max_discount_amount));
         }
       } else if (promo.discount_amount) {
-        discountAmount = Number(promo.discount_amount);
+        voucherDiscountAmount = Number(promo.discount_amount);
       }
 
-      discountAmount = Math.min(discountAmount, subtotal + travelFee);
       appliedPromoCode = normalizedCode;
       promotionId = promo.id;
     }
 
+    const discountAmount = Math.min(memberDiscountAmount + voucherDiscountAmount, subtotal + travelFee);
     const totalPrice = Math.max(0, subtotal + travelFee - discountAmount);
 
     // Calculate dates & times with explicit Vietnam timezone (+07:00)
@@ -210,6 +228,9 @@ export class CreateBookingRequestUseCase {
         travelFee,
         distanceKm,
         discountAmount,
+        memberDiscountAmount,
+        memberTier,
+        voucherDiscountAmount,
         promoCode: appliedPromoCode,
         finalPrice: totalPrice,
       };
