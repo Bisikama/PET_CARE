@@ -43,7 +43,23 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const data = await notificationService.getNotifications();
-      const notifications = Array.isArray(data) ? data : (data as any).data || [];
+      const raw = Array.isArray(data) ? data : (data as any).data || [];
+      const notifications = raw.map((item: any) => ({
+        id: item.id,
+        userId: item.user_id || item.userId,
+        title: item.title,
+        message: item.content || item.message || '',
+        content: item.content || item.message || '',
+        type: item.type,
+        isRead: item.is_read ?? item.isRead ?? false,
+        is_read: item.is_read ?? item.isRead ?? false,
+        createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+        created_at: item.created_at || item.createdAt || new Date().toISOString(),
+        updatedAt: item.updated_at || item.updatedAt,
+        link: item.action_url || item.link || '',
+        actionUrl: item.action_url || item.link || '',
+        metadata: item.metadata,
+      }));
       set({ notifications, isLoading: false, hasFetchedOnce: true });
     } catch (error: any) {
       set({ isLoading: false, error: error.message || 'Failed to fetch notifications' });

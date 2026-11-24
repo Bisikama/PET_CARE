@@ -78,6 +78,7 @@ describe('CalculateBookingPriceUseCase', () => {
       service_pricing_rules: { findMany: jest.fn().mockResolvedValue([]) },
       promotions: { findUnique: jest.fn().mockResolvedValue(mockPromotion) },
       promotion_usages: { count: jest.fn().mockResolvedValue(0) },
+      subscriptions: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     const module: TestingModule = await Test.createTestingModule({

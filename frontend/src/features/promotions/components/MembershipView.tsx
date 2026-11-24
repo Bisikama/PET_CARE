@@ -12,10 +12,16 @@ import {
   RefreshCw,
   RotateCcw,
   XCircle,
+  Sparkles,
+  ShieldCheck,
+  Stethoscope,
+  Zap,
+  HelpCircle,
+  ChevronRight,
 } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
 import { SubscriptionModal, formatPlanPeriod } from './SubscriptionModal';
-import type { SubscriptionOrder, SubscriptionOrderStatus, SubscriptionPaymentMethod } from '../types/subscription.types';
+import { getPlanBenefits, type SubscriptionOrder, type SubscriptionOrderStatus, type SubscriptionPaymentMethod } from '../types/subscription.types';
 
 const formatPrice = (price: number) => new Intl.NumberFormat('vi-VN').format(price) + ' đ';
 const formatDate = (val: string) => new Date(val).toLocaleDateString('vi-VN');
@@ -39,6 +45,85 @@ const METHOD_LABEL: Record<SubscriptionPaymentMethod, string> = {
   VNPAY: 'VNPay',
   WALLET: 'Ví PetCare',
 };
+
+const COMPARISON_ROWS = [
+  {
+    feature: 'Mức giảm giá khi đặt dịch vụ (Booking)',
+    free: '0%',
+    basic: 'Giảm 5%',
+    premium: 'Giảm 15%',
+    yearly: 'Giảm 15% (+ Tặng 2 buổi Spa)',
+  },
+  {
+    feature: 'Phí dịch vụ nền tảng (Platform fee)',
+    free: 'Thu theo đơn',
+    basic: 'Miễn phí 100%',
+    premium: 'Miễn phí 100%',
+    yearly: 'Miễn phí 100%',
+  },
+  {
+    feature: 'Ưu tiên ghép Chuyên viên (Matching)',
+    free: 'Hàng đợi tiêu chuẩn',
+    basic: 'Ưu tiên cấp 1',
+    premium: 'Ưu tiên hàng đầu (Lễ, Tết, Cao điểm)',
+    yearly: 'Ưu tiên tối cao (Giữ chỗ trước)',
+  },
+  {
+    feature: 'Tư vấn y tế trực tuyến với Bác sĩ Thú y',
+    free: 'Tính phí theo lượt',
+    basic: '1 lần / tháng',
+    premium: 'Không giới hạn 24/7 qua Chat',
+    yearly: 'Không giới hạn 24/7 (Bác sĩ chuyên khoa)',
+  },
+  {
+    feature: 'Quỹ bảo hiểm bảo vệ sự cố thú cưng',
+    free: 'Không hỗ trợ',
+    basic: 'Lên đến 2.000.000 đ',
+    premium: 'Lên đến 5.000.000 đ',
+    yearly: 'Lên đến 20.000.000 đ',
+  },
+  {
+    feature: 'Giới hạn số thú cưng trong hồ sơ',
+    free: 'Tối đa 1 bé',
+    basic: 'Tối đa 2 bé',
+    premium: 'Không giới hạn',
+    yearly: 'Không giới hạn',
+  },
+  {
+    feature: 'Tốc độ hỗ trợ CSKH & Trọng tài khiếu nại',
+    free: 'Trong 24 giờ',
+    basic: 'Trong 4 giờ',
+    premium: 'Ưu tiên trong 2 giờ (Kênh VIP)',
+    yearly: 'Ưu tiên trong 2 giờ (Kênh VIP)',
+  },
+  {
+    feature: 'Quà tặng sinh nhật thú cưng & Tri ân',
+    free: '—',
+    basic: 'Voucher 20.000 đ',
+    premium: 'Hộp quà sinh nhật PetCare',
+    yearly: 'Bộ quà tặng VIP cao cấp hàng năm',
+  },
+];
+
+const FAQS = [
+  {
+    question: 'Gói hội viên có tự động gia hạn hoặc trừ tiền ngầm không?',
+    answer: 'Hoàn toàn không. PetCare áp dụng cơ chế thanh toán chủ động qua VietQR hoặc Ví PetCare. Chúng tôi không bao giờ tự động trừ tiền thẻ ngân hàng của bạn. Bạn có thể gia hạn thêm kỳ khi muốn.',
+  },
+  {
+    question: 'Tôi có thể đổi từ gói Cơ Bản lên VIP Pro được không?',
+    answer: 'Có. Khi bạn đăng ký gói mới, thời gian hiệu lực của gói cũ sẽ được hệ thống bảo lưu và kích hoạt gói mới ngay lập tức hoặc nối tiếp thông minh.',
+  },
+  {
+    question: 'Sau khi chuyển khoản qua VietQR bao lâu thì gói được kích hoạt?',
+    answer: 'Hệ thống đối soát SePay tự động nhận diện mã giao dịch và kích hoạt đặc quyền hội viên cho tài khoản của bạn ngay lập tức trong 5 - 30 giây.',
+  },
+  {
+    question: 'Ưu đãi giảm giá của gói có áp dụng chung với Voucher khuyến mãi không?',
+    answer: 'Có! Khi bạn là Hội viên, bạn vừa được hưởng mức giảm giá định kỳ theo gói, vừa có thể nhập thêm mã giảm giá (Voucher) khi thanh toán để nhân đôi quyền lợi.',
+  },
+];
+
 
 export function MembershipView() {
   const {
@@ -207,19 +292,22 @@ export function MembershipView() {
                 </div>
               </div>
 
-              {activePlanDetails && activePlanDetails.benefits.length > 0 && (
-                <div className="pt-2 flex flex-wrap gap-2">
-                  {activePlanDetails.benefits.map((b) => (
-                    <span
-                      key={b}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs text-slate-200"
-                    >
-                      <Check className="w-3.5 h-3.5 text-[#F7C948]" />
-                      {b}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {activePlanDetails && (() => {
+                const activeBenefitsList = getPlanBenefits(activePlanDetails);
+                return activeBenefitsList.length > 0 ? (
+                  <div className="pt-2 flex flex-wrap gap-2">
+                    {activeBenefitsList.map((b) => (
+                      <span
+                        key={b}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 px-3 py-1 text-xs text-slate-200"
+                      >
+                        <Check className="w-3.5 h-3.5 text-[#F7C948]" />
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -409,16 +497,19 @@ export function MembershipView() {
                     </p>
                   )}
 
-                  {p.benefits.length > 0 && (
-                    <ul className={`mt-5 pt-5 border-t space-y-2.5 ${isFeatured ? 'border-white/10' : 'border-slate-100'}`}>
-                      {p.benefits.map((b) => (
-                        <li key={b} className={`flex gap-2.5 text-xs ${isFeatured ? 'text-slate-200' : 'text-slate-600'}`}>
-                          <Check className={`w-4 h-4 shrink-0 ${isFeatured ? 'text-[#F7C948]' : 'text-teal-600'}`} />
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  {(() => {
+                    const cardBenefitsList = getPlanBenefits(p);
+                    return cardBenefitsList.length > 0 ? (
+                      <ul className={`mt-5 pt-5 border-t space-y-2.5 ${isFeatured ? 'border-white/10' : 'border-slate-100'}`}>
+                        {cardBenefitsList.map((b) => (
+                          <li key={b} className={`flex gap-2.5 text-xs ${isFeatured ? 'text-slate-200' : 'text-slate-600'}`}>
+                            <Check className={`w-4 h-4 shrink-0 ${isFeatured ? 'text-[#F7C948]' : 'text-teal-600'}`} />
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null;
+                  })()}
                 </div>
 
                 <div className="mt-7 space-y-2">
@@ -482,7 +573,133 @@ export function MembershipView() {
         </div>
       )}
 
-      {/* 4. Order History Table with Resume / Retry / Check Actions */}
+      
+      {/* 4. Value Pillars: Tại sao nên mua gói hội viên */}
+      <div className="rounded-3xl border border-slate-200/80 bg-linear-to-b from-white to-slate-50/50 p-6 md:p-8 space-y-6 shadow-2xs">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F7C948]/15 border border-[#F7C948]/30 text-xs font-bold text-[#08243D]">
+            <Sparkles className="w-3.5 h-3.5 text-[#d49d13]" />
+            Đặc Quyền Hội Viên PetCare
+          </div>
+          <h3 className="text-lg md:text-xl font-bold text-[#08243D] mt-2">
+            Tại sao bạn nên nâng cấp gói hội viên PetCare?
+          </h3>
+          <p className="text-xs md:text-sm text-slate-500 mt-1">
+            Đầu tư nhỏ mỗi tháng, nhận lại sự an tâm tuyệt đối và tiết kiệm vượt trội trên mỗi đơn đặt lịch chăm sóc thú cưng của bạn.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-2.5 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+              <Zap className="w-5 h-5 text-[#F7C948]" />
+            </div>
+            <h4 className="text-sm font-bold text-[#08243D]">Hoàn vốn chỉ sau 1-2 đơn</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Giảm trực tiếp 5% - 15% tổng hóa đơn và miễn 100% phí dịch vụ nền tảng. Số tiền tiết kiệm nhanh chóng vượt xa chi phí mua gói.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-2.5 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+              <Crown className="w-5 h-5 text-[#08243D]" />
+            </div>
+            <h4 className="text-sm font-bold text-[#08243D]">Ưu tiên ghép Chuyên viên 5 sao</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Vào dịp Lễ Tết hoặc cuối tuần cao điểm, yêu cầu của bạn luôn được hệ thống ưu tiên kết nối với các thợ chăm sóc giỏi nhất.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-2.5 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <Stethoscope className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h4 className="text-sm font-bold text-[#08243D]">Bác sĩ thú y tư vấn 24/7</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Hỏi đáp y tế, dinh dưỡng và nhận hướng dẫn xử trí khi thú cưng có dấu hiệu bất thường trực tuyến qua Chat với Bác sĩ thú y.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-2.5 shadow-2xs">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-rose-600" />
+            </div>
+            <h4 className="text-sm font-bold text-[#08243D]">Bảo hiểm thú cưng & CSKH VIP</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Bảo hiểm sự cố trong suốt ca chăm sóc lên đến 20.000.000 đ. Đường dây nóng hỗ trợ và xử lý khiếu nại siêu tốc trong 2 giờ.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Comparison Matrix */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-[#08243D]">Bảng so sánh chi tiết quyền lợi</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              So sánh sự khác biệt giữa tài khoản thường và các hạng gói hội viên PetCare
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#08243D]">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            Đã bao gồm đặc quyền
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-slate-600 font-bold">
+                <th className="py-3.5 px-6 min-w-[220px]">Quyền lợi / Tiêu chí</th>
+                <th className="py-3.5 px-4 text-center min-w-[120px] text-slate-500 font-medium">Tài khoản thường</th>
+                <th className="py-3.5 px-4 text-center min-w-[140px] text-[#08243D]">Gói Cơ Bản (99k)</th>
+                <th className="py-3.5 px-4 text-center min-w-[160px] bg-[#08243D] text-[#F7C948]">
+                  Gói VIP Pro (249k)
+                  <span className="block text-[9px] font-normal text-slate-300">Được chọn nhiều nhất</span>
+                </th>
+                <th className="py-3.5 px-4 text-center min-w-[150px] text-[#08243D]">Gói Năm (1.990k)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {COMPARISON_ROWS.map((row, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-6 font-semibold text-[#08243D]">{row.feature}</td>
+                  <td className="py-3.5 px-4 text-center text-slate-500">{row.free}</td>
+                  <td className="py-3.5 px-4 text-center font-medium text-slate-700">{row.basic}</td>
+                  <td className="py-3.5 px-4 text-center font-bold text-[#08243D] bg-amber-50/30">{row.premium}</td>
+                  <td className="py-3.5 px-4 text-center font-semibold text-[#08243D]">{row.yearly}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 6. FAQ Section */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white p-6 md:p-8 space-y-5 shadow-2xs">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+            <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+            Giải Đáp Thắc Mắc
+          </div>
+          <h3 className="text-lg font-bold text-[#08243D] mt-2">Câu hỏi thường gặp về Gói Hội Viên</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {FAQS.map((faq, idx) => (
+            <div key={idx} className="rounded-2xl border border-slate-200/70 bg-slate-50/40 p-4 space-y-1.5">
+              <h4 className="text-xs md:text-sm font-bold text-[#08243D] flex items-start gap-2">
+                <span className="text-amber-500 shrink-0 font-extrabold">Q:</span>
+                {faq.question}
+              </h4>
+              <p className="text-xs text-slate-600 pl-5 leading-relaxed">{faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 7. Lịch sử mua gói */}
       <div className="rounded-3xl border border-slate-200/70 bg-white shadow-2xs overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
