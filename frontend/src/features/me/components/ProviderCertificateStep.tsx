@@ -4,6 +4,7 @@ import * as React from 'react';
 import { X, Loader2, Upload, FileText, Check, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useProvider } from '@/features/provider';
 import { providerService } from '@/features/provider/services/provider.service';
+import { systemAlert, systemConfirm } from '@/components/ui/SystemDialogProvider';
 
 export function ProviderCertificateStep() {
   const { setStep, closeModal } = useProvider();
@@ -91,7 +92,14 @@ export function ProviderCertificateStep() {
   };
 
   const handleDelete = async (docId: string) => {
-    if (!window.confirm('Bạn có chắc muốn xóa chứng chỉ này?')) return;
+    const ok = await systemConfirm({
+      title: 'Xóa chứng chỉ?',
+      message: 'Bạn có chắc muốn xóa tài liệu chứng chỉ này khỏi hồ sơ đăng ký không?',
+      confirmText: 'Xóa chứng chỉ',
+      cancelText: 'Giữ lại',
+      variant: 'danger',
+    });
+    if (!ok) return;
     
     if (docId.startsWith('local-')) {
       setLocalUploadedFiles((prev) => prev.filter((d) => d.id !== docId));
@@ -104,9 +112,9 @@ export function ProviderCertificateStep() {
     } catch (err: any) {
       console.error('Error deleting document:', err);
       if (err?.response?.status === 403) {
-        alert('Không thể xóa chứng chỉ sau khi đã nộp hồ sơ.');
+        systemAlert('Không thể xóa chứng chỉ sau khi đã nộp hồ sơ.', { type: 'warning' });
       } else {
-        alert('Không thể xóa tài liệu này.');
+        systemAlert('Không thể xóa tài liệu này.', { type: 'error' });
       }
     }
   };

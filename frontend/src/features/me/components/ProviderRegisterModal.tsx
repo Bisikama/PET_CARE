@@ -4,6 +4,7 @@ import * as React from 'react';
 import { X, Loader2, Save, Award, Info, MapPin, Briefcase, FileText, ChevronRight } from 'lucide-react';
 import { useProvider } from '@/features/provider';
 import { useProviderProfile } from '../hooks/useProviderProfile';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 export function ProviderRegisterModal() {
   const { isOpen, step, setStep } = useProvider();
@@ -16,7 +17,10 @@ export function ProviderRegisterModal() {
 
   const handleStepClick = (targetStep: number) => {
     if (targetStep > 1) {
-      alert('Vui lòng hoàn thành Bước 1 để khởi tạo hồ sơ đối tác.');
+      systemAlert('Vui lòng hoàn thành Bước 1 để khởi tạo hồ sơ đối tác.', {
+        title: 'Chưa hoàn tất Bước 1',
+        type: 'warning',
+      });
       return;
     }
     setStep(targetStep);

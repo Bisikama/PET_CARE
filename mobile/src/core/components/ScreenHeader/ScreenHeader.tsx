@@ -7,16 +7,25 @@ import { theme } from '../../theme';
 interface ScreenHeaderProps {
   title?: string;
   transparent?: boolean;
+  onLeftPress?: () => void;
+  rightIcon?: string;
+  onRightPress?: () => void;
 }
 
-export function ScreenHeader({ title, transparent = false }: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  transparent = false,
+  onLeftPress,
+  rightIcon,
+  onRightPress,
+}: ScreenHeaderProps) {
   const router = useRouter();
   
   return (
     <View style={[styles.container, transparent && styles.transparent]}>
       <TouchableOpacity 
         style={[styles.backButton, transparent && styles.backButtonTransparent]} 
-        onPress={() => router.back()}
+        onPress={() => (onLeftPress ? onLeftPress() : router.back())}
         activeOpacity={0.7}
       >
         <ChevronLeft size={24} color={transparent ? 'white' : theme.colors.text.primary} />
@@ -24,7 +33,17 @@ export function ScreenHeader({ title, transparent = false }: ScreenHeaderProps) 
       
       {title && <Text style={styles.title}>{title}</Text>}
       
-      <View style={styles.placeholder} />
+      {rightIcon ? (
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={onRightPress} 
+          activeOpacity={0.7}
+        >
+          {/* placeholder for right icon action */}
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.placeholder} />
+      )}
     </View>
   );
 }

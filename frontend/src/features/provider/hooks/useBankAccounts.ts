@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useBankStore } from '../stores/useBankStore';
 import { bankService } from '../services/bank.service';
 import { CreateBankAccountPayload, UpdateBankAccountPayload } from '../types/bank.types';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 export const useBankAccounts = () => {
   const { 
@@ -43,10 +44,10 @@ export const useBankAccounts = () => {
       // or we just fetch again for simplicity.
       await fetchBankAccounts(true);
       
-      window.alert('Thêm tài khoản ngân hàng thành công');
+      systemAlert('Thêm tài khoản ngân hàng thành công', { type: 'success' });
       return true;
     } catch (err: any) {
-      window.alert(err.response?.data?.message || 'Thêm tài khoản ngân hàng thất bại');
+      systemAlert(err.response?.data?.message || 'Thêm tài khoản ngân hàng thất bại', { type: 'error' });
       return false;
     } finally {
       setLoading(false);
@@ -58,10 +59,10 @@ export const useBankAccounts = () => {
       setLoading(true);
       await bankService.updateBankAccount(id, { is_default: true });
       await fetchBankAccounts(true);
-      window.alert('Đã đặt làm thẻ mặc định');
+      systemAlert('Đã đặt làm thẻ ngân hàng mặc định', { type: 'success' });
       return true;
     } catch (err: any) {
-      window.alert(err.response?.data?.message || 'Cập nhật thất bại');
+      systemAlert(err.response?.data?.message || 'Cập nhật thẻ mặc định thất bại', { type: 'error' });
       return false;
     } finally {
       setLoading(false);

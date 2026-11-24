@@ -4,7 +4,9 @@ export interface DiscoveredPackage {
   description: string | null;
   category: string | null;
   durationMinutes: number;
-  price: number; // Calculated price (pricing rule or base price)
+  price: number; // Giá niêm yết theo bảng giá (hoặc giá gốc nếu gói chưa có bảng giá)
+  /** Thú cưng nằm ngoài các mức cân nặng có giá niêm yết => cần báo giá riêng */
+  requiresQuote?: boolean;
   checklist: string[]; // checklist titles
   cancellationPolicy: any; // policy details
 }
@@ -19,7 +21,7 @@ export interface MatchedProvider {
   ratingAvg: number;
   totalReviews: number;
   totalCompletedBookings: number;
-  price: number; // provider custom service price
+  price: number; // Giá niêm yết của hệ thống (gói chưa có bảng giá => giá đối tác)
   durationMinutes: number;
   kycStatus: string;
   trustBadges: { code: string; name: string }[];

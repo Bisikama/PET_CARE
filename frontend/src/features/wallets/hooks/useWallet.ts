@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useWalletStore } from '../stores/useWalletStore';
 import { walletService } from '../services/wallet.service';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 
 export const useWallet = (options?: { pollingIntervalMs?: number }) => {
@@ -131,8 +132,8 @@ export const usePayoutRequests = () => {
       const data = await walletService.requestProviderPayout(amount, bankAccountId);
       addPayoutRequest(data);
       return { success: true };
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Yêu cầu rút tiền thất bại';
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Yêu cầu rút tiền thất bại. Vui lòng thử lại.');
       console.error('Payout request error:', err);
       setError(msg);
       return { success: false, message: msg };

@@ -7,6 +7,7 @@ import { bookingService } from '../services/booking.service';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
 import { providerScheduleService } from '../services/provider-schedule.service';
 import { ProviderWorkingSlotView } from '@/features/schedule/types';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
 
 // Hook to fetch provider's schedule
 function useProviderSchedule(providerId: string | null, date: string) {
@@ -105,7 +106,10 @@ export function TimeSelection() {
 
   const handleCreateBooking = async () => {
     if (!selectedPetId || !selectedAddressId || !selectedServiceId || !selectedSlotId) {
-      alert('Vui lòng chọn 1 khung giờ làm việc khả dụng.');
+      systemAlert('Vui lòng chọn 1 khung giờ làm việc khả dụng trước khi tiếp tục.', {
+        title: 'Chưa chọn khung giờ',
+        type: 'warning',
+      });
       return;
     }
     setStep(8);

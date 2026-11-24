@@ -7,6 +7,8 @@ export * from './components/ServiceDetailModal';
 export * from './components/ServicePricingRulesModal';
 export * from './components/ServiceChecklistTemplatesModal';
 export * from './components/CancellationPoliciesModal';
+export * from './components/SystemPriceTable';
+export * from './components/AdminServiceFeesManager';
 export * from './hooks/useServices';
 export * from './hooks/useCreateService';
 export * from './hooks/useUpdateService';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import {
   Circle,
   ArrowRight,
   Lock,
-  PlusCircle,
+  Landmark,
 } from 'lucide-react-native';
 import { Screen } from '@/core/components/Screen';
 import { theme } from '@/core/theme';
@@ -30,9 +30,22 @@ import { PaymentSecurityFooter } from '../components/PaymentSecurityFooter';
 import { formatCurrency } from '@/core/utils/currency';
 import { useBookingFlow } from '../context/BookingContext';
 import { bookingsApi } from '@/infrastructure/api/bookings.api';
-import { paymentsApi } from '@/infrastructure/api/payments.api';
+import { paymentsApi, BankTransferCheckout } from '@/infrastructure/api/payments.api';
+import { PaymentVietQrModal } from '../components/PaymentVietQrModal';
 
-type PaymentMethodKey = 'WALLET' | 'VNPAY' | 'MOMO';
+type PaymentMethodKey = 'VIETQR' | 'WALLET' | 'VNPAY' | 'MOMO';
+const PAYMENT_METHODS: PaymentMethodKey[] = ['VIETQR', 'WALLET', 'VNPAY', 'MOMO'];
+
+type BookingPaymentState = 'PAID' | 'EXPIRED' | 'PENDING';
+
+/** Hỏi backend trạng thái đơn — nguồn sự thật duy nhất về việc đã thanh toán hay chưa. */
+async function fetchBookingPaymentState(bookingId: string): Promise<BookingPaymentState> {
+  const latest = await bookingsApi.getBookingById(bookingId);
+  const status = latest?.status as string | undefined;
+  if (!status || status === 'PENDING_PAYMENT') return 'PENDING';
+  if (['EXPIRED', 'CANCELLED'].includes(status)) return 'EXPIRED';
+  return 'PAID';
+}
 
 export default function PaymentGatewayScreen() {
   const router = useRouter();
@@ -68,12 +81,23 @@ export default function PaymentGatewayScreen() {
 
   // Payment states
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodKey>(
-    (params.paymentMethod as PaymentMethodKey) || 'WALLET'
+    PAYMENT_METHODS.includes(params.paymentMethod as PaymentMethodKey)
+      ? (params.paymentMethod as PaymentMethodKey)
+      : 'VIETQR'
   );
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isToppingUp, setIsToppingUp] = useState(false);
+
+  // Chuyển khoản VietQR (MB Bank + SePay)
+  const [qrCheckout, setQrCheckout] = useState<BankTransferCheckout | null>(null);
+  const [qrBooking, setQrBooking] = useState<{ id: string; code: string } | null>(null);
+  const [isQrModalVisible, setIsQrModalVisible] = useState(false);
+  const [isCheckingQr, setIsCheckingQr] = useState(false);
+  const qrHandledRef = useRef(false);
+
+  // Mốc giữ chỗ THẬT từ backend — chỉ có sau khi booking được tạo
+  const [hold, setHold] = useState<{ bookingCode: string; expiresAt: string | null } | null>(null);
 
   // Fetch real wallet balance from backend
   const fetchWallet = async () => {
@@ -92,19 +116,6 @@ export default function PaymentGatewayScreen() {
     fetchWallet();
   }, []);
 
-  const handleTopup = async () => {
-    try {
-      setIsToppingUp(true);
-      await paymentsApi.topupWallet(1000000);
-      await fetchWallet();
-      Alert.alert('Thành công', 'Đã nạp 1.000.000 đ vào ví PetCare để thử nghiệm thanh toán!');
-    } catch (e: any) {
-      Alert.alert('Lỗi nạp tiền', e?.message || 'Không thể nạp tiền ví.');
-    } finally {
-      setIsToppingUp(false);
-    }
-  };
-
   const methods: {
     id: PaymentMethodKey;
     title: string;
@@ -114,14 +125,20 @@ export default function PaymentGatewayScreen() {
     badgeColor?: string;
   }[] = [
     {
+      id: 'VIETQR',
+      title: 'Chuyển khoản ngân hàng (VietQR)',
+      subtext: 'Quét mã bằng app ngân hàng bất kỳ · Xác nhận tự động trong vài giây',
+      icon: <Landmark size={20} color="#059669" />,
+      badge: 'Khuyên dùng',
+      badgeColor: '#10B981',
+    },
+    {
       id: 'WALLET',
       title: 'Ví PetCare Wallet',
       subtext: isLoadingWallet
         ? 'Đang tải số dư...'
-        : `Khả dụng: ${formatCurrency(walletBalance)} đ · Trừ tiền tự động 1-chạm`,
+        : `Số dư hoàn tiền: ${formatCurrency(walletBalance)} đ`,
       icon: <Wallet size={20} color={theme.colors.secondary.onContainer} />,
-      badge: 'Khuyên dùng',
-      badgeColor: '#10B981',
     },
     {
       id: 'VNPAY',
@@ -155,6 +172,118 @@ export default function PaymentGatewayScreen() {
     });
   };
 
+  /**
+   * Đồng hồ giữ chỗ về 0. Modal QR đang mở thì để vòng hỏi trạng thái tự xử lý (tránh 2 thông báo);
+   * ngược lại báo khách và xoá đơn cũ để lần bấm sau tạo đơn mới.
+   */
+  const handleHoldExpired = () => {
+    if (isQrModalVisible) return;
+    setHold(null);
+    setQrCheckout(null);
+    setQrBooking(null);
+    Alert.alert(
+      'Hết hạn giữ chỗ',
+      'Khung giờ không còn được giữ cho bạn. Nếu bạn đã chuyển tiền, số tiền sẽ được hoàn vào Ví PetCare. Vui lòng bấm thanh toán để đặt lại.'
+    );
+  };
+
+  const showExpiredAlert = () =>
+    Alert.alert(
+      'Đơn đã hết hạn',
+      'Đơn đặt lịch đã hết thời gian giữ chỗ. Nếu bạn đã chuyển tiền, số tiền sẽ được hoàn vào Ví PetCare.'
+    );
+
+  /** Xử lý kết quả của đơn VietQR (một lần duy nhất). Trả về true nếu đơn đã có kết quả cuối. */
+  const settleQrBooking = (state: BookingPaymentState): boolean => {
+    if (state === 'PENDING' || !qrBooking || qrHandledRef.current) return false;
+    qrHandledRef.current = true;
+    setIsQrModalVisible(false);
+    if (state === 'EXPIRED') {
+      setQrCheckout(null);
+      setQrBooking(null);
+      showExpiredAlert();
+    } else {
+      completeAndNavigate(qrBooking.code, 'VIETQR');
+    }
+    return true;
+  };
+
+  // Khi đang hiện mã QR: tự hỏi backend mỗi 4 giây xem SePay đã báo có chưa
+  useEffect(() => {
+    if (!isQrModalVisible || !qrBooking) return;
+    const timer = setInterval(async () => {
+      try {
+        settleQrBooking(await fetchBookingPaymentState(qrBooking.id));
+      } catch (e) {
+        console.log('Không kiểm tra được trạng thái đơn:', e);
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQrModalVisible, qrBooking]);
+
+  /** Khách bấm "Tôi đã chuyển khoản": kiểm tra ngay vài lần, KHÔNG tự xác nhận. */
+  const handleQrConfirmPaid = async () => {
+    if (!qrBooking) return;
+    setIsCheckingQr(true);
+    try {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (settleQrBooking(await fetchBookingPaymentState(qrBooking.id))) return;
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+      Alert.alert(
+        'Chưa nhận được tiền',
+        'Ngân hàng chưa báo về giao dịch. Thường mất vài giây đến 1-2 phút. Vui lòng giữ màn hình này, đơn sẽ tự cập nhật khi nhận được tiền.'
+      );
+    } catch (e: any) {
+      Alert.alert('Lỗi', e?.message || 'Không kiểm tra được trạng thái đơn.');
+    } finally {
+      setIsCheckingQr(false);
+    }
+  };
+
+  /**
+   * Sau khi khách đóng trình duyệt cổng thanh toán, hỏi backend trạng thái đơn.
+   * Chỉ backend (qua IPN/Return đã xác thực chữ ký) mới quyết định đơn đã được thanh toán hay chưa.
+   */
+  const confirmGatewayPayment = async (
+    bookingId: string,
+    createdBookingCode: string,
+    method: PaymentMethodKey
+  ) => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const state = await fetchBookingPaymentState(bookingId);
+        if (state === 'EXPIRED') {
+          showExpiredAlert();
+          return;
+        }
+        if (state === 'PAID') {
+          completeAndNavigate(createdBookingCode, method);
+          return;
+        }
+      } catch (e) {
+        console.log('Không kiểm tra được trạng thái đơn:', e);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    Alert.alert(
+      'Chưa nhận được xác nhận thanh toán',
+      'Nếu bạn đã thanh toán, đơn sẽ tự cập nhật trong ít phút. Bạn có thể bấm thanh toán lại nếu chưa trả tiền.',
+      [
+        { text: 'Ở lại trang này', style: 'cancel' },
+        {
+          text: 'Xem đơn của tôi',
+          onPress: () => {
+            resetDraft();
+            router.replace('/(customer)/(tabs)/bookings');
+          },
+        },
+      ]
+    );
+  };
+
   const handlePay = async () => {
     const missing: string[] = [];
     if (!petId) missing.push('thú cưng');
@@ -170,22 +299,19 @@ export default function PaymentGatewayScreen() {
       return;
     }
 
+    // Đã tạo đơn + mã QR trước đó trong phiên này => mở lại, không tạo đơn mới
+    if (selectedMethod === 'VIETQR' && qrCheckout && qrBooking) {
+      setIsQrModalVisible(true);
+      return;
+    }
+
     // 1. Kiểm tra số dư nếu chọn ví
     if (selectedMethod === 'WALLET' && walletBalance < totalAmount) {
       Alert.alert(
         'Số dư ví không đủ',
         `Số dư ví hiện tại là ${formatCurrency(walletBalance)} đ, không đủ thanh toán ${formatCurrency(
           totalAmount
-        )} đ. Bạn có muốn nạp nhanh 1.000.000 đ vào ví để tiếp tục không?`,
-        [
-          { text: 'Đổi phương thức khác', style: 'cancel' },
-          {
-            text: 'Nạp nhanh 1.000.000đ',
-            onPress: async () => {
-              await handleTopup();
-            },
-          },
-        ]
+        )} đ. Vui lòng chọn VNPAY hoặc MoMo để thanh toán.`
       );
       return;
     }
@@ -211,7 +337,25 @@ export default function PaymentGatewayScreen() {
         throw new Error('Không tạo được mã đơn đặt lịch.');
       }
 
+      const holdExpiresAt: string | null =
+        bookingRes?.holdExpiresAt || bookingRes?.data?.holdExpiresAt || null;
+      setHold({ bookingCode, expiresAt: holdExpiresAt });
+
       // 3. Xử lý thanh toán theo từng phương thức
+      if (selectedMethod === 'VIETQR') {
+        const checkout = await paymentsApi.checkoutBankTransfer({
+          bookingId,
+          promotionCode: promoCode,
+        });
+        qrHandledRef.current = false;
+        // Chuyển khoản được gia hạn giữ chỗ => dùng mốc mới
+        setHold({ bookingCode, expiresAt: checkout.expiresAt || holdExpiresAt });
+        setQrCheckout(checkout);
+        setQrBooking({ id: bookingId, code: bookingCode });
+        setIsQrModalVisible(true);
+        return;
+      }
+
       if (selectedMethod === 'WALLET') {
         // Gọi API checkout bằng ví
         await paymentsApi.checkoutWithWallet({
@@ -235,11 +379,12 @@ export default function PaymentGatewayScreen() {
           paymentUrl = vnpayRes?.paymentUrl;
         }
 
-        if (paymentUrl) {
-          // Mở In-App Browser cổng VNPAY
-          await WebBrowser.openBrowserAsync(paymentUrl);
+        if (!paymentUrl) {
+          throw new Error('Không tạo được liên kết thanh toán VNPAY.');
         }
-        completeAndNavigate(bookingCode, 'VNPAY');
+        // Mở In-App Browser cổng VNPAY, sau khi đóng thì kiểm tra trạng thái thật từ backend
+        await WebBrowser.openBrowserAsync(paymentUrl);
+        await confirmGatewayPayment(bookingId, bookingCode, 'VNPAY');
         return;
       }
 
@@ -249,10 +394,11 @@ export default function PaymentGatewayScreen() {
           promotionCode: promoCode,
         });
         const paymentUrl = momoRes?.paymentUrl;
-        if (paymentUrl) {
-          await WebBrowser.openBrowserAsync(paymentUrl);
+        if (!paymentUrl) {
+          throw new Error('Không tạo được liên kết thanh toán MoMo.');
         }
-        completeAndNavigate(bookingCode, 'MOMO');
+        await WebBrowser.openBrowserAsync(paymentUrl);
+        await confirmGatewayPayment(bookingId, bookingCode, 'MOMO');
         return;
       }
     } catch (apiError: any) {
@@ -308,14 +454,9 @@ export default function PaymentGatewayScreen() {
         <View style={styles.sectionWrap}>
           <PaymentEscrowCard
             totalAmount={totalAmount}
-            bookingCode="BK-HOLD"
-            initialMinutes={15}
-            onExpire={() =>
-              Alert.alert(
-                'Hết hạn giữ chỗ',
-                'Thời gian thanh toán cho lịch hẹn đã hết hạn. Vui lòng đặt lại.'
-              )
-            }
+            bookingCode={hold?.bookingCode}
+            expiresAt={hold?.expiresAt}
+            onExpire={handleHoldExpired}
           />
         </View>
 
@@ -400,20 +541,6 @@ export default function PaymentGatewayScreen() {
               );
             })}
           </View>
-
-          {/* Quick Top-up Button for Testing Wallet */}
-          <TouchableOpacity
-            style={styles.topupCard}
-            onPress={handleTopup}
-            disabled={isToppingUp}
-            activeOpacity={0.7}
-          >
-            <View style={styles.topupLeft}>
-              <PlusCircle size={18} color="#059669" />
-              <Text style={styles.topupText}>Nạp thêm 1.000.000 đ vào ví PetCare (Thử nghiệm)</Text>
-            </View>
-            {isToppingUp && <ActivityIndicator size="small" color="#059669" />}
-          </TouchableOpacity>
         </View>
 
         {/* 4. Security Trust Badges */}
@@ -440,7 +567,11 @@ export default function PaymentGatewayScreen() {
           ) : (
             <>
               <Text style={styles.payButtonText}>
-                {selectedMethod === 'WALLET'
+                {selectedMethod === 'VIETQR'
+                  ? qrCheckout
+                    ? 'Xem lại mã QR'
+                    : 'Lấy mã chuyển khoản'
+                  : selectedMethod === 'WALLET'
                   ? 'Thanh toán bằng ví'
                   : selectedMethod === 'VNPAY'
                   ? 'Mở cổng VNPAY'
@@ -451,6 +582,15 @@ export default function PaymentGatewayScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* 6. Modal chuyển khoản VietQR (MB Bank, xác nhận tự động qua SePay) */}
+      <PaymentVietQrModal
+        visible={isQrModalVisible}
+        checkout={qrCheckout}
+        isChecking={isCheckingQr}
+        onClose={() => setIsQrModalVisible(false)}
+        onConfirmPaid={handleQrConfirmPaid}
+      />
     </Screen>
   );
 }
@@ -555,28 +695,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: theme.colors.text.secondary,
     lineHeight: 15,
-  },
-  topupCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-    borderRadius: theme.radius.lg,
-    paddingHorizontal: theme.spacing[4],
-    paddingVertical: theme.spacing[3],
-    marginTop: 12,
-  },
-  topupLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  topupText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#15803D',
   },
   bottomBar: {
     position: 'absolute',

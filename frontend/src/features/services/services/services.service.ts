@@ -12,6 +12,7 @@ import {
   UpdateChecklistTemplateData,
   CancellationPolicy,
   CreateCancellationPolicyData,
+  ServiceFeeSettings,
 } from '../types';
 
 export const servicesService = {
@@ -50,6 +51,17 @@ export const servicesService = {
     return response.data;
   },
 
+
+  // Phí di chuyển & phụ phí (khách xem công khai, admin chỉnh)
+  getServiceFees: async (): Promise<ServiceFeeSettings> => {
+    const response = await axiosInstance.get<ServiceFeeSettings>('/service-fees');
+    return response.data;
+  },
+
+  updateServiceFees: async (data: ServiceFeeSettings): Promise<ServiceFeeSettings> => {
+    const response = await axiosInstance.put<ServiceFeeSettings>('/admin/service-fees', data);
+    return response.data;
+  },
 
   // Pricing Rules APIs
   getPricingRules: async (serviceId: string): Promise<PricingRule[]> => {

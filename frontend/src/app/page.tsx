@@ -208,19 +208,19 @@ export default function LandingPage() {
               </span>
             </div>
 
-            {/* Bubble 3: TỈA LÔNG */}
+            {/* Bubble 3: CHẢI LÔNG */}
             <div className="absolute md:-translate-x-0 md:-translate-y-0 bottom-0 right-2 md:bottom-16 md:right-[60px] lg:right-[100px] z-20 group hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center">
               <div className="relative w-20 h-20 md:w-28 md:h-28 rounded-full overflow-hidden border-4 border-slate-800 group-hover:border-[#F7C948] shadow-2xl transition-all duration-300 bg-slate-900/60 backdrop-blur-md">
                 <Image
                   src="/tỉa-lông.jpg"
-                  alt="Tỉa lông"
+                  alt="Chải lông"
                   fill
                   className="object-cover group-hover:scale-105 transition-all duration-300"
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all duration-300" />
               </div>
               <span className="mt-2.5 bg-slate-950/90 backdrop-blur-md border border-slate-800 text-[#F7C948] text-[10px] md:text-xs font-bold px-3 py-1 rounded-full shadow-lg whitespace-nowrap uppercase tracking-wider">
-                Tỉa lông
+                Chải lông
               </span>
             </div>
 
@@ -247,7 +247,7 @@ export default function LandingPage() {
                 <span className="text-[10px] uppercase font-bold tracking-wider text-slate-300">Về PetCare</span>
               </div>
               <p className="text-xs text-slate-200 leading-relaxed font-normal">
-                <strong>PetCare</strong> là website đặt lịch chăm sóc thú cưng trực tuyến hàng đầu. Chúng tôi cung cấp giải pháp toàn diện bao gồm tắm rửa, chải lông, cắt móng, tỉa lông và chăm sóc cơ bản cho cún & mèo yêu một cách thuận tiện, an toàn và chuyên nghiệp nhất ngay tại không gian nhà bạn.
+                <strong>PetCare</strong> là website đặt lịch chăm sóc thú cưng trực tuyến hàng đầu. Chúng tôi cung cấp giải pháp toàn diện với 2 gói Basic Bath và Clean Care: tắm sấy, chải lông, khử mùi, vệ sinh tai, cắt mài móng và vệ sinh bàn chân cho cún & mèo yêu một cách thuận tiện, an toàn và chuyên nghiệp nhất ngay tại không gian nhà bạn.
               </p>
             </div>
 
@@ -399,7 +399,7 @@ export default function LandingPage() {
               Chúng Tôi Chăm Sóc Bé Yêu Như Thế Nào?
             </h2>
             <p className="text-slate-500 text-sm mt-3 leading-relaxed">
-              Các gói dịch vụ tiêu chuẩn 5 sao được thực hiện bởi các chuyên gia chăm sóc thú cưng (Provider) giàu kinh nghiệm.
+              Hai gói Basic Bath và Clean Care, giá niêm yết rõ ràng theo cân nặng, được thực hiện tại nhà bởi các chuyên viên (Provider) đã được PetCare xác minh.
             </p>
           </div>
 
@@ -417,7 +417,7 @@ export default function LandingPage() {
               </div>
               <h3 className="font-extrabold text-base text-[#08243D] mb-2 uppercase tracking-wide">Tắm Rửa</h3>
               <p className="text-slate-500 text-xs leading-relaxed flex-1">
-                Tắm sấy khô, chải tơi lông, vệ sinh tai, xịt nước hoa dưỡng lông cao cấp giúp bé luôn sạch sẽ và thơm mát.
+                Tắm sạch và sấy khô hoàn toàn bằng nước ấm, giúp bé luôn sạch sẽ, thơm mát. Có trong cả gói Basic Bath và Clean Care.
               </p>
               <Link href={ROUTES.REGISTER} className="mt-4 flex items-center gap-1 text-xs font-bold text-[#0B2A47] hover:text-[#F7C948] transition-colors">
                 Đặt lịch tắm rửa <ArrowRight className="h-3 w-3" />
@@ -436,7 +436,7 @@ export default function LandingPage() {
               </div>
               <h3 className="font-extrabold text-base text-[#08243D] mb-2 uppercase tracking-wide">Cắt Móng</h3>
               <p className="text-slate-500 text-xs leading-relaxed flex-1">
-                Cắt tỉa móng và mài dũa góc cạnh cẩn thận, tránh trầy xước và đau đớn khi bé di chuyển hoặc đùa nghịch.
+                Cắt và mài móng cẩn thận, tránh trầy xước khi bé di chuyển hoặc đùa nghịch. Có trong gói Clean Care.
               </p>
               <Link href={ROUTES.REGISTER} className="mt-4 flex items-center gap-1 text-xs font-bold text-[#0B2A47] hover:text-[#F7C948] transition-colors">
                 Đặt lịch cắt móng <ArrowRight className="h-3 w-3" />
@@ -448,17 +448,17 @@ export default function LandingPage() {
               <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-5">
                 <Image
                   src="/tỉa-lông.jpg"
-                  alt="Dịch vụ Tỉa lông chải lông"
+                  alt="Dịch vụ Chải lông khử mùi"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <h3 className="font-extrabold text-base text-[#08243D] mb-2 uppercase tracking-wide">Tỉa lông & Chải lông</h3>
+              <h3 className="font-extrabold text-base text-[#08243D] mb-2 uppercase tracking-wide">Chải lông & Khử mùi</h3>
               <p className="text-slate-500 text-xs leading-relaxed flex-1">
-                Loại bỏ lông rụng thừa, cắt tạo kiểu thẩm mỹ thời thượng, gỡ rối tối ưu phù hợp với từng giống chó mèo.
+                Chải sạch lông rụng, khử mùi giúp bộ lông mềm mượt, thơm tho. Có trong cả gói Basic Bath và Clean Care.
               </p>
               <Link href={ROUTES.REGISTER} className="mt-4 flex items-center gap-1 text-xs font-bold text-[#0B2A47] hover:text-[#F7C948] transition-colors">
-                Đặt lịch tỉa lông <ArrowRight className="h-3 w-3" />
+                Đặt lịch chải lông <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
 
@@ -467,17 +467,17 @@ export default function LandingPage() {
               <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-5">
                 <Image
                   src="/cat.jpg"
-                  alt="Dịch vụ Chăm sóc cơ bản"
+                  alt="Dịch vụ Vệ sinh tai và bàn chân"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <h3 className="font-extrabold text-base text-[#08243D] mb-2 uppercase tracking-wide">Chăm Sóc Cơ Bản</h3>
+              <h3 className="font-extrabold text-base text-[#08243D] mb-2 uppercase tracking-wide">Vệ Sinh Toàn Diện</h3>
               <p className="text-slate-500 text-xs leading-relaxed flex-1">
-                Combo vệ sinh mắt mũi tai miệng chuyên nghiệp, vệ sinh tuyến hôi và kiểm tra sức khỏe tổng quan cơ bản.
+                Vệ sinh tai, vệ sinh bàn chân và cạo lông vùng vệ sinh giúp bé gọn gàng từ đầu đến chân. Có trong gói Clean Care.
               </p>
               <Link href={ROUTES.REGISTER} className="mt-4 flex items-center gap-1 text-xs font-bold text-[#0B2A47] hover:text-[#F7C948] transition-colors">
-                Đặt lịch chăm sóc <ArrowRight className="h-3 w-3" />
+                Đặt lịch Clean Care <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
 
@@ -540,7 +540,7 @@ export default function LandingPage() {
                 </span>
               </Link>
               <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-                Mạng lưới đặt lịch dịch vụ chăm sóc sức khỏe, tắm rửa, tỉa lông, cắt móng cho cún mèo chuyên nghiệp hàng đầu ngay tại nhà của bạn.
+                Đặt lịch tắm sấy, chải lông, vệ sinh và cắt móng cho cún mèo ngay tại nhà của bạn — giá niêm yết rõ ràng, thanh toán an toàn.
               </p>
               <div className="flex gap-2.5 text-xs text-slate-500">
                 <span>Email: contact@petcare.com</span>
@@ -554,9 +554,9 @@ export default function LandingPage() {
               <h5 className="text-white text-xs uppercase font-extrabold tracking-wider">Dịch vụ</h5>
               <ul className="space-y-2 text-xs">
                 <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Tắm rửa vệ sinh</a></li>
-                <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Cắt tỉa móng chân</a></li>
-                <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Tỉa tạo kiểu lông</a></li>
-                <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Chăm sóc tai mắt miệng</a></li>
+                <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Cắt, mài móng</a></li>
+                <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Vệ sinh tai & bàn chân</a></li>
+                <li><a href="#dich-vu" className="hover:text-[#F7C948] transition-colors">Chải lông &amp; khử mùi</a></li>
               </ul>
             </div>
 
