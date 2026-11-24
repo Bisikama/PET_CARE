@@ -97,6 +97,7 @@ export class PaymentsService {
     promotionCode?: string,
   ): Promise<string> {
     const booking = await this.assertBookingPayable(bookingId, customerId);
+    promotionCode = this.effectivePromoCode(booking, promotionCode);
     const finalAmount = Math.round(
       await this.calculateFinalAmount(Number(booking.total_price), promotionCode),
     );
@@ -201,6 +202,7 @@ export class PaymentsService {
    */
   async createMomoUrl(bookingId: string, customerId: string, promotionCode?: string): Promise<string> {
     const booking = await this.assertBookingPayable(bookingId, customerId);
+    promotionCode = this.effectivePromoCode(booking, promotionCode);
     const finalAmount = Math.round(
       await this.calculateFinalAmount(Number(booking.total_price), promotionCode),
     );
@@ -313,6 +315,7 @@ export class PaymentsService {
         throw new ConflictException('Đơn đặt lịch này đã được thanh toán trước đó');
       }
 
+      promotionCode = this.effectivePromoCode(booking, promotionCode);
       const finalAmount = Math.round(
         await this.calculateFinalAmount(Number(booking.total_price), promotionCode, tx),
       );
@@ -611,6 +614,18 @@ export class PaymentsService {
       throw new BadRequestException('Đơn đặt lịch này đã được thanh toán trước đó');
     }
     return booking;
+  }
+
+  /**
+   * Mã khuyến mãi áp ở bước thanh toán. Đơn đã áp mã lúc tạo (promotion_id) thì total_price đã trừ giảm giá
+   * và lượt dùng đã được ghi => không áp lại (tránh giảm 2 lần, ghi lượt 2 lần).
+   */
+  effectivePromoCode(
+    booking: { promotion_id?: string | null },
+    promotionCode?: string | null,
+  ): string | undefined {
+    if (booking.promotion_id) return undefined;
+    return promotionCode?.trim() ? promotionCode.trim() : undefined;
   }
 
   /** Tính số tiền sau khuyến mãi, validate đầy đủ mã (dùng chung cho mọi phương thức). */

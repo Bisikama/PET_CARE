@@ -46,6 +46,7 @@ describe('SepayService', () => {
     creditCustomerWallet: jest.fn(),
     sendPaymentSuccessNotifications: jest.fn(),
     safeNotify: jest.fn(),
+    effectivePromoCode: jest.fn((booking: any, code?: string) => (booking.promotion_id ? undefined : code)),
   };
 
   const mockSubscriptionsService = {

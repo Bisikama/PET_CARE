@@ -129,6 +129,17 @@ describe('PaymentsService', () => {
       );
     });
 
+    it('does not apply the promotion again when the booking was created with it', async () => {
+      // total_price đã được trừ giảm giá lúc tạo đơn
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, promotion_id: 'promo-1', total_price: 80000 });
+
+      const url = await service.createVNPayUrl('booking-123', 'cust-1', '127.0.0.1', 'SALE20');
+
+      expect(url).toContain('vnp_Amount=8000000');
+      expect(url).not.toContain('promo');
+      expect(mockPrisma.promotions.findUnique).not.toHaveBeenCalled();
+    });
+
     it('rejects a booking owned by another customer', async () => {
       mockPrisma.bookings.findUnique.mockResolvedValue(pendingBooking);
       await expect(service.createVNPayUrl('booking-123', 'someone-else', '127.0.0.1')).rejects.toThrow(BadRequestException);
@@ -333,6 +344,23 @@ describe('PaymentsService', () => {
           update: expect.objectContaining({ platform_fee: 10000, provider_amount: 90000 }),
         }),
       );
+    });
+
+    it('charges the already-discounted total and does not record the promotion twice', async () => {
+      mockPrisma.bookings.findUnique.mockResolvedValue({ ...pendingBooking, promotion_id: 'promo-1', total_price: 80000 });
+      mockPrisma.wallets.findUnique.mockImplementation(({ where }: any) =>
+        where.user_id === 'cust-1'
+          ? { id: 'customer-wallet', balance: { lessThan: () => false } }
+          : { id: 'provider-wallet' },
+      );
+      mockPrisma.payments.upsert.mockResolvedValue({ amount: 80000 });
+
+      await service.checkoutWithWallet('cust-1', 'booking-123', 'SALE20');
+
+      expect(mockPrisma.payments.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ update: expect.objectContaining({ amount: 80000 }) }),
+      );
+      expect(mockPrisma.promotions.findUnique).not.toHaveBeenCalled();
     });
   });
 });

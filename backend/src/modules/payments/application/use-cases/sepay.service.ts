@@ -109,6 +109,8 @@ export class SepayService {
   ): Promise<BankTransferCheckout> {
     const bank = getBankTransferConfig(this.configService);
     const booking = await this.paymentsService.assertBookingPayable(bookingId, customerId);
+    // Đơn đã áp mã lúc tạo => total_price đã giảm, không áp lại
+    promotionCode = this.paymentsService.effectivePromoCode(booking, promotionCode);
     const amount = Math.round(
       await this.paymentsService.calculateFinalAmount(Number(booking.total_price), promotionCode),
     );
