@@ -1,20 +1,33 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronRight, ShieldCheck, CreditCard, QrCode, ArrowLeft } from 'lucide-react';
+import { ChevronRight, ShieldCheck, CreditCard, QrCode, ArrowLeft, Landmark } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { usePayment } from '../hooks/usePayment';
 import { bookingService } from '../services/booking.service';
+import type { BankTransferCheckout } from '../services/payment.service';
+import { VietQrTransferPanel } from './VietQrTransferPanel';
 import { useWallet } from '@/features/wallets/hooks/useWallet';
 import { useRouter } from 'next/navigation';
 
 export function PaymentGateway() {
   const { setStep, createdBookingId, resetBooking, appliedDiscount, appliedPromoCode } = useBookingStore();
-  const { createCheckoutUrl, createMomoCheckoutUrl, checkoutWithWallet, loading, error } = usePayment();
+  const {
+    createCheckoutUrl,
+    createMomoCheckoutUrl,
+    createBankTransferCheckout,
+    checkoutWithWallet,
+    loading,
+    error,
+  } = usePayment();
   const { wallet } = useWallet();
   const router = useRouter();
   const [totalAmount, setTotalAmount] = React.useState<number>(0);
   const [isFetchingBooking, setIsFetchingBooking] = React.useState(true);
+
+  // Chuyển khoản VietQR: giữ lại mã đã tạo để mở lại không sinh mã mới
+  const [qrCheckout, setQrCheckout] = React.useState<BankTransferCheckout | null>(null);
+  const [showQrPanel, setShowQrPanel] = React.useState(false);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -53,6 +66,34 @@ export function PaymentGateway() {
     createMomoCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
   };
 
+  const handleBankTransferCheckout = async () => {
+    if (!createdBookingId) return;
+    if (qrCheckout) {
+      setShowQrPanel(true);
+      return;
+    }
+    const checkout = await createBankTransferCheckout({
+      bookingId: createdBookingId,
+      promotionCode: appliedPromoCode || undefined,
+    });
+    if (checkout) {
+      setQrCheckout(checkout);
+      setShowQrPanel(true);
+    }
+  };
+
+  const handleQrPaid = React.useCallback(() => {
+    resetBooking();
+    router.push('/bookings');
+  }, [resetBooking, router]);
+
+  const handleQrBack = React.useCallback(() => {
+    const ok = window.confirm(
+      'Nếu bạn ĐÃ chuyển khoản, vui lòng ở lại trang này để hệ thống xác nhận. Chọn phương thức khác sẽ làm mã chuyển khoản hiện tại không còn dùng được. Tiếp tục?',
+    );
+    if (ok) setShowQrPanel(false);
+  }, []);
+
   const handleWalletCheckout = async () => {
     if (!createdBookingId) return;
     const success = await checkoutWithWallet({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
@@ -90,6 +131,15 @@ export function PaymentGateway() {
         </div>
       )}
 
+      {showQrPanel && qrCheckout && createdBookingId ? (
+        <VietQrTransferPanel
+          key={createdBookingId}
+          bookingId={createdBookingId}
+          checkout={qrCheckout}
+          onPaid={handleQrPaid}
+          onBack={handleQrBack}
+        />
+      ) : (
       <div className="w-full max-w-md bg-white border border-slate-200 rounded-[24px] p-6 md:p-8 shadow-sm">
         {/* Nạp ví Escrow row */}
         <div className="flex justify-between items-center border-b-2 border-slate-100 pb-5 mb-6">
@@ -99,7 +149,28 @@ export function PaymentGateway() {
 
         {/* Buttons */}
         <div className="space-y-4">
-          <button 
+          <button
+            onClick={handleBankTransferCheckout}
+            disabled={loading || !createdBookingId}
+            className="w-full flex justify-between items-center bg-emerald-600 text-white p-5 rounded-2xl hover:bg-emerald-700 disabled:opacity-70 transition-all active:scale-[0.98] group"
+          >
+            <div className="flex items-center gap-3">
+              <Landmark className="w-5 h-5 text-emerald-100" />
+              <div className="flex flex-col text-left">
+                <span className="font-bold">
+                  {qrCheckout ? 'Xem lại mã chuyển khoản' : 'Chuyển khoản ngân hàng (VietQR)'}
+                </span>
+                <span className="text-xs mt-0.5 text-emerald-100">Quét mã bằng app ngân hàng · Xác nhận tự động</span>
+              </div>
+            </div>
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+            ) : (
+              <ChevronRight className="w-5 h-5 text-emerald-100 group-hover:text-white transition-colors" />
+            )}
+          </button>
+
+          <button
             onClick={handleVNPayCheckout}
             disabled={loading || !createdBookingId}
             className="w-full flex justify-between items-center bg-[#0a1128] text-white p-5 rounded-2xl hover:bg-slate-800 disabled:opacity-70 transition-all active:scale-[0.98] group"
@@ -141,7 +212,7 @@ export function PaymentGateway() {
               <div className="flex flex-col text-left">
                 <span className="font-bold">Thanh toán bằng Số dư Ví</span>
                 <span className="text-xs mt-0.5 opacity-80">
-                  Khả dụng: {wallet ? formatPrice(Number(wallet.balance)) : '0 đ'}
+                  Số dư hoàn tiền: {wallet ? formatPrice(Number(wallet.balance)) : '0 đ'}
                 </span>
               </div>
             </div>
@@ -158,14 +229,17 @@ export function PaymentGateway() {
           </button>
         </div>
       </div>
-      
-      <button 
+      )}
+
+      {!showQrPanel && (
+      <button
         onClick={() => setStep(8)}
         className="mt-8 flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-slate-800 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Quay lại trang Hóa Đơn
       </button>
+      )}
     </div>
   );
 }

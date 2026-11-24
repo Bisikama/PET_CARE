@@ -132,5 +132,9 @@ describe('CreateBookingRequestUseCase', () => {
     );
     expect(result.booking.id).toBe('booking-1');
     expect(result.paymentUrl).toBe('https://sandbox.vnpayment.vn/test');
+
+    // Mốc giữ chỗ trả về cho client phải đúng mốc đã ghi vào slot
+    const heldUntilArg: Date = mockBookingRepo.updateWorkingSlotStatus.mock.calls[0][2];
+    expect(result.holdExpiresAt).toBe(heldUntilArg.toISOString());
   });
 });

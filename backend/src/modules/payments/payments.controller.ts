@@ -13,7 +13,8 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
+
   @Public()
   @Get('commission-preview')
   @ApiOperation({ summary: 'Tính toán và xem trước phí hoa hồng nền tảng / tiền thực nhận cho mỗi đơn hàng' })
@@ -71,12 +72,8 @@ export class PaymentsController {
     @Body('promotionCode') promotionCode: string | undefined,
     @Ip() ip: string,
   ) {
-    const ipAddr = ip || '127.0.0.1';
-
-    // Security Fix: Get amount directly from database
-    const booking = await this.paymentsService.getBookingForCheckout(bookingId);
-
-    const paymentUrl = await this.paymentsService.createVNPayUrl(bookingId, Number(booking.total_price), ipAddr, promotionCode);
+    // Số tiền được lấy trực tiếp từ DB bên trong service, kèm kiểm tra chủ booking
+    const paymentUrl = await this.paymentsService.createVNPayUrl(bookingId, userId, ip || '127.0.0.1', promotionCode);
     return { paymentUrl };
   }
 
@@ -126,11 +123,8 @@ export class PaymentsController {
     @GetCurrentUserId() userId: string,
     @Body('bookingId') bookingId: string,
     @Body('promotionCode') promotionCode: string | undefined,
-    @Ip() ip: string,
   ) {
-    const ipAddr = ip || '127.0.0.1';
-    const booking = await this.paymentsService.getBookingForCheckout(bookingId);
-    const paymentUrl = await this.paymentsService.createMomoUrl(bookingId, Number(booking.total_price), ipAddr, promotionCode);
+    const paymentUrl = await this.paymentsService.createMomoUrl(bookingId, userId, promotionCode);
     return { paymentUrl };
   }
 
@@ -145,7 +139,7 @@ export class PaymentsController {
 
   @Public()
   @Post('momo-ipn')
-  @ApiOperation({
+  @ApiOperation({ 
     summary: 'Webhook IPN từ Momo',
     description: 'Endpoint nhận thông báo trạng thái thanh toán từ hệ thống Momo. Yêu cầu xác thực chữ ký (Signature) bằng thuật toán HMAC SHA256.',
   })
@@ -189,15 +183,17 @@ export class PaymentsController {
   async vnpayReturn(@Query() query: any, @Res() res: Response) {
     const frontendUrl = this.getFrontendUrl();
     const orderId = query.vnp_TxnRef || '';
-
-    // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
+    
+    // Xử lý cập nhật DB ngay tại Return URL (có xác thực chữ ký, idempotent với IPN)
+    let rspCode = '99';
     try {
-      await this.paymentsService.processPaymentCallback({ ...query });
-    } catch (err: any) {
-      // Ghi log lỗi xử lý nhưng vẫn cho phép redirect về frontend với status tương ứng
+      rspCode = (await this.paymentsService.processPaymentCallback({ ...query })).RspCode;
+    } catch {
+      // vẫn redirect về frontend với trạng thái thất bại
     }
 
-    const status = query.vnp_ResponseCode === '00' ? 'success' : 'failed';
+    // Chỉ báo thành công khi chữ ký hợp lệ và giao dịch đã được ghi nhận
+    const status = query.vnp_ResponseCode === '00' && ['00', '02'].includes(rspCode) ? 'success' : 'failed';
     return res.redirect(`${frontendUrl}/payment/result?status=${status}&orderId=${orderId}&method=VNPAY`);
   }
 
@@ -210,16 +206,17 @@ export class PaymentsController {
   async momoReturn(@Query() query: any, @Res() res: Response) {
     const frontendUrl = this.getFrontendUrl();
     const orderId = query.orderId || '';
-
-    // Xử lý cập nhật DB ngay tại Return URL (an toàn & chống trùng lặp với IPN)
+    
+    // Xử lý cập nhật DB ngay tại Return URL (bắt buộc chữ ký, idempotent với IPN)
+    let rspCode = '99';
     try {
-      await this.paymentsService.processMomoIPN({ ...query });
-    } catch (err: any) {
-      // Ghi log lỗi xử lý nhưng vẫn cho phép redirect về frontend với status tương ứng
+      rspCode = (await this.paymentsService.processMomoIPN({ ...query })).RspCode;
+    } catch {
+      // vẫn redirect về frontend với trạng thái thất bại
     }
 
-    // MoMo's success resultCode is 0
-    const status = String(query.resultCode) === '0' ? 'success' : 'failed';
+    // MoMo thành công khi resultCode = 0; chỉ báo success khi chữ ký hợp lệ và đã ghi nhận
+    const status = String(query.resultCode) === '0' && ['00', '02'].includes(rspCode) ? 'success' : 'failed';
     return res.redirect(`${frontendUrl}/payment/result?status=${status}&orderId=${orderId}&method=MOMO`);
   }
 }

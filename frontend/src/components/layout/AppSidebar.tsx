@@ -19,7 +19,8 @@ import {
   Calendar,
   ShieldAlert,
   MessageSquare,
-  Wallet
+  Wallet,
+  Landmark
 } from 'lucide-react';
 import { removeAuthToken } from '@/lib/auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -53,6 +54,7 @@ export const AppSidebar = () => {
         { name: 'Quản Lý Dịch Vụ', href: `${ROUTES.DASHBOARD}?tab=services-manager`, icon: HeartHandshake },
         { name: 'Giám Sát Ca Làm', href: `${ROUTES.DASHBOARD}?tab=monitor-shifts`, icon: Activity },
         { name: 'Quản Lý Escrow', href: `${ROUTES.DASHBOARD}?tab=escrow`, icon: ShieldCheck },
+        { name: 'Giao Dịch Chuyển Khoản', href: `${ROUTES.DASHBOARD}?tab=bank-transactions`, icon: Landmark },
         { name: 'Trọng Tài Tranh Chấp', href: `${ROUTES.ADMIN_SUPPORT}?tab=disputes`, icon: Gavel },
         { name: 'Trung Tâm CSKH', href: ROUTES.ADMIN_SUPPORT, icon: Headphones },
         { name: 'Giới Hạn Tài Khoản', href: `${ROUTES.DASHBOARD}?tab=limits`, icon: BarChart3 },

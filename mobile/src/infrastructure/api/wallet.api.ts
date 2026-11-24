@@ -138,10 +138,5 @@ export const walletApi = {
       return [];
     }
   },
-
-  // Nạp tiền thử nghiệm
-  topup: async (amount: number): Promise<any> => {
-    const res = await apiClient.post<any>('/wallets/me/topup', { amount });
-    return res.data?.data || res.data;
-  },
+  // Ví không hỗ trợ nạp tiền: chỉ nhận tiền công (provider) / tiền hoàn (khách hàng)
 };
