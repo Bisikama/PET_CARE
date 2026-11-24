@@ -30,6 +30,9 @@ describe('CreateBookingRequestUseCase', () => {
     mockPrisma = {
       provider_profiles: { findUnique: jest.fn() },
       promotions: { findUnique: jest.fn() },
+      subscriptions: { findFirst: jest.fn().mockResolvedValue(null) },
+      // Gói chưa có bảng giá => dùng giá đối tác
+      service_pricing_rules: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     mockPaymentsService = {
@@ -132,5 +135,9 @@ describe('CreateBookingRequestUseCase', () => {
     );
     expect(result.booking.id).toBe('booking-1');
     expect(result.paymentUrl).toBe('https://sandbox.vnpayment.vn/test');
+
+    // Mốc giữ chỗ trả về cho client phải đúng mốc đã ghi vào slot
+    const heldUntilArg: Date = mockBookingRepo.updateWorkingSlotStatus.mock.calls[0][2];
+    expect(result.holdExpiresAt).toBe(heldUntilArg.toISOString());
   });
 });

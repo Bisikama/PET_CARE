@@ -1,6 +1,7 @@
 export const colors = {
   primary: {
     default: '#00152D',
+    main: '#00152D',
     navy: '#0B2A4A',
     container: '#0B2A4A',
     onContainer: '#7892B7',
@@ -49,6 +50,7 @@ export const colors = {
   text: {
     primary: '#0B1C30',
     secondary: '#43474E',
+    tertiary: '#64748B',
     muted: '#64748B',
     light: '#94A3B8',
     inverse: '#FFFFFF',

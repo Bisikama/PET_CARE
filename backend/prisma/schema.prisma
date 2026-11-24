@@ -21,16 +21,16 @@ model booking_checklist_items {
 }
 
 model booking_media {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  booking_id  String     @db.Uuid
-  uploaded_by String     @db.Uuid
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id  String                 @db.Uuid
+  uploaded_by String                 @db.Uuid
   media_url   String
   media_type  media_type
   category    booking_media_category @default(CHECK_IN)
   caption     String?
-  created_at  DateTime?  @default(now()) @db.Timestamp(6)
-  bookings    bookings   @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users       User       @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at  DateTime?              @default(now()) @db.Timestamp(6)
+  bookings    bookings               @relation(fields: [booking_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       User                   @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model booking_status_logs {
@@ -215,25 +215,67 @@ model notifications {
 }
 
 model payments {
-  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  booking_id        String             @unique @db.Uuid
-  customer_id       String             @db.Uuid
-  provider_id       String?            @db.Uuid
-  amount            Decimal            @db.Decimal(12, 2)
-  platform_fee      Decimal?           @default(0) @db.Decimal(12, 2)
-  provider_amount   Decimal?           @default(0) @db.Decimal(12, 2)
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  booking_id        String              @unique @db.Uuid
+  customer_id       String              @db.Uuid
+  provider_id       String?             @db.Uuid
+  amount            Decimal             @db.Decimal(12, 2)
+  platform_fee      Decimal?            @default(0) @db.Decimal(12, 2)
+  provider_amount   Decimal?            @default(0) @db.Decimal(12, 2)
   method            payment_method
-  status            payment_status     @default(PENDING)
-  transaction_code  String?            @db.VarChar(255)
-  paid_at           DateTime?          @db.Timestamp(6)
-  released_at       DateTime?          @db.Timestamp(6)
-  refunded_at       DateTime?          @db.Timestamp(6)
-  created_at        DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at        DateTime?          @default(now()) @updatedAt @db.Timestamp(6)
-  idempotency_key   String?            @unique @db.VarChar(255)
-  bookings          bookings           @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
-  users             User               @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  provider_profiles provider_profiles? @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status            payment_status      @default(PENDING)
+  transaction_code  String?             @db.VarChar(255)
+  paid_at           DateTime?           @db.Timestamp(6)
+  released_at       DateTime?           @db.Timestamp(6)
+  refunded_at       DateTime?           @db.Timestamp(6)
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?           @default(now()) @updatedAt @db.Timestamp(6)
+  idempotency_key   String?             @unique @db.VarChar(255)
+  promotion_code    String?             @db.VarChar(50)
+  bookings          bookings            @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  users             User                @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  provider_profiles provider_profiles?  @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bank_transactions bank_transactions[]
+}
+
+/// Sổ ghi mọi giao dịch ngân hàng do SePay báo về (chuyển khoản VietQR vào tài khoản MB).
+/// external_id là `id` của SePay — unique để chống xử lý trùng khi SePay gửi lại webhook.
+model bank_transactions {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider              String                  @default("SEPAY") @db.VarChar(20)
+  external_id           String                  @db.VarChar(64)
+  gateway               String?                 @db.VarChar(100)
+  account_number        String?                 @db.VarChar(50)
+  transaction_date      DateTime?               @db.Timestamp(6)
+  transfer_type         String                  @db.VarChar(10)
+  transfer_amount       Decimal                 @db.Decimal(14, 2)
+  content               String?
+  code                  String?                 @db.VarChar(64)
+  reference_code        String?                 @db.VarChar(100)
+  status                bank_transaction_status
+  note                  String?
+  payment_id            String?                 @db.Uuid
+  /// Giao dịch thanh toán gói hội viên (thay cho payment_id của booking)
+  subscription_order_id String?                 @db.Uuid
+  raw_payload           Json
+  resolved_by           String?                 @db.Uuid
+  resolved_at           DateTime?               @db.Timestamp(6)
+  created_at            DateTime                @default(now()) @db.Timestamp(6)
+  payments              payments?               @relation(fields: [payment_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  subscription_order    subscription_orders?    @relation(fields: [subscription_order_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  resolver              User?                   @relation("bank_transactions_resolver", fields: [resolved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([provider, external_id])
+  @@index([status])
+  @@index([code])
+}
+
+enum bank_transaction_status {
+  MATCHED // Khớp đơn, đã xác nhận thanh toán
+  REFUNDED_TO_WALLET // Khớp đơn nhưng không xác nhận được (trễ/thiếu tiền/chuyển trùng) -> hoàn vào ví khách
+  UNMATCHED // Không tìm thấy đơn theo nội dung CK -> admin xử lý thủ công
+  IGNORED // Giao dịch tiền ra hoặc không liên quan
+  RESOLVED_MANUALLY // Admin đã xử lý ngoài hệ thống (chuyển trả qua ngân hàng, khoản không liên quan...)
 }
 
 model pets {
@@ -432,6 +474,7 @@ model User {
   customer_addresses                            customer_addresses[]
   notifications                                 notifications[]
   payments                                      payments[]
+  resolved_bank_transactions                    bank_transactions[]             @relation("bank_transactions_resolver")
   pets                                          pets[]
   provider_profiles                             provider_profiles?
   refresh_tokens                                refresh_tokens[]
@@ -449,6 +492,7 @@ model User {
   granted_badges                                provider_trust_badges[]         @relation("granted_badges")
   audit_logs                                    audit_logs[]
   subscriptions                                 subscriptions[]
+  subscription_orders                           subscription_orders[]
   promotion_usages                              promotion_usages[]
   payout_requests                               payout_requests[]
   account_deactivation_requests                 account_deactivation_requests[]
@@ -1091,13 +1135,70 @@ enum subscription_status {
 model subscriptions {
   id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id    String              @db.Uuid
+  /// Mã gói (snapshot của subscription_plans.code)
   tier_name  String              @db.VarChar(50)
+  plan_id    String?             @db.Uuid
   start_date DateTime            @db.Timestamp(6)
   end_date   DateTime            @db.Timestamp(6)
   status     subscription_status @default(ACTIVE)
   created_at DateTime?           @default(now()) @db.Timestamp(6)
 
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user   User                  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan   subscription_plans?   @relation(fields: [plan_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  orders subscription_orders[]
+}
+
+/// Gói hội viên hệ thống bán ra — admin quản lý (giá, thời hạn, bật/tắt bán)
+model subscription_plans {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Mã gói in trong nội dung chuyển khoản: chỉ A-Z, 0-9, không đổi sau khi tạo
+  code          String   @unique @db.VarChar(20)
+  name          String   @db.VarChar(100)
+  description   String?
+  price         Decimal  @db.Decimal(12, 2)
+  duration_days Int
+  benefits      String[] @default([])
+  is_active     Boolean  @default(true)
+  sort_order    Int      @default(0)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  subscriptions subscriptions[]
+  orders        subscription_orders[]
+}
+
+enum subscription_order_status {
+  PENDING // Chờ khách thanh toán
+  PAID // Đã thanh toán, gói đã kích hoạt
+  CANCELLED // Đơn khác của khách đã được thanh toán, hoặc bỏ dở quá 7 ngày => mã hết hiệu lực
+}
+
+/// Mỗi lần khách mua gói. Giá/tên/thời hạn chụp lại tại thời điểm mua để admin sửa gói không ảnh hưởng đơn cũ.
+model subscription_orders {
+  id               String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String                    @db.Uuid
+  plan_id          String                    @db.Uuid
+  plan_code        String                    @db.VarChar(20)
+  plan_name        String                    @db.VarChar(100)
+  duration_days    Int
+  amount           Decimal                   @db.Decimal(12, 2)
+  method           payment_method
+  status           subscription_order_status @default(PENDING)
+  payment_code     String                    @unique @db.VarChar(32)
+  transfer_content String?                   @db.VarChar(100)
+  gateway_ref      String?                   @db.VarChar(255)
+  subscription_id  String?                   @db.Uuid
+  paid_at          DateTime?                 @db.Timestamp(6)
+  created_at       DateTime                  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
+
+  user              User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  plan              subscription_plans  @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  subscription      subscriptions?      @relation(fields: [subscription_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  bank_transactions bank_transactions[]
+
+  @@index([user_id, status])
+  @@index([status, created_at])
 }
 
 // Model Promotions (Flow 21)

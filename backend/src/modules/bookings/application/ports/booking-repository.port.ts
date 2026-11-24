@@ -1,4 +1,5 @@
 import { booking_status, availability_slot_status, booking_event_type } from '@prisma/client';
+import type { PricingRuleLike } from '../../../services/domain/service-pricing';
 
 export interface BookingRepositoryPort {
   findPetById(petId: string): Promise<any>;
@@ -79,6 +80,8 @@ export interface BookingRepositoryPort {
     ward: string,
     date: Date,
   ): Promise<any[]>;
+  /** Bảng giá hệ thống (đang áp dụng) của một gói dịch vụ */
+  findActivePricingRules(serviceId: string): Promise<PricingRuleLike[]>;
   findServiceChecklistTemplates(serviceId: string, tx?: any): Promise<any[]>;
   findChecklistItemById(itemId: string, tx?: any): Promise<any>;
   updateChecklistItem(

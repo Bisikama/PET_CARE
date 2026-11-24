@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Wallet, Clock, ArrowDownToLine } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { PayoutRequestModal } from './PayoutRequestModal';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -7,62 +8,61 @@ export const WalletOverview = () => {
   const { wallet, isLoading } = useWallet();
   const { user } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const isCustomer = user?.role === 'CUSTOMER';
+  const isCustomer = user?.role === 'CUSTOMER' || (user?.role !== 'PROVIDER' && user?.role !== 'ADMIN');
 
   return (
-    <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 rounded-[32px] p-6 md:p-8 text-white relative overflow-hidden shadow-xl shadow-emerald-900/20">
-      {/* Decorative background elements */}
-      <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-      <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-8">
+    <div className="bg-[#08243D] rounded-3xl p-7 md:p-9 text-white relative overflow-hidden shadow-sm animate-fade-in select-none">
+      <div className="absolute right-0 top-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(247,201,72,0.12),transparent_65%)] pointer-events-none" />
+
+      <div className="relative z-10 space-y-8">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#F7C948]">
+              <Wallet className="w-5 h-5" />
             </div>
-            <span className="font-medium text-emerald-100">Ví Bisikama</span>
+            <div>
+              <span className="font-bold text-base text-white block">Ví Điện Tử PetCare</span>
+              <span className="text-xs text-slate-400">Thanh toán & hoàn tiền tự động</span>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs font-medium text-emerald-200 uppercase tracking-wider">{wallet?.status || 'ACTIVE'}</span>
+
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            {wallet?.status || 'ACTIVE'}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-4 items-end">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <p className="text-emerald-200 text-sm font-medium mb-1">Số dư khả dụng</p>
+            <p className="text-slate-300 text-xs font-medium uppercase tracking-wider mb-1">Số dư khả dụng</p>
             {isLoading ? (
               <div className="h-10 w-48 bg-white/10 animate-pulse rounded-lg" />
             ) : (
               <div className="flex items-baseline gap-2">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tight tabular-nums">
                   {(wallet?.balance || 0).toLocaleString('vi-VN')}
                 </h2>
-                <span className="text-xl text-emerald-300 font-medium">đ</span>
+                <span className="text-lg text-[#F7C948] font-bold">đ</span>
               </div>
             )}
-            
-            <div className="mt-4 flex items-center gap-2 text-sm text-emerald-100/70">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>Chờ duyệt: <strong className="text-white">{(wallet?.pending_balance || 0).toLocaleString('vi-VN')} đ</strong></span>
+
+            <div className="mt-3 flex items-center gap-2 text-xs text-slate-300">
+              <Clock className="w-3.5 h-3.5 text-[#F7C948]" />
+              <span>
+                Đang ký quỹ / Chờ xử lý: <strong className="text-white">{(wallet?.pending_balance || 0).toLocaleString('vi-VN')} đ</strong>
+              </span>
             </div>
           </div>
 
           {!isCustomer && (
-            <div className="flex flex-col sm:flex-row gap-3 justify-end">
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="px-6 py-3.5 bg-white text-emerald-900 hover:bg-emerald-50 font-bold rounded-2xl transition-all shadow-lg shadow-white/10 hover:shadow-white/20 active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 12-7 7-7-7"/><path d="M12 19V5"/></svg>
-                Rút tiền
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-3 bg-[#F7C948] hover:bg-[#e5b83b] text-[#08243D] font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer self-start md:self-auto"
+            >
+              <ArrowDownToLine className="w-4 h-4" />
+              Rút tiền
+            </button>
           )}
         </div>
       </div>
@@ -73,3 +73,5 @@ export const WalletOverview = () => {
     </div>
   );
 };
+
+

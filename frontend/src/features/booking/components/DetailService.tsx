@@ -5,14 +5,21 @@ import { ChevronLeft, ChevronRight, Clock, Coins, CheckCircle2 } from 'lucide-re
 import { useBookingStore } from '../stores/booking.store';
 import { useServiceDetail } from '@/features/services/hooks/useServiceDetail';
 import { useChecklistTemplates } from '@/features/services/hooks/useChecklistTemplates';
+import { usePetPackagePrices } from '@/features/services/hooks/usePetPackagePrices';
+import { usePetStore } from '@/features/pet/stores/pet.store';
 
 export function DetailService() {
-  const { setStep, selectedServiceId } = useBookingStore();
+  const { setStep, selectedServiceId, selectedPetId } = useBookingStore();
+  const { pets } = usePetStore();
+  const selectedPet = pets.find((p) => p.id === selectedPetId);
   const { service, isLoading, error, refetch } = useServiceDetail(selectedServiceId || null);
   const {
     checklistTemplates,
     isLoading: checklistLoading,
   } = useChecklistTemplates(selectedServiceId || null);
+
+  const serviceList = React.useMemo(() => (service ? [service] : []), [service]);
+  const petPrice = usePetPackagePrices(serviceList, selectedPet)[service?.id ?? ''];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
@@ -121,19 +128,25 @@ export function DetailService() {
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-slate-400" />
               <span className="text-lg font-bold text-[#0f172a]">
-                {service.durationMinutes} phút
+                {petPrice?.durationMinutes ?? service.durationMinutes} phút
               </span>
             </div>
           </div>
 
           <div className="space-y-1">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-              Bảng phí tạm tính (Escrow)
+              Giá cho {selectedPet ? `${selectedPet.name}${selectedPet.weight ? ` (${selectedPet.weight} kg)` : ''}` : 'bé'}
             </span>
             <div className="flex items-center gap-1.5">
               <Coins className="w-4 h-4 text-slate-400" />
               <span className="text-lg font-bold text-[#0f172a]">
-                {formatPrice(service.basePrice)}
+                {!petPrice ? (
+                  <span className="text-sm text-slate-400">Đang tính…</span>
+                ) : petPrice.requiresQuote ? (
+                  <span className="text-amber-700">Báo giá riêng</span>
+                ) : (
+                  formatPrice(petPrice.price)
+                )}
               </span>
             </div>
           </div>
@@ -148,7 +161,7 @@ export function DetailService() {
         ) : checklistTemplates.length > 0 ? (
           <div className="space-y-3 pt-2">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
-              Quy trình {checklistTemplates.length} bước an toàn chuẩn PetCare:
+              Gói bao gồm {checklistTemplates.length} hạng mục:
             </span>
             <ol className="space-y-2.5">
               {checklistTemplates.map((item, index) => (
@@ -194,7 +207,8 @@ export function DetailService() {
         <button
           type="button"
           onClick={() => setStep(4)}
-          className="inline-flex items-center justify-center gap-1.5 px-6 py-3 bg-[#0a1c2a] hover:bg-[#122e44] text-white text-xs font-bold rounded-2xl shadow transition-all duration-150 cursor-pointer active:scale-[0.98]"
+          disabled={!petPrice || petPrice.requiresQuote}
+          className="inline-flex items-center justify-center gap-1.5 px-6 py-3 bg-[#0a1c2a] hover:bg-[#122e44] text-white text-xs font-bold rounded-2xl shadow transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Tìm người chăm sóc phù hợp
           <ChevronRight className="w-4 h-4" />

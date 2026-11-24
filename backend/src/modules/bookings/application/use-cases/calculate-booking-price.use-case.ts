@@ -6,6 +6,8 @@ import {
 import { PrismaService } from '../../../../database/prisma.service';
 import { GeoLocationHelper } from '../../../../common/utils/geo-location.helper';
 import { CalculateBookingPriceDto } from '../../presentation/dto/calculate-booking-price.dto';
+import { resolveBookableServicePrice } from '../../../services/domain/service-pricing';
+import { loadTravelPolicy } from '../../../services/domain/service-fees';
 
 export interface BookingPriceCalculationResult {
   item: {
@@ -32,6 +34,13 @@ export interface BookingPriceCalculationResult {
     promoCode?: string;
     discountAmount: number;
     promotionId?: string;
+    memberDiscount?: {
+      tierName: string;
+      tierLabel: string;
+      discountPercent: number;
+      discountAmount: number;
+    };
+    voucherDiscountAmount?: number;
   };
   totalPrice: number;
   totalEstimatedDurationMinutes: number;
@@ -107,8 +116,19 @@ export class CalculateBookingPriceUseCase {
       );
     }
 
-    const servicePrice = Number(providerService.price);
-    const serviceDuration = providerService.services.duration_minutes || 60;
+    // Giá niêm yết của hệ thống theo cân nặng (gói chưa có bảng giá => giá đối tác)
+    const { price: servicePrice, durationMinutes: serviceDuration } = await resolveBookableServicePrice(
+      this.prisma,
+      {
+        serviceId: providerService.service_id,
+        species: pet.species,
+        weight: petWeight,
+        fallback: {
+          price: Number(providerService.price),
+          durationMinutes: providerService.services.duration_minutes || 60,
+        },
+      },
+    );
     const subtotal = servicePrice;
 
     // 5. Tính toán khoảng cách và phụ phí di chuyển qua GeoLocationHelper
@@ -117,14 +137,47 @@ export class CalculateBookingPriceUseCase {
       { latitude: Number(address.latitude), longitude: Number(address.longitude) },
       { latitude: Number(provider.base_latitude), longitude: Number(provider.base_longitude) },
       serviceRadiusKm,
+      await loadTravelPolicy(this.prisma),
     );
 
     const travelFee = distanceResult.travelSurcharge;
     const travelDurationMinutes = distanceResult.estimatedDurationMinutes;
     const isWithinRadius = distanceResult.isWithinServiceRadius ?? true;
 
-    // 6. Tính toán mã giảm giá (Voucher Discount) nếu có
-    let discountAmount = 0;
+    // 6. Kiểm tra quyền lợi Hội viên (Membership Discount) & Mã giảm giá (Voucher)
+    let memberDiscountAmount = 0;
+    let memberDiscountInfo: BookingPriceCalculationResult['discount']['memberDiscount'] | undefined;
+
+    const activeSubscription = await this.prisma.subscriptions?.findFirst?.({
+      where: {
+        user_id: customerId,
+        status: 'ACTIVE',
+        end_date: { gt: new Date() },
+      },
+      include: {
+        plan: true,
+      },
+      orderBy: { end_date: 'desc' },
+    });
+
+    if (activeSubscription) {
+      const tierName = activeSubscription.tier_name.toUpperCase();
+      const discountPercent = (tierName === 'PREMIUM' || tierName === 'YEARLY') ? 15 : 5;
+      memberDiscountAmount = Math.round((subtotal * discountPercent) / 100);
+
+      const tierLabel =
+        activeSubscription.plan?.name ||
+        (tierName === 'PREMIUM' ? 'Gói VIP Pro' : tierName === 'YEARLY' ? 'Gói Tiết Kiệm Năm' : 'Gói Cơ Bản');
+
+      memberDiscountInfo = {
+        tierName,
+        tierLabel,
+        discountPercent,
+        discountAmount: memberDiscountAmount,
+      };
+    }
+
+    let voucherDiscountAmount = 0;
     let appliedPromoCode: string | undefined;
     let promotionId: string | undefined;
 
@@ -159,20 +212,21 @@ export class CalculateBookingPriceUseCase {
         }
       }
 
-      // Tính số tiền giảm giá
+      // Tính số tiền giảm giá của voucher
       if (promo.discount_percent) {
-        discountAmount = (subtotal * promo.discount_percent) / 100;
+        voucherDiscountAmount = (subtotal * promo.discount_percent) / 100;
         if (promo.max_discount_amount) {
-          discountAmount = Math.min(discountAmount, Number(promo.max_discount_amount));
+          voucherDiscountAmount = Math.min(voucherDiscountAmount, Number(promo.max_discount_amount));
         }
       } else if (promo.discount_amount) {
-        discountAmount = Number(promo.discount_amount);
+        voucherDiscountAmount = Number(promo.discount_amount);
       }
 
-      discountAmount = Math.min(discountAmount, subtotal + travelFee);
       appliedPromoCode = normalizedCode;
       promotionId = promo.id;
     }
+
+    const discountAmount = Math.min(memberDiscountAmount + voucherDiscountAmount, subtotal + travelFee);
 
     // 7. Tổng tiền thanh toán cuối cùng
     const totalPrice = Math.max(0, subtotal + travelFee - discountAmount);
@@ -203,6 +257,8 @@ export class CalculateBookingPriceUseCase {
         promoCode: appliedPromoCode,
         discountAmount,
         promotionId,
+        memberDiscount: memberDiscountInfo,
+        voucherDiscountAmount,
       },
       totalPrice,
       totalEstimatedDurationMinutes,

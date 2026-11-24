@@ -46,8 +46,8 @@ export const providerApi = {
     const formData = new FormData();
     formData.append('idNumber', data.idNumber);
     formData.append('fullName', data.fullName);
-    formData.append('dob', data.dob);
-    formData.append('issueDate', data.issueDate);
+    formData.append('dob', data.dob || data.dateOfBirth || '');
+    formData.append('issueDate', data.issueDate || '');
 
     // Compress images
     const frontUri = await compressImage(frontImage.uri);

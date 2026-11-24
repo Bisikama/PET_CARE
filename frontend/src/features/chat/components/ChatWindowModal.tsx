@@ -133,16 +133,16 @@ export const ChatWindowModal: React.FC<ChatWindowModalProps> = ({ roomId, bookin
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 sm:p-6 backdrop-blur-md animate-in fade-in duration-300 select-none">
       <div className="w-full max-w-5xl rounded-[2rem] bg-white shadow-2xl dark:bg-slate-950 flex flex-col h-[85vh] min-h-[600px] max-h-[900px] border border-slate-200/50 dark:border-slate-800/80 overflow-hidden ring-1 ring-slate-900/5">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800/80 z-10">
+        <div className="flex items-center justify-between px-6 py-4 bg-[#08243D] text-white z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50 text-emerald-600 dark:text-emerald-400 rounded-2xl shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
+            <div className="p-2.5 bg-white/10 text-[#F7C948] rounded-xl">
               <MessageSquare className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                Trò Chuyện {partnerName ? `- ${user?.role === 'CUSTOMER' ? 'Chuyên viên' : 'Khách hàng'}: ${partnerName}` : ''}
+              <h3 className="text-base font-bold text-white leading-tight">
+                Trò Chuyện {partnerName ? `· ${user?.role === 'CUSTOMER' ? 'Chuyên viên' : 'Khách hàng'} ${partnerName}` : ''}
               </h3>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Kênh trao đổi trực tiếp an toàn trong thời gian thực hiện dịch vụ</p>
+              <p className="text-xs text-slate-300">Kênh trao đổi trực tiếp trong thời gian thực hiện dịch vụ</p>
             </div>
           </div>
           <button 
@@ -152,7 +152,7 @@ export const ChatWindowModal: React.FC<ChatWindowModalProps> = ({ roomId, bookin
               e.stopPropagation();
               onClose();
             }} 
-            className="rounded-full p-2.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-all cursor-pointer active:scale-95"
+            className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
             title="Đóng cửa sổ chat"
           >
             <XIcon className="w-5 h-5" />

@@ -75,8 +75,10 @@ describe('CalculateBookingPriceUseCase', () => {
       customer_addresses: { findUnique: jest.fn().mockResolvedValue(mockAddress) },
       provider_profiles: { findUnique: jest.fn().mockResolvedValue(mockProvider) },
       provider_services: { findUnique: jest.fn(), findFirst: jest.fn().mockResolvedValue(mockProviderService) },
+      service_pricing_rules: { findMany: jest.fn().mockResolvedValue([]) },
       promotions: { findUnique: jest.fn().mockResolvedValue(mockPromotion) },
       promotion_usages: { count: jest.fn().mockResolvedValue(0) },
+      subscriptions: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -99,6 +101,28 @@ describe('CalculateBookingPriceUseCase', () => {
     expect(result.discount.promoCode).toBe('DISCOUNT20');
     expect(result.distance.travelFee).toBeGreaterThanOrEqual(0);
     expect(result.totalPrice).toBe(200000 + result.distance.travelFee - 40000);
+  });
+
+  it('uses the system price table by pet weight instead of the provider price', async () => {
+    // Milo nặng 8,5 kg => dòng "5–10 kg" của Clean Care
+    prisma.service_pricing_rules.findMany.mockResolvedValue([
+      { pet_species: 'Dog', min_weight: 0, max_weight: 4.99, price: 229000, duration_minutes: 90 },
+      { pet_species: 'Dog', min_weight: 5, max_weight: 10, price: 269000, duration_minutes: 90 },
+    ]);
+
+    const result = await useCase.execute(mockCustomerId, mockDto);
+
+    expect(result.item.servicePrice).toBe(269000);
+    expect(result.item.serviceDurationMinutes).toBe(90);
+    expect(result.subtotal).toBe(269000);
+    expect(result.discount.discountAmount).toBe(50000); // 20% = 53.800 nhưng tối đa 50.000
+  });
+
+  it('refuses online pricing for a pet outside the price table (custom quote)', async () => {
+    prisma.service_pricing_rules.findMany.mockResolvedValue([
+      { pet_species: 'Dog', min_weight: 0, max_weight: 4.99, price: 229000, duration_minutes: 90 },
+    ]);
+    await expect(useCase.execute(mockCustomerId, mockDto)).rejects.toThrow(BadRequestException);
   });
 
   it('should throw NotFoundException if pet does not exist', async () => {

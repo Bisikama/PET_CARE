@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { SystemPriceTable } from '@/features/services/components/SystemPriceTable';
 import { X, Loader2, Award, Check } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { providerService } from '../services/provider.service';
@@ -28,11 +29,11 @@ export function AddCapabilityModal({ show, onClose, onSuccess }: AddCapabilityMo
     if (show) {
       setLoadingServices(true);
       providerService.getActiveServices()
-        .then((list) => {
-          console.log('[DEBUG] getActiveServices list:', list);
-          setServicesList(list || []);
-          if (list && list.length > 0) {
-            console.log('[DEBUG] Setting initial serviceId:', list[0].id);
+        .then((all) => {
+          // Chỉ các gói đang mở bán
+          const list = (all || []).filter((s: any) => s.isActive !== false);
+          setServicesList(list);
+          if (list.length > 0) {
             setServiceId(list[0].id);
           }
           setLoadingServices(false);
@@ -161,7 +162,7 @@ export function AddCapabilityModal({ show, onClose, onSuccess }: AddCapabilityMo
                 >
                   {servicesList.map((srv) => (
                     <option key={srv.id} value={srv.id}>
-                      {srv.name} (Giá sàn: {new Intl.NumberFormat('vi-VN').format(srv.basePrice)}đ)
+                      {srv.name}
                     </option>
                   ))}
                 </select>
@@ -198,6 +199,12 @@ export function AddCapabilityModal({ show, onClose, onSuccess }: AddCapabilityMo
             </div>
 
             {/* Weights range */}
+            <SystemPriceTable
+              serviceId={serviceId}
+              petSpecies={petSpecies}
+              fallbackPrice={servicesList.find((s: any) => s.id === serviceId)?.basePrice}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label htmlFor="minWeight" className="text-xs font-bold text-slate-500 uppercase tracking-wider block">

@@ -85,7 +85,7 @@ export const ServiceDiscoveryPackagesView: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1">{pkg.description}</p>
                 <div className="mt-4 pt-3 border-t flex justify-between items-center dark:border-gray-800">
                   <span className="text-base font-bold text-gray-900 dark:text-white">
-                    {Number(pkg.price).toLocaleString('vi-VN')} đ
+                    {pkg.requiresQuote ? 'Báo giá riêng' : `${Number(pkg.price).toLocaleString('vi-VN')} đ`}
                   </span>
                   <button className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
                     Chọn Gói

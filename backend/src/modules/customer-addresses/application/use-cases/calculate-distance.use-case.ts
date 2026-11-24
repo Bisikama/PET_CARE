@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../../../database/prisma.service';
 import { GeoLocationHelper, DistanceCalculationResult } from '../../../../common/utils/geo-location.helper';
 import { CalculateDistanceDto } from '../../dto/calculate-distance.dto';
+import { loadTravelPolicy } from '../../../services/domain/service-fees';
 
 export interface DetailedDistanceResponse extends DistanceCalculationResult {
   origin: {
@@ -87,6 +88,7 @@ export class CalculateDistanceUseCase {
       { latitude: originLat, longitude: originLng },
       { latitude: destLat, longitude: destLng },
       providerServiceRadiusKm,
+      await loadTravelPolicy(this.prisma),
     );
 
     return {

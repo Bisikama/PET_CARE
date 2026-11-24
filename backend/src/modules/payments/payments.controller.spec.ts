@@ -12,6 +12,10 @@ describe('PaymentsController', () => {
   beforeEach(async () => {
     mockPaymentsService = {
       createMomoUrl: jest.fn().mockResolvedValue('https://momo.vn/pay'),
+      processPaymentCallback: jest
+        .fn()
+        .mockResolvedValue({ RspCode: '00', Message: 'Confirm Success' }),
+      processMomoIPN: jest.fn().mockResolvedValue({ RspCode: '00', Message: 'Confirm Success' }),
     };
 
     mockConfigService = {
@@ -59,6 +63,20 @@ describe('PaymentsController', () => {
         `${frontendUrl}/payment/result?status=failed&orderId=BOOKING_456&method=VNPAY`,
       );
     });
+
+    it('should redirect with failed status when the signature is rejected, even if vnp_ResponseCode is 00', async () => {
+      (mockPaymentsService.processPaymentCallback as jest.Mock).mockResolvedValueOnce({
+        RspCode: '97',
+        Message: 'Checksum failed',
+      });
+      const mockRes = { redirect: jest.fn() } as any;
+
+      await controller.vnpayReturn({ vnp_ResponseCode: '00', vnp_TxnRef: 'FORGED' }, mockRes);
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        `${frontendUrl}/payment/result?status=failed&orderId=FORGED&method=VNPAY`,
+      );
+    });
   });
 
   describe('momoReturn', () => {
@@ -85,6 +103,20 @@ describe('PaymentsController', () => {
 
       expect(mockRes.redirect).toHaveBeenCalledWith(
         `${frontendUrl}/payment/result?status=failed&orderId=BOOKING_999&method=MOMO`,
+      );
+    });
+
+    it('should redirect with failed status when the signature is missing or invalid', async () => {
+      (mockPaymentsService.processMomoIPN as jest.Mock).mockResolvedValueOnce({
+        RspCode: '97',
+        Message: 'Checksum failed',
+      });
+      const mockRes = { redirect: jest.fn() } as any;
+
+      await controller.momoReturn({ resultCode: '0', orderId: 'FORGED' }, mockRes);
+
+      expect(mockRes.redirect).toHaveBeenCalledWith(
+        `${frontendUrl}/payment/result?status=failed&orderId=FORGED&method=MOMO`,
       );
     });
   });

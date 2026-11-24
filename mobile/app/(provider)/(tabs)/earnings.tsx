@@ -18,7 +18,6 @@ import {
   ArrowDownLeft,
   Clock,
   Building2,
-  Plus,
   RefreshCw,
   CheckCircle2,
   AlertCircle,
@@ -54,7 +53,6 @@ export default function ProviderEarningsRoute() {
   // Modal states
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [showAddBankModal, setShowAddBankModal] = useState(false);
-  const [showTopupModal, setShowTopupModal] = useState(false);
 
   // Form states
   const [payoutAmount, setPayoutAmount] = useState('');
@@ -67,10 +65,6 @@ export default function ProviderEarningsRoute() {
   const [accountName, setAccountName] = useState('');
   const [branch, setBranch] = useState('');
   const [isSubmittingBank, setIsSubmittingBank] = useState(false);
-
-  // Topup amount for testing
-  const [topupAmount, setTopupAmount] = useState('500000');
-  const [isSubmittingTopup, setIsSubmittingTopup] = useState(false);
 
   const fetchData = useCallback(async (isPull = false) => {
     if (isPull) {
@@ -207,24 +201,6 @@ export default function ProviderEarningsRoute() {
     }
   };
 
-  // Handle Test Topup
-  const handleTopup = async () => {
-    const amt = parseFloat(topupAmount);
-    if (!amt || amt <= 0) return;
-
-    setIsSubmittingTopup(true);
-    try {
-      await walletApi.topup(amt);
-      Alert.alert('Nạp tiền thành công', `Đã cộng ${formatCurrency(amt)} đ vào ví.`);
-      setShowTopupModal(false);
-      fetchData(false);
-    } catch (err: any) {
-      Alert.alert('Lỗi nạp tiền', err?.response?.data?.message || 'Không thể nạp tiền.');
-    } finally {
-      setIsSubmittingTopup(false);
-    }
-  };
-
   const formatTxDate = (isoStr: string) => {
     try {
       const d = new Date(isoStr);
@@ -278,20 +254,12 @@ export default function ProviderEarningsRoute() {
       >
         {/* 1. HERO BALANCE CARD */}
         <View style={styles.heroCard}>
-          {/* Top Row: Label & Test Topup */}
+          {/* Top Row: Label */}
           <View style={styles.heroTopRow}>
             <View style={styles.heroBadge}>
               <ShieldCheck size={14} color="#00A472" />
               <Text style={styles.heroBadgeText}>Ví đảm bảo PetCare</Text>
             </View>
-            <TouchableOpacity
-              style={styles.testTopupBtn}
-              onPress={() => setShowTopupModal(true)}
-              activeOpacity={0.8}
-            >
-              <Plus size={14} color="#FFFFFF" />
-              <Text style={styles.testTopupText}>Nạp thử</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Available Balance */}
@@ -725,52 +693,6 @@ export default function ProviderEarningsRoute() {
         </View>
       </Modal>
 
-      {/* MODAL 3: TEST TOPUP (DEV / TEST) */}
-      <Modal
-        visible={showTopupModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowTopupModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { maxHeight: 320 }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nạp số dư thử nghiệm</Text>
-              <TouchableOpacity onPress={() => setShowTopupModal(false)}>
-                <X size={20} color="#74777F" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputFieldLabel}>CHỌN SỐ TIỀN NẠP VÀO VÍ</Text>
-            <View style={styles.chipsRow}>
-              {['200000', '500000', '1000000', '2000000'].map((amt) => (
-                <TouchableOpacity
-                  key={amt}
-                  style={[styles.chipBtn, topupAmount === amt && styles.chipBtnActive]}
-                  onPress={() => setTopupAmount(amt)}
-                >
-                  <Text style={[styles.chipBtnText, topupAmount === amt && styles.chipBtnTextActive]}>
-                    {formatCurrency(amt)} đ
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={[styles.confirmPayoutBtn, isSubmittingTopup && styles.btnDisabled, { marginTop: 24 }]}
-              onPress={handleTopup}
-              disabled={isSubmittingTopup}
-              activeOpacity={0.88}
-            >
-              {isSubmittingTopup ? (
-                <ActivityIndicator size="small" color="#00152D" />
-              ) : (
-                <Text style={styles.confirmPayoutBtnText}>Xác nhận nạp số dư</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </Screen>
   );
 }
@@ -853,20 +775,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#FFFFFF',
     fontWeight: '600',
-  },
-  testTopupBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  testTopupText: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   balanceLabel: {
     fontSize: 11,

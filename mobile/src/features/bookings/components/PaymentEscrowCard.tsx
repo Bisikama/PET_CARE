@@ -1,44 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ShieldCheck, Lock, Clock, AlertCircle } from 'lucide-react-native';
+import { ShieldCheck, Lock, Clock } from 'lucide-react-native';
 import { theme } from '@/core/theme';
 import { formatCurrency } from '@/core/utils/currency';
 
 interface PaymentEscrowCardProps {
   totalAmount: number;
-  bookingCode?: string;
-  initialMinutes?: number;
+  /** Mã đặt lịch thật — chỉ có sau khi booking được tạo */
+  bookingCode?: string | null;
+  /**
+   * Mốc hết giữ chỗ do backend trả về (ISO). Chưa có booking => null => không hiện đồng hồ,
+   * vì lúc đó chưa có slot nào đang được giữ.
+   */
+  expiresAt?: string | null;
+  /** Gọi một lần khi đồng hồ về 0 */
   onExpire?: () => void;
+}
+
+function secondsUntil(deadline: number) {
+  return Math.max(0, Math.floor((deadline - Date.now()) / 1000));
 }
 
 export function PaymentEscrowCard({
   totalAmount,
-  bookingCode = 'BK-2026-9812',
-  initialMinutes = 15,
+  bookingCode,
+  expiresAt,
   onExpire,
 }: PaymentEscrowCardProps) {
-  const [secondsLeft, setSecondsLeft] = useState(initialMinutes * 60);
+  const deadline = expiresAt ? new Date(expiresAt).getTime() : NaN;
+  const hasDeadline = Number.isFinite(deadline);
+  const [secondsLeft, setSecondsLeft] = useState(() => (hasDeadline ? secondsUntil(deadline) : 0));
+
+  // Giữ onExpire mới nhất mà không khởi động lại đồng hồ mỗi lần render
+  const onExpireRef = useRef(onExpire);
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
 
   useEffect(() => {
+    if (!hasDeadline) return;
+    let fired = false;
+    const tick = () => {
+      const left = secondsUntil(deadline);
+      setSecondsLeft(left);
+      if (left === 0 && !fired) {
+        fired = true;
+        onExpireRef.current?.();
+      }
+      return left;
+    };
+    // Tính lại theo đồng hồ thật (không trừ dần) để đúng cả khi app vừa chạy nền
+    if (tick() === 0) return;
     const timer = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onExpire?.();
-          return 0;
-        }
-        return prev - 1;
-      });
+      if (tick() === 0) clearInterval(timer);
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [onExpire]);
+  }, [deadline, hasDeadline]);
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
-  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(
-    seconds
-  ).padStart(2, '0')}`;
+  const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const urgent = hasDeadline && secondsLeft <= 5 * 60;
 
   return (
     <View style={styles.card}>
@@ -49,17 +71,32 @@ export function PaymentEscrowCard({
           <Text style={styles.securityBadgeText}>BẢO VỆ KÝ QUỸ ESCROW</Text>
         </View>
 
-        <View style={styles.timerBadge}>
-          <Clock size={12} color="#D97706" />
-          <Text style={styles.timerText}>{formattedTime}</Text>
-        </View>
+        {hasDeadline && (
+          <View
+            style={[styles.timerBadge, urgent && styles.timerBadgeUrgent]}
+            accessibilityLabel={
+              secondsLeft > 0
+                ? `Còn ${minutes} phút ${seconds} giây giữ chỗ`
+                : 'Đã hết thời gian giữ chỗ'
+            }
+          >
+            <Clock size={12} color={urgent ? '#BE123C' : '#D97706'} />
+            <Text style={[styles.timerText, urgent && styles.timerTextUrgent]}>
+              {secondsLeft > 0 ? formattedTime : 'Hết hạn'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Amount Display */}
       <View style={styles.amountSection}>
         <Text style={styles.amountLabel}>SỐ TIỀN CẦN THANH TOÁN</Text>
         <Text style={styles.amountValue}>{formatCurrency(totalAmount)} đ</Text>
-        <Text style={styles.codeText}>Mã đặt lịch: #{bookingCode}</Text>
+        {bookingCode ? (
+          <Text style={styles.codeText}>Mã đặt lịch: #{bookingCode}</Text>
+        ) : (
+          <Text style={styles.codeText}>Khung giờ sẽ được giữ cho bạn khi bấm thanh toán</Text>
+        )}
       </View>
 
       {/* Escrow Note */}
@@ -114,10 +151,17 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: theme.radius.full,
   },
+  timerBadgeUrgent: {
+    backgroundColor: '#FFE4E6',
+  },
   timerText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#B45309',
+    fontVariant: ['tabular-nums'],
+  },
+  timerTextUrgent: {
+    color: '#BE123C',
   },
   amountSection: {
     alignItems: 'center',

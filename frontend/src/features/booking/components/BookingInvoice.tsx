@@ -1,13 +1,79 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ShieldCheck, Ticket, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, Ticket, CheckCircle2, AlertCircle, Crown, Sparkles } from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { bookingService } from '../services/booking.service';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useServicesStore } from '@/features/services/stores/services.store';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
-import { useApplyPromotion } from '@/features/promotions/hooks/useApplyPromotion';
+import { systemAlert } from '@/components/ui/SystemDialogProvider';
+
+interface PriceQuote {
+  servicePrice: number;
+  travelFee: number;
+  distanceKm: number | null;
+  discountAmount: number;
+  promoCode: string | null;
+  totalPrice: number;
+  memberDiscount?: {
+    tierName: string;
+    tierLabel: string;
+    discountPercent: number;
+    discountAmount: number;
+  };
+  voucherDiscountAmount?: number;
+}
+
+const apiMessage = (err: any, fallback: string): string => {
+  const msg = err?.response?.data?.message;
+  return (Array.isArray(msg) ? msg.join(', ') : msg) || err?.message || fallback;
+};
+
+/** Kết quả POST /bookings/calculate-price */
+function toPriceQuote(res: any): PriceQuote {
+  return {
+    servicePrice: Number(res?.item?.servicePrice ?? res?.subtotal ?? 0),
+    travelFee: Number(res?.distance?.travelFee ?? 0),
+    distanceKm: res?.distance?.estimatedRoadDistanceKm != null ? Number(res.distance.estimatedRoadDistanceKm) : null,
+    discountAmount: Number(res?.discount?.discountAmount ?? 0),
+    promoCode: res?.discount?.promoCode ?? null,
+    totalPrice: Number(res?.totalPrice ?? 0),
+    memberDiscount: res?.discount?.memberDiscount ? {
+      tierName: String(res.discount.memberDiscount.tierName),
+      tierLabel: String(res.discount.memberDiscount.tierLabel),
+      discountPercent: Number(res.discount.memberDiscount.discountPercent),
+      discountAmount: Number(res.discount.memberDiscount.discountAmount),
+    } : undefined,
+    voucherDiscountAmount: res?.discount?.voucherDiscountAmount != null ? Number(res.discount.voucherDiscountAmount) : undefined,
+  };
+}
+
+/** Số tiền của đơn đã tạo (price_snapshot do backend chụp lúc tạo đơn). */
+function priceFromBooking(booking: any): PriceQuote {
+  const snap = booking?.price_snapshot || booking?.priceSnapshot || {};
+  const total = Number(booking?.total_price ?? booking?.totalPrice ?? snap.finalPrice ?? 0);
+  const discount = Number(snap.discountAmount ?? booking?.discount_amount ?? 0);
+  const travel = Number(snap.travelFee ?? 0);
+  const memberDiscountAmount = Number(snap.memberDiscountAmount ?? 0);
+  const memberTier = snap.memberTier;
+
+  return {
+    servicePrice: Number(snap.servicePrice ?? total - travel + discount),
+    travelFee: travel,
+    distanceKm: snap.distanceKm != null ? Number(snap.distanceKm) : null,
+    discountAmount: discount,
+    promoCode: snap.promoCode ?? null,
+    totalPrice: total,
+    memberDiscount: memberDiscountAmount > 0 && memberTier ? {
+      tierName: memberTier,
+      tierLabel: memberTier === 'PREMIUM' ? 'Gói VIP Pro' : memberTier === 'YEARLY' ? 'Gói Tiết Kiệm Năm' : 'Gói Cơ Bản',
+      discountPercent: memberTier === 'BASIC' ? 5 : 15,
+      discountAmount: memberDiscountAmount,
+    } : undefined,
+    voucherDiscountAmount: snap.voucherDiscountAmount != null ? Number(snap.voucherDiscountAmount) : undefined,
+  };
+}
 
 export function BookingInvoice() {
   const { 
@@ -39,10 +105,59 @@ export function BookingInvoice() {
 
   // Promo code state
   const [promoInput, setPromoInput] = React.useState(appliedPromoCode || '');
-  const [appliedDiscount, setAppliedDiscount] = React.useState(0);
   const [promoError, setPromoError] = React.useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = React.useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = React.useState(false);
-  const { applyPromotion, isLoading: promoLoading } = useApplyPromotion();
+
+  // Báo giá của server (trước khi tạo đơn): giá gói theo cân nặng + phí di chuyển - giảm giá
+  const [quote, setQuote] = React.useState<PriceQuote | null>(null);
+  const [quoteError, setQuoteError] = React.useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = React.useState(false);
+
+  const requestQuote = React.useCallback(
+    async (promoCode?: string) => {
+      if (!selectedPetId || !selectedServiceId || !selectedAddressId || !selectedProviderId) return null;
+      const res = await bookingService.calculatePrice({
+        petId: selectedPetId,
+        serviceId: selectedServiceId,
+        addressId: selectedAddressId,
+        providerId: selectedProviderId,
+        ...(promoCode ? { promoCode } : {}),
+      });
+      return toPriceQuote(res);
+    },
+    [selectedPetId, selectedServiceId, selectedAddressId, selectedProviderId],
+  );
+
+  React.useEffect(() => {
+    if (createdBookingId) return;
+    let cancelled = false;
+    setQuoteLoading(true);
+    setQuoteError(null);
+    requestQuote(appliedPromoCode || undefined)
+      .catch(async (err) => {
+        // Mã đã lưu không còn hợp lệ => báo giá lại không kèm mã
+        if (appliedPromoCode) {
+          setStoreAppliedDiscount(0, null);
+          setPromoError(apiMessage(err, 'Mã khuyến mãi không còn hợp lệ'));
+          return requestQuote();
+        }
+        throw err;
+      })
+      .then((q) => {
+        if (!cancelled) setQuote(q);
+      })
+      .catch((err) => {
+        if (!cancelled) setQuoteError(apiMessage(err, 'Không tính được giá cho đơn này'));
+      })
+      .finally(() => {
+        if (!cancelled) setQuoteLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createdBookingId, requestQuote]);
 
   // Fallback info if API doesn't return full details
   const pet = pets.find(p => p.id === selectedPetId);
@@ -89,7 +204,10 @@ export function BookingInvoice() {
     }
 
     if (!selectedPetId || !selectedAddressId || !selectedServiceId || !selectedSlotId) {
-      alert('Vui lòng quay lại chọn đầy đủ thú cưng, địa chỉ, dịch vụ và khung giờ làm việc.');
+      systemAlert('Vui lòng quay lại chọn đầy đủ thú cưng, địa chỉ, dịch vụ và khung giờ làm việc.', {
+        title: 'Thiếu thông tin đặt lịch',
+        type: 'warning',
+      });
       return;
     }
 
@@ -118,7 +236,12 @@ export function BookingInvoice() {
       }
     } catch (err: any) {
       console.error('Lỗi khi tạo đơn đặt lịch:', err);
-      alert(err?.response?.data?.message || err?.message || 'Không thể tạo đơn đặt lịch. Khung giờ có thể đã được người khác đặt trước.');
+      systemAlert(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Không thể tạo đơn đặt lịch. Khung giờ có thể đã được người khác đặt trước.',
+        { title: 'Không thể khởi tạo đơn', type: 'error' },
+      );
     } finally {
       setIsCreatingBooking(false);
     }
@@ -170,30 +293,42 @@ export function BookingInvoice() {
     ? `${formatDateTime(booking.estimated_start_at)} - ${booking.estimated_end_at ? formatDateTime(booking.estimated_end_at).split(' ')[1] : ''}`
     : booking?.timeString || 'Đang cập nhật...'; 
     
-  const totalAmount = booking?.total_price ? Number(booking.total_price) : (service?.basePrice || 250000);
+  // Đơn đã tạo => số tiền thật của đơn (total_price đã gồm phí di chuyển và đã trừ giảm giá)
+  const pricing: PriceQuote | null = booking ? priceFromBooking(booking) : quote;
+  const finalTotal = pricing?.totalPrice ?? 0;
+  const appliedDiscount = pricing?.discountAmount ?? 0;
+  const promoLocked = Boolean(createdBookingId);
 
   const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!promoInput.trim()) return;
+    const code = promoInput.trim();
+    if (!code || promoLocked) return;
     setPromoError(null);
+    setPromoLoading(true);
     try {
-      const res = await applyPromotion({ promoCode: promoInput.trim(), orderValue: totalAmount });
-      if (res && (res.discountAmount || (res as any).discount_amount || (res as any).discountAmount === 0)) {
-        const discount = res.discountAmount ?? (res as any).discount_amount ?? 0;
-        setAppliedDiscount(discount);
-        setStoreAppliedDiscount(discount, promoInput.trim());
-      } else {
-        setAppliedDiscount(20000);
-        setStoreAppliedDiscount(20000, promoInput.trim());
+      const q = await requestQuote(code);
+      if (q) {
+        setQuote(q);
+        setStoreAppliedDiscount(q.discountAmount, code);
       }
-    } catch (err: any) {
-      setPromoError(err?.response?.data?.message || err?.message || 'Mã khuyến mãi không hợp lệ');
-      setAppliedDiscount(0);
-      setStoreAppliedDiscount(0, null);
+    } catch (err) {
+      setPromoError(apiMessage(err, 'Mã khuyến mãi không hợp lệ'));
+    } finally {
+      setPromoLoading(false);
     }
   };
 
-  const finalTotal = Math.max(0, totalAmount - appliedDiscount);
+  const handleRemovePromo = async () => {
+    setPromoInput('');
+    setPromoError(null);
+    setStoreAppliedDiscount(0, null);
+    try {
+      const q = await requestQuote();
+      if (q) setQuote(q);
+    } catch (err) {
+      setQuoteError(apiMessage(err, 'Không tính được giá cho đơn này'));
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
@@ -243,7 +378,7 @@ export function BookingInvoice() {
           </div>
           <div className="space-y-1">
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Địa chỉ thực hiện ca:</p>
-            <p className="text-red-500 font-bold text-sm">{addressString}</p>
+            <p className="text-slate-800 font-bold text-sm">{addressString}</p>
           </div>
           <div className="space-y-1">
             <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Thời gian lên lịch:</p>
@@ -251,13 +386,42 @@ export function BookingInvoice() {
           </div>
         </div>
 
+        {/* Member Discount Banner */}
+        {pricing?.memberDiscount && (
+          <div className="bg-linear-to-r from-amber-500/10 via-amber-400/5 to-transparent border border-[#F7C948]/40 rounded-2xl p-4 flex items-center justify-between mt-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#08243D] text-[#F7C948] flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <Crown className="w-5 h-5 text-[#F7C948]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#08243D]">
+                    Đặc quyền {pricing.memberDiscount.tierLabel}
+                  </span>
+                  <span className="text-[10px] font-bold bg-[#F7C948] text-[#08243D] px-2 py-0.5 rounded-full">
+                    Hội viên Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Đã tự động áp dụng giảm {pricing.memberDiscount.discountPercent}% giá dịch vụ & miễn 100% phí nền tảng
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-bold text-amber-700 tabular-nums">
+                -{formatPrice(pricing.memberDiscount.discountAmount)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Escrow Terms */}
-        <div className="bg-[#ebf3ff] border border-blue-200 rounded-2xl p-5 flex items-start gap-3 mt-4">
-          <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 flex items-start gap-3 mt-4">
+          <ShieldCheck className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-sm font-bold text-slate-800 mb-1">Điều khoản bảo hộ Ký Quỹ Độc Quyền (Escrow-Pay):</h4>
+            <h4 className="text-sm font-bold text-[#08243D] mb-1">Điều khoản bảo hộ Ký Quỹ (Escrow-Pay):</h4>
             <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Hệ thống trung gian của PetCare sẽ đóng băng khoản thanh toán <strong className="text-slate-800">{formatPrice(finalTotal)}</strong>. {providerName} chỉ được nhận giải ngân khi và chỉ khi bạn chính tay xác nhận hoàn thành dịch vụ mỹ mãn.
+              Hệ thống trung gian của PetCare sẽ giữ an toàn khoản thanh toán <strong className="text-[#08243D]">{formatPrice(finalTotal)}</strong>. {providerName} chỉ nhận giải ngân sau khi bạn xác nhận hoàn thành dịch vụ.
             </p>
           </div>
         </div>
@@ -267,33 +431,50 @@ export function BookingInvoice() {
       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Ticket className="w-5 h-5 text-emerald-600" />
-            <h4 className="text-sm font-bold text-slate-800">Mã khuyến mãi / Voucher</h4>
+            <Ticket className="w-5 h-5 text-[#08243D]" />
+            <h4 className="text-sm font-bold text-[#08243D]">Mã khuyến mãi / Voucher</h4>
           </div>
           {appliedDiscount > 0 && (
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Đã giảm {formatPrice(appliedDiscount)}
             </span>
           )}
         </div>
 
+        {promoLocked ? (
+          <p className="text-xs font-medium text-slate-500">
+            {appliedPromoCode || appliedDiscount > 0
+              ? 'Mã khuyến mãi đã được áp dụng khi tạo đơn.'
+              : 'Đơn đã được tạo — không thể thêm mã khuyến mãi.'}
+          </p>
+        ) : (
         <form onSubmit={handleApplyPromo} className="flex gap-2">
           <input
             type="text"
             value={promoInput}
             onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-            placeholder="Nhập mã khuyến mãi (VD: SIUU)"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 uppercase placeholder:normal-case placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+            placeholder="Nhập mã khuyến mãi (VD: SUMMER2026)"
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 uppercase placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-[#08243D]"
           />
           <button
             type="submit"
             disabled={promoLoading || !promoInput.trim()}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
+            className="px-5 py-2.5 bg-[#08243D] hover:bg-[#0c3254] disabled:opacity-50 text-[#F7C948] text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer"
           >
             {promoLoading ? 'Đang kiểm tra...' : 'Áp dụng'}
           </button>
+          {appliedPromoCode && (
+            <button
+              type="button"
+              onClick={handleRemovePromo}
+              className="px-3 py-2.5 text-xs font-bold text-slate-500 hover:text-rose-600 shrink-0"
+            >
+              Bỏ mã
+            </button>
+          )}
         </form>
+        )}
 
         {promoError && (
           <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
@@ -305,51 +486,82 @@ export function BookingInvoice() {
 
       {/* Total Section */}
       <div className="space-y-2 px-2">
-        {appliedDiscount > 0 && (
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Tạm tính giá gốc:</span>
-            <span className="line-through">{formatPrice(totalAmount)}</span>
+        {quoteLoading && !pricing ? (
+          <div className="flex items-center gap-2 py-3 text-sm font-semibold text-slate-400">
+            <div className="w-4 h-4 border-2 border-slate-200 border-t-[#08243D] rounded-full animate-spin" />
+            Đang tính giá theo cân nặng & quãng đường...
           </div>
-        )}
-        {appliedDiscount > 0 && (
-          <div className="flex items-center justify-between text-xs font-bold text-emerald-600">
-            <span>Giảm giá khuyến mãi:</span>
-            <span>-{formatPrice(appliedDiscount)}</span>
+        ) : quoteError && !pricing ? (
+          <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-sm font-semibold text-rose-700 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            {quoteError}
           </div>
-        )}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-          <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">
-            Tổng tiền cần thanh toán ký quỹ:
-          </h3>
-          <span className="text-2xl font-black text-slate-900 tracking-tight">
-            {formatPrice(finalTotal)}
-          </span>
-        </div>
+        ) : pricing ? (
+          <>
+            <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+              <span>Giá gói {serviceName} (theo cân nặng)</span>
+              <span>{formatPrice(pricing.servicePrice)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+              <span>
+                Phí di chuyển
+                {pricing.distanceKm !== null ? ` (~${pricing.distanceKm.toLocaleString('vi-VN')} km)` : ''}
+              </span>
+              <span>{pricing.travelFee > 0 ? formatPrice(pricing.travelFee) : 'Miễn phí'}</span>
+            </div>
+            {pricing.memberDiscount && (
+              <div className="flex items-center justify-between text-sm font-bold text-amber-700">
+                <span className="flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-[#F7C948]" />
+                  Đặc quyền {pricing.memberDiscount.tierLabel} (-{pricing.memberDiscount.discountPercent}%)
+                </span>
+                <span>-{formatPrice(pricing.memberDiscount.discountAmount)}</span>
+              </div>
+            )}
+            {((pricing.voucherDiscountAmount != null && pricing.voucherDiscountAmount > 0) ||
+              (appliedDiscount > (pricing.memberDiscount?.discountAmount ?? 0))) && (
+              <div className="flex items-center justify-between text-sm font-bold text-emerald-600">
+                <span>Voucher giảm giá{pricing.promoCode ? ` (${pricing.promoCode})` : ''}</span>
+                <span>
+                  -{formatPrice(
+                    pricing.voucherDiscountAmount != null
+                      ? pricing.voucherDiscountAmount
+                      : appliedDiscount - (pricing.memberDiscount?.discountAmount ?? 0),
+                  )}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <h3 className="text-base font-bold text-[#08243D]">
+                Tổng thanh toán ký quỹ Escrow
+              </h3>
+              <span className="text-2xl font-bold text-[#08243D] tracking-tight tabular-nums">{formatPrice(finalTotal)}</span>
+            </div>
+          </>
+        ) : null}
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-100">
         <button
           onClick={() => setStep(6)}
-          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
           Quay lại
         </button>
         <button
           onClick={handleProceedPayment}
-          disabled={isCreatingBooking}
-          className="flex items-center gap-2 px-8 py-3.5 bg-[#00a86b] hover:bg-[#00915c] disabled:opacity-50 text-white text-sm font-bold rounded-2xl transition-all shadow-lg shadow-teal-500/20 active:scale-95 cursor-pointer"
+          disabled={isCreatingBooking || (!createdBookingId && !quote)}
+          className="flex items-center gap-2 px-7 py-3.5 bg-[#08243D] hover:bg-[#0c3254] disabled:opacity-50 text-[#F7C948] text-sm font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
         >
           {isCreatingBooking ? (
             <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>ĐANG TẠO ĐƠN & KÝ QUỸ...</span>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-[#F7C948] rounded-full animate-spin"></div>
+              <span>Đang tạo đơn...</span>
             </>
           ) : (
-            <>
-              <span className="font-mono font-normal opacity-80 mr-1">$</span> TIẾN HÀNH KÝ QUỸ VÍ PETCARE
-            </>
+            <span>Xác nhận & Chọn phương thức thanh toán →</span>
           )}
         </button>
       </div>

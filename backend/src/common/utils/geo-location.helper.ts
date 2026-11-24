@@ -28,8 +28,8 @@ export class GeoLocationHelper {
   // Tốc độ di chuyển trung bình trong đô thị (25 km/h cho xe máy)
   public static readonly AVERAGE_SPEED_KMH = 25;
 
-  // Bán kính miễn phí phụ phí di chuyển (2 km đầu miễn phí)
-  public static readonly FREE_DISTANCE_KM = 2.0;
+  // Mặc định khi chưa cấu hình (admin chỉnh trong Quản Lý Dịch Vụ → Phụ phí & phí di chuyển)
+  public static readonly FREE_DISTANCE_KM = 5.0;
 
   // Phụ phí mỗi km phát sinh vượt định mức (5.000 VNĐ / km)
   public static readonly SURCHARGE_PER_KM = 5000;
@@ -67,7 +67,11 @@ export class GeoLocationHelper {
     origin: Coordinates,
     destination: Coordinates,
     serviceRadiusKm?: number,
+    /** Phí di chuyển do admin cấu hình (mặc định: hằng số bên dưới) */
+    travelPolicy?: { freeKm: number; perKm: number },
   ): DistanceCalculationResult {
+    const freeKm = travelPolicy?.freeKm ?? this.FREE_DISTANCE_KM;
+    const perKm = travelPolicy?.perKm ?? this.SURCHARGE_PER_KM;
     const straightLine = this.calculateHaversineDistance(origin, destination);
     const roadDistance = Number((straightLine * this.ROAD_WINDING_FACTOR).toFixed(2));
 
@@ -75,8 +79,8 @@ export class GeoLocationHelper {
     const durationMinutes = Math.max(1, Math.round((roadDistance / this.AVERAGE_SPEED_KMH) * 60));
 
     // Tính phụ phí di chuyển vượt mức
-    const chargeableDistance = Math.max(0, Number((roadDistance - this.FREE_DISTANCE_KM).toFixed(2)));
-    const travelSurcharge = Math.round(chargeableDistance * this.SURCHARGE_PER_KM);
+    const chargeableDistance = Math.max(0, Number((roadDistance - freeKm).toFixed(2)));
+    const travelSurcharge = Math.round(chargeableDistance * perKm);
 
     const isWithinRadius =
       serviceRadiusKm !== undefined ? roadDistance <= serviceRadiusKm : undefined;
@@ -90,8 +94,8 @@ export class GeoLocationHelper {
       isWithinServiceRadius: isWithinRadius,
       serviceRadiusKm,
       pricingFormula: {
-        freeDistanceKm: this.FREE_DISTANCE_KM,
-        ratePerKm: this.SURCHARGE_PER_KM,
+        freeDistanceKm: freeKm,
+        ratePerKm: perKm,
         chargeableDistanceKm: chargeableDistance,
       },
     };

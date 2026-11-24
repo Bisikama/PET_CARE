@@ -75,8 +75,8 @@ export function PetSelection() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {pets.map((pet) => {
+        <div className="space-y-3.5">
+          {pets.map((pet, idx) => {
             const isSelected = selectedPetId === pet.id;
             const genderIcon = 
               pet.gender === 'MALE' || pet.gender === 'Đực' ? '♂' : 
@@ -85,11 +85,12 @@ export function PetSelection() {
             return (
               <div
                 key={pet.id}
+                style={{ animationDelay: `${idx * 60}ms` }}
                 onClick={() => handleSelectPet(pet.id)}
-                className={`relative overflow-hidden rounded-[24px] bg-white p-5 flex items-start gap-4 cursor-pointer transition-all duration-300 border-2 ${
+                className={`animate-stagger-card card-hover-lift relative overflow-hidden rounded-3xl bg-white p-5 flex items-center gap-4 cursor-pointer transition-all duration-300 border-2 ${
                   isSelected 
-                    ? 'border-[#f0c05a] shadow-md bg-amber-50/5' 
-                    : 'border-slate-100 hover:border-slate-200'
+                    ? 'border-[#08243D] shadow-md bg-slate-50/70' 
+                    : 'border-slate-200/70 hover:border-slate-300'
                 }`}
               >
                 {/* Pet Avatar */}
@@ -113,30 +114,32 @@ export function PetSelection() {
                 </div>
 
                 {/* Pet Info */}
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-slate-800 tracking-tight leading-none">
+                    <h3 className="text-base font-bold text-[#08243D] tracking-tight leading-none">
                       {pet.name}
                     </h3>
-                    <span className="inline-flex text-[9px] font-extrabold px-2 py-0.5 rounded bg-[#eef2ff] text-[#4f46e5] border border-[#e0e7ff] tracking-wider uppercase">
-                      {pet.species}
+                    <span className="inline-flex text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                      {pet.species === 'Cat' ? 'Mèo' : 'Cún'}
                     </span>
                   </div>
 
-                  <p className="text-slate-500 text-xs md:text-sm font-semibold">
+                  <p className="text-slate-500 text-xs font-medium">
                     {[
-                      pet.breed,
+                      pet.breed || 'Chưa rõ giống',
                       pet.age ? `${pet.age} tuổi` : null,
-                      pet.weight ? `${pet.weight} kg` : null,
+                      pet.weight ? `${pet.weight} kg` : 'Chưa cập nhật cân nặng',
                       genderIcon
-                    ].filter(Boolean).join(' • ')}
+                    ].filter(Boolean).join(' · ')}
                   </p>
 
                   {/* Pet Special Note */}
                   {(pet.healthNote || pet.behaviorNote) && (
-                    <div className="inline-block p-3.5 bg-amber-50/55 rounded-xl border border-amber-200/20 text-xs font-bold text-amber-700/90 leading-relaxed">
-                      {pet.healthNote || pet.behaviorNote}
-                    </div>
+                    <p className="text-xs text-slate-400">
+                      {[pet.healthNote && `Sức khỏe: ${pet.healthNote}`, pet.behaviorNote && `Thói quen: ${pet.behaviorNote}`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
                   )}
                 </div>
               </div>
@@ -147,17 +150,17 @@ export function PetSelection() {
 
       {/* Footer Alert & Action Bar */}
       {selectedPet && (
-        <div className="rounded-2xl bg-[#eef6fc] border border-[#dbeafe]/40 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-          <div className="text-xs md:text-sm font-semibold text-slate-700 leading-relaxed max-w-2xl">
-            ✓ Bạn đã chọn bé cưng <strong className="text-slate-900 font-bold">{selectedPet.name}</strong> cho kịch bản chăm sóc tắm cắt tỉa này. Bấm <strong className="text-slate-900 font-bold">Tiếp Tục</strong> để chọn cân nặng và thiết lập nhu cầu đặc biệt.
+        <div className="animate-slide-up rounded-2xl bg-[#08243D] text-white p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+          <div className="text-xs md:text-sm font-medium text-slate-200 leading-relaxed max-w-2xl">
+            Đã chọn hồ sơ thú cưng <strong className="text-[#F7C948] font-bold">{selectedPet.name}</strong>. Tiếp tục để chọn gói chăm sóc phù hợp theo cân nặng của bé.
           </div>
 
           <button
             type="button"
             onClick={() => setStep(2)}
-            className="inline-flex items-center justify-center gap-1.5 px-5 py-3 bg-[#0a1c2a] hover:bg-[#122e44] text-white text-xs font-bold rounded-2xl shadow transition-all duration-150 cursor-pointer active:scale-[0.98] shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-6 py-3 bg-[#F7C948] hover:bg-[#e5b83b] text-[#08243D] text-xs font-bold rounded-xl shadow-xs transition-all duration-200 cursor-pointer active:scale-[0.98] shrink-0"
           >
-            Chọn dịch vụ
+            Chọn gói dịch vụ
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

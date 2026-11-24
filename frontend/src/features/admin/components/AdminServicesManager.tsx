@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Eye, Plus, Package, RefreshCw, HeartHandshake, Tag, Clock, CheckCircle2, XCircle, Edit3, Trash2, Coins, ListChecks, Shield } from 'lucide-react';
-import { CreateServiceModal, EditServiceModal, DeleteServiceConfirmModal, ServiceDetailModal, ServicePricingRulesModal, ServiceChecklistTemplatesModal, CancellationPoliciesModal, useServices, Service } from '@/features/services';
+import { AdminServiceFeesManager, CreateServiceModal, EditServiceModal, DeleteServiceConfirmModal, ServiceDetailModal, ServicePricingRulesModal, ServiceChecklistTemplatesModal, CancellationPoliciesModal, useServices, Service } from '@/features/services';
 
 
 export function AdminServicesManager() {
@@ -184,6 +184,9 @@ export function AdminServicesManager() {
           </div>
         )}
       </div>
+
+      {/* Phụ phí & phí di chuyển (system_configs) */}
+      <AdminServiceFeesManager />
 
       {/* Component 1: Create Service Modal (POST /api/services) */}
       <CreateServiceModal
