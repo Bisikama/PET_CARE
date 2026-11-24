@@ -1,12 +1,22 @@
 'use client';
 
 import * as React from 'react';
-import { PetSelection, ServiceSelection, DetailService, ProviderSelection, ProviderDetail, TimeSelection, ConditionSelection, BookingInvoice, PaymentGateway, useBookingStore, CustomerBookingList } from '@/features/booking';
+import { PetSelection, ServiceSelection, DetailService, ProviderSelection, ProviderDetail, TimeSelection, BookingInvoice, PaymentGateway, useBookingStore, CustomerBookingList } from '@/features/booking';
 import { CalendarDays, PlusCircle } from 'lucide-react';
 
 export default function BookingsPage() {
-  const { currentStep } = useBookingStore();
+  const { currentStep, resetBooking, setSelectedServiceId } = useBookingStore();
   const [view, setView] = React.useState<'list' | 'new'>('list');
+
+  // Từ trang Dịch vụ: /bookings?serviceId=... => mở luồng đặt lịch mới với gói đã chọn sẵn
+  React.useEffect(() => {
+    const serviceId = new URLSearchParams(window.location.search).get('serviceId');
+    if (!serviceId) return;
+    resetBooking();
+    setSelectedServiceId(serviceId);
+    setView('new');
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [resetBooking, setSelectedServiceId]);
 
   return (
     <div className="py-6 max-w-6xl mx-auto px-4 md:px-8">
@@ -48,7 +58,6 @@ export default function BookingsPage() {
           {currentStep === 4 && <ProviderSelection />}
           {currentStep === 5 && <ProviderDetail />}
           {currentStep === 6 && <TimeSelection />}
-          {currentStep === 7 && <ConditionSelection />}
           {currentStep === 8 && <BookingInvoice />}
           {currentStep === 9 && <PaymentGateway />}
         </>

@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Clock, CheckCircle2, Scissors, Home, Stethos
 import { useBookingStore } from '../stores/booking.store';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useServices } from '@/features/services/hooks/useServices';
-import { Service } from '@/features/services/types';
+import { usePetPackagePrices } from '@/features/services/hooks/usePetPackagePrices';
 
 export function ServiceSelection() {
   const { setStep, selectedServiceId, setSelectedServiceId } = useBookingStore();
@@ -13,34 +13,31 @@ export function ServiceSelection() {
   const { selectedPetId } = useBookingStore();
   const { services, isLoading, error, refreshServices } = useServices();
 
-  // Auto-select the first service if none is selected
+  // Chỉ các gói đang mở bán
+  const activeServices = React.useMemo(
+    () => services.filter((s) => s.isActive && !s.deletedAt).sort((a, b) => a.basePrice - b.basePrice),
+    [services],
+  );
+
+  // Tự chọn gói đầu tiên nếu chưa chọn, hoặc gói đã chọn không còn mở bán
   React.useEffect(() => {
-    if (services.length > 0 && !selectedServiceId) {
-      setSelectedServiceId(services[0].id);
+    if (activeServices.length === 0) return;
+    if (!selectedServiceId || !activeServices.some((s) => s.id === selectedServiceId)) {
+      setSelectedServiceId(activeServices[0].id);
     }
-  }, [services, selectedServiceId, setSelectedServiceId]);
+  }, [activeServices, selectedServiceId, setSelectedServiceId]);
 
   const selectedPet = pets.find((p) => p.id === selectedPetId);
   const petName = selectedPet?.name || 'bé cưng';
+  const prices = usePetPackagePrices(activeServices, selectedPet);
+  const selectedPrice = selectedServiceId ? prices[selectedServiceId] : undefined;
+  const petLabel = selectedPet
+    ? `${petName} (${selectedPet.species === 'Cat' ? 'mèo' : 'chó'}${selectedPet.weight ? `, ${selectedPet.weight} kg` : ''})`
+    : petName;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
   };
-
-  // Determine if a service is considered the "primary/recommended" one
-  const getPrimaryIndex = (servicesList: Service[]) => {
-    // First grooming/bathing service is considered primary
-    const idx = servicesList.findIndex(
-      (s) =>
-        s.name.toLowerCase().includes('tắm') ||
-        s.name.toLowerCase().includes('cắt tỉa') ||
-        s.name.toLowerCase().includes('grooming') ||
-        s.name.toLowerCase().includes('vệ sinh')
-    );
-    return idx >= 0 ? idx : 0;
-  };
-
-  const primaryIndex = services.length > 0 ? getPrimaryIndex(services) : -1;
 
   // Loading state
   if (isLoading && services.length === 0) {
@@ -98,12 +95,12 @@ export function ServiceSelection() {
           Danh Mục Dịch Vụ Chăm Sóc Thú Cưng
         </h2>
         <p className="text-slate-400 text-sm font-medium">
-          Lựa chọn dịch vụ thích hợp cho {petName}. Chúng tôi khuyên dùng dịch vụ tắm rửa &amp; cắt tỉa tạo hình.
+          Chọn gói phù hợp cho {petLabel}. Giá hiển thị đã tính theo cân nặng của bé (chưa gồm phí di chuyển).
         </p>
       </div>
 
       {/* Service Cards */}
-      {services.length === 0 ? (
+      {activeServices.length === 0 ? (
         <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-[24px] py-12 text-center flex flex-col items-center justify-center">
           <Heart className="w-10 h-10 text-slate-400 mb-3" />
           <h3 className="text-base font-bold text-slate-800">Chưa có dịch vụ nào</h3>
@@ -113,11 +110,9 @@ export function ServiceSelection() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {services
-            .filter((s) => s.isActive)
-            .map((service, index) => {
+          {activeServices.map((service) => {
               const isSelected = selectedServiceId === service.id;
-              const isPrimary = index === primaryIndex;
+              const petPrice = prices[service.id];
 
               return (
                 <div
@@ -158,11 +153,6 @@ export function ServiceSelection() {
                           <h3 className="text-base md:text-lg font-bold text-[#0f172a] tracking-tight leading-tight">
                             {service.name}
                           </h3>
-                          {isPrimary && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider bg-[#0a1c2a] text-[#f0c05a] border border-[#1a3a52] whitespace-nowrap">
-                              Kịch bản chính
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -178,17 +168,33 @@ export function ServiceSelection() {
                     <div className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
                       <Clock className="w-3.5 h-3.5" />
                       <span>
-                        Thời lượng: <em className="not-italic text-slate-600">{service.durationMinutes} phút</em>
+                        Thời lượng: <em className="not-italic text-slate-600">{petPrice?.durationMinutes ?? service.durationMinutes} phút</em>
                       </span>
                     </div>
 
                     <span className="text-base md:text-lg font-extrabold text-[#0f172a] tracking-tight">
-                      {formatPrice(service.basePrice)}
+                      {!petPrice ? (
+                        <span className="text-sm font-semibold text-slate-400">Đang tính giá…</span>
+                      ) : petPrice.requiresQuote ? (
+                        <span className="text-sm font-bold text-amber-700">Báo giá riêng</span>
+                      ) : (
+                        formatPrice(petPrice.price)
+                      )}
                     </span>
                   </div>
                 </div>
               );
             })}
+        </div>
+      )}
+
+      {selectedPrice?.requiresQuote && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+          <p>
+            Gói này chưa có giá niêm yết cho {petLabel}. Vui lòng liên hệ PetCare (mục Hỗ trợ) để được báo giá riêng,
+            hoặc chọn gói khác.
+          </p>
         </div>
       )}
 
@@ -205,7 +211,7 @@ export function ServiceSelection() {
 
         <button
           type="button"
-          disabled={!selectedServiceId}
+          disabled={!selectedServiceId || !selectedPrice || selectedPrice.requiresQuote}
           onClick={() => setStep(3)}
           className="inline-flex items-center justify-center gap-1.5 px-6 py-3 bg-[#0a1c2a] hover:bg-[#122e44] text-white text-xs font-bold rounded-2xl shadow transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >

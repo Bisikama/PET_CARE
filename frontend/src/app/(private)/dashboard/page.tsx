@@ -188,8 +188,24 @@ function DashboardContent() {
                                   {item.pet_species === 'Dog' ? '🐶 Chó' : '🐱 Mèo'} ({item.min_weight} - {item.max_weight} kg)
                                 </span>
                               </div>
-                              <span className="text-xs text-amber-600 font-extrabold bg-amber-50/50 px-2 py-0.5 rounded-lg border border-amber-100">
-                                {new Intl.NumberFormat('vi-VN').format(item.price)} đ
+                              {/* Giá do PetCare niêm yết theo cân nặng (xem trong chi tiết gói) — hiện trạng thái duyệt năng lực */}
+                              <span
+                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border ${
+                                  item.status === 'APPROVED'
+                                    ? 'text-emerald-700 bg-emerald-50 border-emerald-100'
+                                    : item.status === 'REJECTED'
+                                      ? 'text-rose-700 bg-rose-50 border-rose-100'
+                                      : 'text-amber-700 bg-amber-50 border-amber-100'
+                                }`}
+                                title="Giá do PetCare niêm yết theo cân nặng — bấm để xem bảng giá"
+                              >
+                                {item.status === 'APPROVED'
+                                  ? 'Đã duyệt'
+                                  : item.status === 'REJECTED'
+                                    ? 'Bị từ chối'
+                                    : item.status === 'NEED_RESUBMIT'
+                                      ? 'Cần bổ sung'
+                                      : 'Chờ duyệt'}
                               </span>
                             </div>
                           );

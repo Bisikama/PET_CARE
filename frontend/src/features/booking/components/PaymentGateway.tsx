@@ -11,7 +11,7 @@ import { useWallet } from '@/features/wallets/hooks/useWallet';
 import { useRouter } from 'next/navigation';
 
 export function PaymentGateway() {
-  const { setStep, createdBookingId, resetBooking, appliedDiscount, appliedPromoCode } = useBookingStore();
+  const { setStep, createdBookingId, resetBooking } = useBookingStore();
   const {
     createCheckoutUrl,
     createMomoCheckoutUrl,
@@ -22,7 +22,8 @@ export function PaymentGateway() {
   } = usePayment();
   const { wallet } = useWallet();
   const router = useRouter();
-  const [totalAmount, setTotalAmount] = React.useState<number>(0);
+  // Số tiền thật của đơn (đã gồm phí di chuyển, đã trừ giảm giá lúc tạo đơn). null = chưa tải được
+  const [totalAmount, setTotalAmount] = React.useState<number | null>(null);
   const [isFetchingBooking, setIsFetchingBooking] = React.useState(true);
 
   // Chuyển khoản VietQR: giữ lại mã đã tạo để mở lại không sinh mã mới
@@ -39,7 +40,7 @@ export function PaymentGateway() {
       try {
         const bookingDetails = await bookingService.getBooking(createdBookingId);
         const fetchedBooking = bookingDetails?.data?.booking || bookingDetails?.data || bookingDetails;
-        if (isMounted && fetchedBooking?.total_price) {
+        if (isMounted && fetchedBooking?.total_price !== undefined && fetchedBooking?.total_price !== null) {
           setTotalAmount(Number(fetchedBooking.total_price));
         }
       } catch (err) {
@@ -54,16 +55,18 @@ export function PaymentGateway() {
     };
   }, [createdBookingId]);
 
-  const finalAmount = Math.max(0, (totalAmount || 250000) - appliedDiscount);
+  // Mã khuyến mãi đã áp khi tạo đơn => không gửi lại / không trừ lần nữa ở bước này
+  const finalAmount = totalAmount ?? 0;
+  const amountReady = totalAmount !== null;
 
   const handleVNPayCheckout = () => {
     if (!createdBookingId) return;
-    createCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
+    createCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount });
   };
 
   const handleMoMoCheckout = () => {
     if (!createdBookingId) return;
-    createMomoCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
+    createMomoCheckoutUrl({ bookingId: createdBookingId, amount: finalAmount });
   };
 
   const handleBankTransferCheckout = async () => {
@@ -72,10 +75,7 @@ export function PaymentGateway() {
       setShowQrPanel(true);
       return;
     }
-    const checkout = await createBankTransferCheckout({
-      bookingId: createdBookingId,
-      promotionCode: appliedPromoCode || undefined,
-    });
+    const checkout = await createBankTransferCheckout({ bookingId: createdBookingId });
     if (checkout) {
       setQrCheckout(checkout);
       setShowQrPanel(true);
@@ -96,7 +96,7 @@ export function PaymentGateway() {
 
   const handleWalletCheckout = async () => {
     if (!createdBookingId) return;
-    const success = await checkoutWithWallet({ bookingId: createdBookingId, amount: finalAmount, promoCode: appliedPromoCode || undefined });
+    const success = await checkoutWithWallet({ bookingId: createdBookingId, amount: finalAmount });
     if (success) {
       resetBooking();
       router.push('/bookings');
@@ -144,14 +144,14 @@ export function PaymentGateway() {
         {/* Nạp ví Escrow row */}
         <div className="flex justify-between items-center border-b-2 border-slate-100 pb-5 mb-6">
           <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Nạp ví Escrow:</span>
-          <span className="text-2xl font-black text-slate-900 tracking-tight">{formatPrice(finalAmount)}</span>
+          <span className="text-2xl font-black text-slate-900 tracking-tight">{amountReady ? formatPrice(finalAmount) : 'Không tải được số tiền'}</span>
         </div>
 
         {/* Buttons */}
         <div className="space-y-4">
           <button
             onClick={handleBankTransferCheckout}
-            disabled={loading || !createdBookingId}
+            disabled={loading || !createdBookingId || !amountReady}
             className="w-full flex justify-between items-center bg-emerald-600 text-white p-5 rounded-2xl hover:bg-emerald-700 disabled:opacity-70 transition-all active:scale-[0.98] group"
           >
             <div className="flex items-center gap-3">
@@ -172,7 +172,7 @@ export function PaymentGateway() {
 
           <button
             onClick={handleVNPayCheckout}
-            disabled={loading || !createdBookingId}
+            disabled={loading || !createdBookingId || !amountReady}
             className="w-full flex justify-between items-center bg-[#0a1128] text-white p-5 rounded-2xl hover:bg-slate-800 disabled:opacity-70 transition-all active:scale-[0.98] group"
           >
             <div className="flex items-center gap-3">
@@ -188,7 +188,7 @@ export function PaymentGateway() {
 
           <button 
             onClick={handleMoMoCheckout}
-            disabled={loading || !createdBookingId}
+            disabled={loading || !createdBookingId || !amountReady}
             className="w-full flex justify-between items-center bg-[#a50064] text-white p-5 rounded-2xl hover:bg-[#80004d] disabled:opacity-70 transition-all active:scale-[0.98] group"
           >
             <div className="flex items-center gap-3">
@@ -204,7 +204,7 @@ export function PaymentGateway() {
 
           <button 
             onClick={handleWalletCheckout}
-            disabled={loading || !createdBookingId || !wallet || Number(wallet.balance) < finalAmount}
+            disabled={loading || !createdBookingId || !amountReady || !wallet || Number(wallet.balance) < finalAmount}
             className="w-full flex justify-between items-center bg-emerald-50 text-emerald-700 border border-emerald-200 p-5 rounded-2xl hover:bg-emerald-100 disabled:opacity-50 disabled:bg-slate-50 disabled:border-slate-200 disabled:text-slate-400 transition-all active:scale-[0.98] group"
           >
             <div className="flex items-center gap-3">

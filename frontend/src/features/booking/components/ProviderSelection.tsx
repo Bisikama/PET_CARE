@@ -47,7 +47,7 @@ export function ProviderSelection() {
 
   const handleContinue = () => {
     if (selectedProviderId) {
-      setStep(5); // Go to ConditionSelection
+      setStep(5); // Xem chi tiết đối tác
     }
   };
 

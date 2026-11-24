@@ -7,7 +7,48 @@ import { bookingService } from '../services/booking.service';
 import { usePetStore } from '@/features/pet/stores/pet.store';
 import { useServicesStore } from '@/features/services/stores/services.store';
 import { useDiscoverProviders } from '../hooks/useDiscoverProviders';
-import { useApplyPromotion } from '@/features/promotions/hooks/useApplyPromotion';
+
+interface PriceQuote {
+  servicePrice: number;
+  travelFee: number;
+  distanceKm: number | null;
+  discountAmount: number;
+  promoCode: string | null;
+  totalPrice: number;
+}
+
+const apiMessage = (err: any, fallback: string): string => {
+  const msg = err?.response?.data?.message;
+  return (Array.isArray(msg) ? msg.join(', ') : msg) || err?.message || fallback;
+};
+
+/** Kết quả POST /bookings/calculate-price */
+function toPriceQuote(res: any): PriceQuote {
+  return {
+    servicePrice: Number(res?.item?.servicePrice ?? res?.subtotal ?? 0),
+    travelFee: Number(res?.distance?.travelFee ?? 0),
+    distanceKm: res?.distance?.estimatedRoadDistanceKm != null ? Number(res.distance.estimatedRoadDistanceKm) : null,
+    discountAmount: Number(res?.discount?.discountAmount ?? 0),
+    promoCode: res?.discount?.promoCode ?? null,
+    totalPrice: Number(res?.totalPrice ?? 0),
+  };
+}
+
+/** Số tiền của đơn đã tạo (price_snapshot do backend chụp lúc tạo đơn). */
+function priceFromBooking(booking: any): PriceQuote {
+  const snap = booking?.price_snapshot || booking?.priceSnapshot || {};
+  const total = Number(booking?.total_price ?? booking?.totalPrice ?? snap.finalPrice ?? 0);
+  const discount = Number(snap.discountAmount ?? booking?.discount_amount ?? 0);
+  const travel = Number(snap.travelFee ?? 0);
+  return {
+    servicePrice: Number(snap.servicePrice ?? total - travel + discount),
+    travelFee: travel,
+    distanceKm: snap.distanceKm != null ? Number(snap.distanceKm) : null,
+    discountAmount: discount,
+    promoCode: snap.promoCode ?? null,
+    totalPrice: total,
+  };
+}
 
 export function BookingInvoice() {
   const { 
@@ -39,10 +80,59 @@ export function BookingInvoice() {
 
   // Promo code state
   const [promoInput, setPromoInput] = React.useState(appliedPromoCode || '');
-  const [appliedDiscount, setAppliedDiscount] = React.useState(0);
   const [promoError, setPromoError] = React.useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = React.useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = React.useState(false);
-  const { applyPromotion, isLoading: promoLoading } = useApplyPromotion();
+
+  // Báo giá của server (trước khi tạo đơn): giá gói theo cân nặng + phí di chuyển - giảm giá
+  const [quote, setQuote] = React.useState<PriceQuote | null>(null);
+  const [quoteError, setQuoteError] = React.useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = React.useState(false);
+
+  const requestQuote = React.useCallback(
+    async (promoCode?: string) => {
+      if (!selectedPetId || !selectedServiceId || !selectedAddressId || !selectedProviderId) return null;
+      const res = await bookingService.calculatePrice({
+        petId: selectedPetId,
+        serviceId: selectedServiceId,
+        addressId: selectedAddressId,
+        providerId: selectedProviderId,
+        ...(promoCode ? { promoCode } : {}),
+      });
+      return toPriceQuote(res);
+    },
+    [selectedPetId, selectedServiceId, selectedAddressId, selectedProviderId],
+  );
+
+  React.useEffect(() => {
+    if (createdBookingId) return;
+    let cancelled = false;
+    setQuoteLoading(true);
+    setQuoteError(null);
+    requestQuote(appliedPromoCode || undefined)
+      .catch(async (err) => {
+        // Mã đã lưu không còn hợp lệ => báo giá lại không kèm mã
+        if (appliedPromoCode) {
+          setStoreAppliedDiscount(0, null);
+          setPromoError(apiMessage(err, 'Mã khuyến mãi không còn hợp lệ'));
+          return requestQuote();
+        }
+        throw err;
+      })
+      .then((q) => {
+        if (!cancelled) setQuote(q);
+      })
+      .catch((err) => {
+        if (!cancelled) setQuoteError(apiMessage(err, 'Không tính được giá cho đơn này'));
+      })
+      .finally(() => {
+        if (!cancelled) setQuoteLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createdBookingId, requestQuote]);
 
   // Fallback info if API doesn't return full details
   const pet = pets.find(p => p.id === selectedPetId);
@@ -170,30 +260,42 @@ export function BookingInvoice() {
     ? `${formatDateTime(booking.estimated_start_at)} - ${booking.estimated_end_at ? formatDateTime(booking.estimated_end_at).split(' ')[1] : ''}`
     : booking?.timeString || 'Đang cập nhật...'; 
     
-  const totalAmount = booking?.total_price ? Number(booking.total_price) : (service?.basePrice || 250000);
+  // Đơn đã tạo => số tiền thật của đơn (total_price đã gồm phí di chuyển và đã trừ giảm giá)
+  const pricing: PriceQuote | null = booking ? priceFromBooking(booking) : quote;
+  const finalTotal = pricing?.totalPrice ?? 0;
+  const appliedDiscount = pricing?.discountAmount ?? 0;
+  const promoLocked = Boolean(createdBookingId);
 
   const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!promoInput.trim()) return;
+    const code = promoInput.trim();
+    if (!code || promoLocked) return;
     setPromoError(null);
+    setPromoLoading(true);
     try {
-      const res = await applyPromotion({ promoCode: promoInput.trim(), orderValue: totalAmount });
-      if (res && (res.discountAmount || (res as any).discount_amount || (res as any).discountAmount === 0)) {
-        const discount = res.discountAmount ?? (res as any).discount_amount ?? 0;
-        setAppliedDiscount(discount);
-        setStoreAppliedDiscount(discount, promoInput.trim());
-      } else {
-        setAppliedDiscount(20000);
-        setStoreAppliedDiscount(20000, promoInput.trim());
+      const q = await requestQuote(code);
+      if (q) {
+        setQuote(q);
+        setStoreAppliedDiscount(q.discountAmount, code);
       }
-    } catch (err: any) {
-      setPromoError(err?.response?.data?.message || err?.message || 'Mã khuyến mãi không hợp lệ');
-      setAppliedDiscount(0);
-      setStoreAppliedDiscount(0, null);
+    } catch (err) {
+      setPromoError(apiMessage(err, 'Mã khuyến mãi không hợp lệ'));
+    } finally {
+      setPromoLoading(false);
     }
   };
 
-  const finalTotal = Math.max(0, totalAmount - appliedDiscount);
+  const handleRemovePromo = async () => {
+    setPromoInput('');
+    setPromoError(null);
+    setStoreAppliedDiscount(0, null);
+    try {
+      const q = await requestQuote();
+      if (q) setQuote(q);
+    } catch (err) {
+      setQuoteError(apiMessage(err, 'Không tính được giá cho đơn này'));
+    }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
@@ -278,6 +380,13 @@ export function BookingInvoice() {
           )}
         </div>
 
+        {promoLocked ? (
+          <p className="text-xs font-medium text-slate-500">
+            {appliedPromoCode || appliedDiscount > 0
+              ? 'Mã khuyến mãi đã được áp dụng khi tạo đơn.'
+              : 'Đơn đã được tạo — không thể thêm mã khuyến mãi.'}
+          </p>
+        ) : (
         <form onSubmit={handleApplyPromo} className="flex gap-2">
           <input
             type="text"
@@ -293,7 +402,17 @@ export function BookingInvoice() {
           >
             {promoLoading ? 'Đang kiểm tra...' : 'Áp dụng'}
           </button>
+          {appliedPromoCode && (
+            <button
+              type="button"
+              onClick={handleRemovePromo}
+              className="px-3 py-2.5 text-xs font-bold text-slate-500 hover:text-rose-600 shrink-0"
+            >
+              Bỏ mã
+            </button>
+          )}
         </form>
+        )}
 
         {promoError && (
           <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
@@ -305,26 +424,43 @@ export function BookingInvoice() {
 
       {/* Total Section */}
       <div className="space-y-2 px-2">
-        {appliedDiscount > 0 && (
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
-            <span>Tạm tính giá gốc:</span>
-            <span className="line-through">{formatPrice(totalAmount)}</span>
+        {quoteLoading && !pricing ? (
+          <div className="flex items-center gap-2 py-3 text-sm font-semibold text-slate-400">
+            <div className="w-4 h-4 border-2 border-slate-200 border-t-teal-500 rounded-full animate-spin" />
+            Đang tính giá theo cân nặng & quãng đường...
           </div>
-        )}
-        {appliedDiscount > 0 && (
-          <div className="flex items-center justify-between text-xs font-bold text-emerald-600">
-            <span>Giảm giá khuyến mãi:</span>
-            <span>-{formatPrice(appliedDiscount)}</span>
+        ) : quoteError && !pricing ? (
+          <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-sm font-semibold text-rose-700 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            {quoteError}
           </div>
-        )}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-          <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">
-            Tổng tiền cần thanh toán ký quỹ:
-          </h3>
-          <span className="text-2xl font-black text-slate-900 tracking-tight">
-            {formatPrice(finalTotal)}
-          </span>
-        </div>
+        ) : pricing ? (
+          <>
+            <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+              <span>Giá gói {serviceName} (theo cân nặng)</span>
+              <span>{formatPrice(pricing.servicePrice)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+              <span>
+                Phí di chuyển
+                {pricing.distanceKm !== null ? ` (~${pricing.distanceKm.toLocaleString('vi-VN')} km)` : ''}
+              </span>
+              <span>{pricing.travelFee > 0 ? formatPrice(pricing.travelFee) : 'Miễn phí'}</span>
+            </div>
+            {appliedDiscount > 0 && (
+              <div className="flex items-center justify-between text-sm font-bold text-emerald-600">
+                <span>Giảm giá khuyến mãi{pricing.promoCode ? ` (${pricing.promoCode})` : ''}</span>
+                <span>-{formatPrice(appliedDiscount)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <h3 className="text-lg font-bold text-slate-800 uppercase tracking-wider">
+                Tổng tiền cần thanh toán ký quỹ:
+              </h3>
+              <span className="text-2xl font-black text-slate-900 tracking-tight">{formatPrice(finalTotal)}</span>
+            </div>
+          </>
+        ) : null}
       </div>
 
       {/* Actions */}
@@ -338,7 +474,7 @@ export function BookingInvoice() {
         </button>
         <button
           onClick={handleProceedPayment}
-          disabled={isCreatingBooking}
+          disabled={isCreatingBooking || (!createdBookingId && !quote)}
           className="flex items-center gap-2 px-8 py-3.5 bg-[#00a86b] hover:bg-[#00915c] disabled:opacity-50 text-white text-sm font-bold rounded-2xl transition-all shadow-lg shadow-teal-500/20 active:scale-95 cursor-pointer"
         >
           {isCreatingBooking ? (
