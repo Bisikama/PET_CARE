@@ -90,7 +90,7 @@ function CopyRow({
         }`}
         title={`Sao chép ${label.toLowerCase()}`}
       >
-        <span className="font-bold text-sm truncate">{display ?? value}</span>
+        <span className={`font-bold text-sm ${highlight ? 'text-right break-words' : 'truncate'}`}>{display ?? value}</span>
         {copied ? (
           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
         ) : (
@@ -187,7 +187,7 @@ export function VietQrTransferPanel({ bookingId, checkout, onPaid, onBack }: Vie
               value={checkout.transferContent}
               highlight
               display={
-                <span className="font-mono tracking-wider bg-white border border-slate-200 rounded-md px-2 py-0.5">
+                <span className="inline-block font-mono tracking-wide bg-white border border-slate-200 rounded-md px-2 py-0.5">
                   {checkout.transferContent}
                 </span>
               }

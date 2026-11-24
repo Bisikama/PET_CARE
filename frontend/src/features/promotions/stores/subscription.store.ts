@@ -1,62 +1,106 @@
 import { create } from 'zustand';
-import { subscriptionService } from '../services/subscription.service';
-import { SubscriptionCheckoutDto, UserSubscription } from '../types/subscription.types';
+import { getApiErrorMessage, subscriptionService } from '../services/subscription.service';
+import type {
+  SubscriptionBankTransferCheckout,
+  SubscriptionOrder,
+  SubscriptionPlan,
+  UserSubscription,
+} from '../types/subscription.types';
 
 interface SubscriptionState {
+  plans: SubscriptionPlan[];
   mySubscription: UserSubscription | null;
+  myOrders: SubscriptionOrder[];
   isLoading: boolean;
   isSubmitting: boolean;
   isOpen: boolean;
+  /** Gói được chọn sẵn khi mở modal */
+  selectedPlanCode: string | null;
   error: string | null;
 
-  openModal: () => void;
+  openModal: (planCode?: string) => void;
   closeModal: () => void;
-  fetchMySubscription: (force?: boolean) => Promise<void>;
-  checkoutVnPay: (dto: SubscriptionCheckoutDto) => Promise<string | null>;
-  checkoutWallet: (dto: SubscriptionCheckoutDto) => Promise<boolean>;
+  clearError: () => void;
+  fetchAll: () => Promise<void>;
+  fetchMySubscription: () => Promise<void>;
+  checkoutBankTransfer: (planCode: string) => Promise<SubscriptionBankTransferCheckout | null>;
+  checkoutVnPay: (planCode: string) => Promise<string | null>;
+  checkoutWallet: (planCode: string) => Promise<boolean>;
 }
 
 export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
+  plans: [],
   mySubscription: null,
+  myOrders: [],
   isLoading: false,
   isSubmitting: false,
   isOpen: false,
+  selectedPlanCode: null,
   error: null,
 
-  openModal: () => set({ isOpen: true, error: null }),
+  openModal: (planCode) => set({ isOpen: true, error: null, selectedPlanCode: planCode ?? null }),
   closeModal: () => set({ isOpen: false, error: null }),
+  clearError: () => set({ error: null }),
 
-  fetchMySubscription: async (force = false) => {
-    if (!force && get().mySubscription) return;
+  fetchAll: async () => {
     set({ isLoading: true, error: null });
     try {
-      const sub = await subscriptionService.getMySubscription();
-      set({ mySubscription: sub, isLoading: false });
-    } catch (err: any) {
-      set({ error: err?.message || 'Không thể tải gói dịch vụ hiện tại', isLoading: false });
+      const [plans, mySubscription, myOrders] = await Promise.all([
+        subscriptionService.getPlans(),
+        subscriptionService.getMySubscription().catch(() => null),
+        subscriptionService.getMyOrders().catch(() => []),
+      ]);
+      set({ plans, mySubscription, myOrders, isLoading: false });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err, 'Không thể tải danh sách gói'), isLoading: false });
     }
   },
 
-  checkoutVnPay: async (dto: SubscriptionCheckoutDto) => {
+  fetchMySubscription: async () => {
+    try {
+      const [mySubscription, myOrders] = await Promise.all([
+        subscriptionService.getMySubscription(),
+        subscriptionService.getMyOrders(),
+      ]);
+      set({ mySubscription, myOrders });
+    } catch {
+      // giữ dữ liệu cũ
+    }
+  },
+
+  checkoutBankTransfer: async (planCode) => {
     set({ isSubmitting: true, error: null });
     try {
-      const res = await subscriptionService.checkoutVnPay(dto);
+      const checkout = await subscriptionService.checkoutBankTransfer({ planCode });
       set({ isSubmitting: false });
-      return res.paymentUrl;
-    } catch (err: any) {
-      set({ error: err?.message || 'Không thể tạo liên kết VNPay', isSubmitting: false });
+      return checkout;
+    } catch (err) {
+      set({ error: getApiErrorMessage(err, 'Không tạo được thông tin chuyển khoản'), isSubmitting: false });
       return null;
     }
   },
 
-  checkoutWallet: async (dto: SubscriptionCheckoutDto) => {
+  checkoutVnPay: async (planCode) => {
     set({ isSubmitting: true, error: null });
     try {
-      const newSub = await subscriptionService.checkoutWallet(dto);
-      set({ mySubscription: newSub, isSubmitting: false, isOpen: false });
+      const res = await subscriptionService.checkoutVnPay({ planCode });
+      set({ isSubmitting: false });
+      return res.paymentUrl;
+    } catch (err) {
+      set({ error: getApiErrorMessage(err, 'Không thể tạo liên kết VNPay'), isSubmitting: false });
+      return null;
+    }
+  },
+
+  checkoutWallet: async (planCode) => {
+    set({ isSubmitting: true, error: null });
+    try {
+      await subscriptionService.checkoutWallet({ planCode });
+      set({ isSubmitting: false });
+      await get().fetchMySubscription();
       return true;
-    } catch (err: any) {
-      set({ error: err?.message || 'Thanh toán bằng ví thất bại', isSubmitting: false });
+    } catch (err) {
+      set({ error: getApiErrorMessage(err, 'Thanh toán bằng ví thất bại'), isSubmitting: false });
       return false;
     }
   },

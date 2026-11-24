@@ -20,7 +20,8 @@ import {
   ShieldAlert,
   MessageSquare,
   Wallet,
-  Landmark
+  Landmark,
+  Crown
 } from 'lucide-react';
 import { removeAuthToken } from '@/lib/auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -60,6 +61,7 @@ export const AppSidebar = () => {
         { name: 'Giới Hạn Tài Khoản', href: `${ROUTES.DASHBOARD}?tab=limits`, icon: BarChart3 },
         { name: 'Nhật Ký Hệ Thống', href: `${ROUTES.DASHBOARD}?tab=logs`, icon: Database },
         { name: 'Mã Khuyến Mãi', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
+        { name: 'Gói Hội Viên', href: `${ROUTES.DASHBOARD}?tab=subscriptions`, icon: Crown },
       ]
     : user?.role === 'PROVIDER'
     ? [
@@ -74,6 +76,7 @@ export const AppSidebar = () => {
         { name: 'Dịch vụ thú cưng', href: ROUTES.SERVICES, icon: HeartHandshake },
         { name: 'Đặt người chăm sóc', href: ROUTES.BOOKINGS, icon: UserCheck },
         { name: 'Kho Ưu Đãi & Voucher', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
+        { name: 'Gói Hội Viên', href: `${ROUTES.DASHBOARD}?tab=membership`, icon: Crown },
         { name: 'Ví Điện Tử', href: `${ROUTES.DASHBOARD}?tab=wallet`, icon: ShieldCheck },
         { name: 'Hỗ trợ & Trợ giúp', href: ROUTES.SUPPORT, icon: Headphones },
       ];

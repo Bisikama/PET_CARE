@@ -12,7 +12,7 @@ const ACTIONS: { key: ActionKey; title: string; description: string; icon: React
   {
     key: 'ASSIGN',
     title: 'Gán vào đơn',
-    description: 'Khách ghi sai/thiếu nội dung. Đủ tiền và đơn còn hiệu lực → xác nhận đơn; nếu không → hoàn vào ví khách.',
+    description: 'Khách ghi sai/thiếu nội dung. Nhập mã PC… của đơn đặt lịch hoặc đơn mua gói hội viên. Đủ tiền và đơn còn hiệu lực → xác nhận đơn / kích hoạt gói; nếu không → hoàn vào ví khách.',
     icon: Link2,
   },
   {

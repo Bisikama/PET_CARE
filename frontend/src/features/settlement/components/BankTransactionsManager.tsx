@@ -205,6 +205,19 @@ export function BankTransactionsManager() {
                           BK {txn.payments.booking_id.slice(0, 8)}…
                         </div>
                       )}
+                      {txn.subscription_order && (
+                        <div
+                          className="text-[11px] text-violet-700 font-bold mt-1"
+                          title={txn.subscription_order.user?.email || txn.subscription_order.payment_code}
+                        >
+                          Gói {txn.subscription_order.plan_code}
+                          {txn.subscription_order.user && (
+                            <span className="block font-medium text-slate-400 truncate max-w-[160px]">
+                              {txn.subscription_order.user.email}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4 max-w-sm">
                       <div className="text-xs text-slate-600 leading-relaxed">{txn.note || '—'}</div>

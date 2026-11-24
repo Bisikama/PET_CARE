@@ -10,7 +10,7 @@ import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCerti
 import { providerService } from '@/features/provider/services/provider.service';
 import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager } from '@/features/admin';
 import { AdminDisputeList } from '@/features/admin-care/components';
-import { PromotionsView, AdminPromotionsManager } from '@/features/promotions';
+import { PromotionsView, AdminPromotionsManager, AdminSubscriptionsManager, MembershipView } from '@/features/promotions';
 import { ServiceDetailModal } from '@/features/services';
 import { ScheduleManager } from '@/features/schedule';
 import { EscrowManagement, BankTransactionsManager } from '@/features/settlement';
@@ -90,6 +90,8 @@ function DashboardContent() {
           <AdminAuditLogsList key={adminRefreshKey} />
         ) : adminTab === 'promotions' ? (
           <AdminPromotionsManager key={adminRefreshKey} />
+        ) : adminTab === 'subscriptions' ? (
+          <AdminSubscriptionsManager key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
         ) : adminTab === 'bank-transactions' ? (
@@ -304,6 +306,14 @@ function DashboardContent() {
     return (
       <div className="animate-fade-in">
         <PromotionsView />
+      </div>
+    );
+  }
+
+  if (searchParams.get('tab') === 'membership') {
+    return (
+      <div className="animate-fade-in">
+        <MembershipView />
       </div>
     );
   }

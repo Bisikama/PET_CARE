@@ -1,34 +1,14 @@
 import { useEffect } from 'react';
 import { useSubscriptionStore } from '../stores/subscription.store';
 
+/** Dữ liệu gói hội viên của khách: gói đang bán, gói đang dùng, lịch sử mua. */
 export const useSubscription = () => {
-  const {
-    mySubscription,
-    isLoading,
-    isSubmitting,
-    isOpen,
-    error,
-    openModal,
-    closeModal,
-    fetchMySubscription,
-    checkoutVnPay,
-    checkoutWallet,
-  } = useSubscriptionStore();
+  const store = useSubscriptionStore();
+  const { fetchAll } = store;
 
   useEffect(() => {
-    fetchMySubscription();
-  }, [fetchMySubscription]);
+    fetchAll();
+  }, [fetchAll]);
 
-  return {
-    mySubscription,
-    isLoading,
-    isSubmitting,
-    isOpen,
-    error,
-    openModal,
-    closeModal,
-    checkoutVnPay,
-    checkoutWallet,
-    refetch: () => fetchMySubscription(true),
-  };
+  return { ...store, refetch: store.fetchMySubscription };
 };

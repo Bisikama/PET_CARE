@@ -13,6 +13,7 @@ function PaymentResultContent() {
   const status = searchParams.get('status');
   const orderId = searchParams.get('orderId');
   const method = searchParams.get('method');
+  const isSubscription = searchParams.get('type') === 'subscription';
 
   const isSuccess = status === 'success';
 
@@ -37,7 +38,9 @@ function PaymentResultContent() {
           </h1>
           <p className={`text-sm font-medium ${isSuccess ? 'text-emerald-600/80' : 'text-rose-600/80'}`}>
             {isSuccess 
-              ? 'Giao dịch của bạn đã được xử lý thành công. Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.' 
+              ? isSubscription
+                ? 'Gói hội viên của bạn đã được kích hoạt. Cảm ơn bạn đã đồng hành cùng PetCare.'
+                : 'Giao dịch của bạn đã được xử lý thành công. Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi.' 
               : 'Rất tiếc, giao dịch của bạn không thể hoàn tất. Vui lòng kiểm tra lại phương thức thanh toán và thử lại.'}
           </p>
         </div>
@@ -64,10 +67,10 @@ function PaymentResultContent() {
 
           <div className="pt-4 space-y-3">
             <Link 
-              href={ROUTES.DASHBOARD}
+              href={isSubscription ? `${ROUTES.DASHBOARD}?tab=membership` : ROUTES.DASHBOARD}
               className="w-full flex items-center justify-center gap-2 py-4 bg-[#0a1128] hover:bg-slate-800 text-white rounded-2xl font-bold transition-all active:scale-[0.98]"
             >
-              Về trang quản lý
+              {isSubscription ? 'Xem gói hội viên' : 'Về trang quản lý'}
               <ArrowRight className="w-4 h-4" />
             </Link>
             
