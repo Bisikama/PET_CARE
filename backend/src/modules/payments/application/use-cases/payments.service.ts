@@ -168,16 +168,15 @@ export class PaymentsService {
     const orderInfo = String(vnp_Params['vnp_OrderInfo'] || '');
     const paidAmount = Math.round(Number(vnp_Params['vnp_Amount']) / 100);
 
-    // 1. Giao dịch mua gói Subscription
+    // 1. Giao dịch mua gói hội viên (orderInfo: "SUB_<mã> Thanh toan goi <MÃ GÓI>", TxnRef = mã)
     if (orderInfo.startsWith('SUB_')) {
-      if (success) {
-        // orderInfo: SUB_userId_tierName
-        const parts = orderInfo.split('_');
-        if (parts.length >= 3) {
-          await this.subscriptionsService.handleSubscriptionSuccess(parts[1], parts.slice(2).join('_'));
-        }
-      }
-      return this.ipnResponse('00');
+      const code = await this.subscriptionsService.handleVnpayIpn({
+        paymentCode: orderId,
+        success,
+        paidAmount,
+        transactionNo: idempotencyKey,
+      });
+      return this.ipnResponse(code);
     }
 
     // 2. Giao dịch thanh toán Booking

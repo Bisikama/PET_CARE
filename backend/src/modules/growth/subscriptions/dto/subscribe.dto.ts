@@ -1,15 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
-export enum SubscriptionTier {
-  SILVER = 'SILVER',
-  GOLD = 'GOLD',
-  PLATINUM = 'PLATINUM',
-}
+export const PLAN_CODE_PATTERN = /^[A-Z0-9]{2,20}$/;
 
 export class SubscribeDto {
-  @ApiProperty({ enum: SubscriptionTier, example: SubscriptionTier.GOLD })
-  @IsEnum(SubscriptionTier)
+  @ApiProperty({ example: 'BASIC', description: 'Mã gói hội viên (xem GET /subscriptions/plans)' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsString()
   @IsNotEmpty()
-  tierName: SubscriptionTier;
+  @Matches(PLAN_CODE_PATTERN, { message: 'Mã gói không hợp lệ' })
+  planCode: string;
 }

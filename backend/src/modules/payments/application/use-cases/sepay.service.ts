@@ -12,6 +12,18 @@ import { Prisma, bank_transaction_status } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../../../database/prisma.service';
 import { PaymentsService } from './payments.service';
+import {
+  SubscriptionFollowUp,
+  SubscriptionsService,
+} from '../../../growth/subscriptions/subscriptions.service';
+import {
+  CODE_ALPHABET,
+  CODE_RANDOM_LENGTH,
+  buildBankTransferInstructions,
+  buildTransferContent,
+  generateUniquePaymentCode,
+  getBankTransferConfig,
+} from '../bank-transfer.helpers';
 import { DEFAULT_PAYMENT_HOLD_MINUTES } from '../../../provider-schedules/application/cron/release-held-slots.cron';
 
 /** Payload SePay POST về webhook (https://docs.sepay.vn/tich-hop-webhooks.html). */
@@ -56,6 +68,17 @@ type PaymentWithBooking = Prisma.paymentsGetPayload<{ include: { bookings: true 
 type FollowUp = {
   confirmed?: { bookingId: string; customerId: string; amount: number };
   refunded?: { bookingId: string; customerId: string; amount: number; reason: string };
+  subscription?: SubscriptionFollowUp;
+};
+
+type SubscriptionOrder = Prisma.subscription_ordersGetPayload<object>;
+
+/** Kết quả áp tiền vào một đơn (booking hoặc gói hội viên). */
+type ApplyDecision = {
+  status: bank_transaction_status;
+  note?: string;
+  paymentId: string | null;
+  subscriptionOrderId: string | null;
 };
 
 export type AdminResolveAction =
@@ -63,9 +86,6 @@ export type AdminResolveAction =
   | { action: 'CREDIT_WALLET'; customerEmail: string; reason: string }
   | { action: 'MARK_RESOLVED'; reason: string };
 
-// Bỏ các ký tự dễ nhầm (0/O, 1/I/L) để khách gõ tay nội dung CK không bị sai
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const CODE_RANDOM_LENGTH = 10;
 
 @Injectable()
 export class SepayService {
@@ -75,6 +95,7 @@ export class SepayService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly paymentsService: PaymentsService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -86,7 +107,7 @@ export class SepayService {
     customerId: string,
     promotionCode?: string,
   ): Promise<BankTransferCheckout> {
-    const bank = this.getBankConfig();
+    const bank = getBankTransferConfig(this.configService);
     const booking = await this.paymentsService.assertBookingPayable(bookingId, customerId);
     const amount = Math.round(
       await this.paymentsService.calculateFinalAmount(Number(booking.total_price), promotionCode),
@@ -102,7 +123,14 @@ export class SepayService {
     const expiresAt = await this.extendHoldForBankTransfer(booking);
 
     // Mỗi lần thanh toán một mã mới: mã cũ (nếu khách vẫn chuyển) sẽ không khớp đơn nữa
-    const paymentCode = await this.generateUniquePaymentCode(bank.codePrefix);
+    const paymentCode = await generateUniquePaymentCode(bank.codePrefix, (code) =>
+      this.isPaymentCodeTaken(code),
+    );
+    // VD: "PCABCD234567 Thanh toan goi Basic Bath" — khách/admin đọc sao kê biết trả cho gói nào
+    const transferContent = buildTransferContent(
+      paymentCode,
+      `Thanh toan ${await this.describeBooking(bookingId)}`,
+    );
 
     await this.prisma.payments.upsert({
       where: { booking_id: bookingId },
@@ -125,24 +153,33 @@ export class SepayService {
       },
     });
 
-    const qrParams = new URLSearchParams({
-      acc: bank.accountNumber,
-      bank: bank.bankCode,
-      amount: String(amount),
-      des: paymentCode,
-    });
-
     return {
-      paymentCode,
-      amount,
-      bankName: bank.bankName,
-      bankCode: bank.bankCode,
-      accountNumber: bank.accountNumber,
-      accountName: bank.accountName,
-      transferContent: paymentCode,
-      qrImageUrl: `${bank.qrBaseUrl}?${qrParams.toString()}`,
+      ...buildBankTransferInstructions(bank, paymentCode, amount, transferContent),
       expiresAt: expiresAt.toISOString(),
     };
+  }
+
+  /** Tên dịch vụ của đơn để in vào nội dung CK (không dấu, gọn). */
+  private async describeBooking(bookingId: string): Promise<string> {
+    const services = await this.prisma.booking_services.findMany({
+      where: { booking_pets: { booking_id: bookingId } },
+      select: { service_name: true },
+    });
+    const names = [...new Set(services.map((s) => s.service_name?.trim()).filter(Boolean))];
+    if (names.length === 0) return 'dat lich PetCare';
+    return names.length === 1 ? `goi ${names[0]}` : `goi ${names[0]} va ${names.length - 1} goi khac`;
+  }
+
+  /** Mã thanh toán dùng chung một dải cho booking và gói hội viên (webhook dò cả hai). */
+  private async isPaymentCodeTaken(code: string): Promise<boolean> {
+    const [payment, order] = await Promise.all([
+      this.prisma.payments.findFirst({ where: { transaction_code: code }, select: { id: true } }),
+      this.prisma.subscription_orders.findUnique({
+        where: { payment_code: code },
+        select: { id: true },
+      }),
+    ]);
+    return Boolean(payment || order);
   }
 
   /**
@@ -262,6 +299,7 @@ export class SepayService {
             status: decision.status,
             note: decision.note || null,
             payment_id: decision.paymentId,
+            subscription_order_id: decision.subscriptionOrderId,
             raw_payload: payload as unknown as Prisma.InputJsonValue,
           },
         });
@@ -327,6 +365,17 @@ export class SepayService {
           created_at: true,
           resolver: { select: { id: true, fullName: true, email: true } },
           payments: { select: { booking_id: true, amount: true, status: true } },
+          subscription_order: {
+            select: {
+              id: true,
+              plan_code: true,
+              plan_name: true,
+              amount: true,
+              status: true,
+              payment_code: true,
+              user: { select: { email: true, fullName: true } },
+            },
+          },
         },
       }),
       this.prisma.bank_transactions.count({ where }),
@@ -376,7 +425,7 @@ export class SepayService {
       }
 
       const transferAmount = Math.round(Number(txn.transfer_amount));
-      let decision: { status: bank_transaction_status; note?: string; paymentId: string | null };
+      let decision: ApplyDecision;
       let auditTarget: Record<string, unknown>;
 
       switch (input.action) {
@@ -386,6 +435,30 @@ export class SepayService {
           if (!paymentCode && !bookingId) {
             throw new BadRequestException('Nhập mã thanh toán hoặc Booking ID cần gán');
           }
+          // Mã thanh toán có thể thuộc đơn mua gói hội viên
+          const subscriptionOrder = paymentCode
+            ? await tx.subscription_orders.findUnique({ where: { payment_code: paymentCode } })
+            : null;
+          if (subscriptionOrder) {
+            const applied = await this.applyToSubscriptionOrder(
+              tx,
+              subscriptionOrder,
+              transferAmount,
+              txn.external_id,
+              followUp,
+            );
+            decision = {
+              ...applied,
+              note: `[Admin gán đơn mua gói] ${applied.note ? applied.note + ' — ' : ''}${reason}`,
+            };
+            auditTarget = {
+              subscriptionOrderId: subscriptionOrder.id,
+              planCode: subscriptionOrder.plan_code,
+              result: applied.status,
+            };
+            break;
+          }
+
           const payment = await tx.payments.findFirst({
             where: paymentCode
               ? { transaction_code: paymentCode, method: 'BANK_TRANSFER' }
@@ -432,6 +505,7 @@ export class SepayService {
             status: 'REFUNDED_TO_WALLET',
             note: `[Admin hoàn ví ${email}] ${reason}`,
             paymentId: null,
+            subscriptionOrderId: null,
           };
           auditTarget = { userId: user.id, email };
           walletNotice = { userId: user.id, amount: transferAmount };
@@ -443,6 +517,7 @@ export class SepayService {
             status: 'RESOLVED_MANUALLY',
             note: `[Admin xử lý ngoài hệ thống] ${reason}`,
             paymentId: null,
+            subscriptionOrderId: null,
           };
           auditTarget = {};
           break;
@@ -459,6 +534,7 @@ export class SepayService {
           status: decision.status,
           note: decision.note,
           payment_id: decision.paymentId ?? txn.payment_id,
+          subscription_order_id: decision.subscriptionOrderId ?? txn.subscription_order_id,
           resolved_by: adminId,
           resolved_at: new Date(),
         },
@@ -510,21 +586,14 @@ export class SepayService {
     payload: SepayWebhookPayload,
     externalId: string,
     transferAmount: number,
-    followUp: {
-      confirmed?: { bookingId: string; customerId: string; amount: number };
-      refunded?: { bookingId: string; customerId: string; amount: number; reason: string };
-    },
-  ): Promise<{
-    status: bank_transaction_status;
-    note?: string;
-    code: string | null;
-    paymentId: string | null;
-  }> {
-    const bank = this.getBankConfig();
+    followUp: FollowUp,
+  ): Promise<ApplyDecision & { code: string | null }> {
+    const none = { paymentId: null, subscriptionOrderId: null };
+    const bank = getBankTransferConfig(this.configService);
     const code = this.extractPaymentCode(payload, bank.codePrefix);
 
     if (payload.transferType !== 'in') {
-      return { status: 'IGNORED', note: 'Giao dịch tiền ra', code, paymentId: null };
+      return { status: 'IGNORED', note: 'Giao dịch tiền ra', code, ...none };
     }
 
     const receivingAccounts = [payload.accountNumber, payload.subAccount]
@@ -535,12 +604,12 @@ export class SepayService {
         status: 'IGNORED',
         note: `Tài khoản nhận khác ${bank.accountNumber}`,
         code,
-        paymentId: null,
+        ...none,
       };
     }
 
     if (transferAmount <= 0) {
-      return { status: 'IGNORED', note: 'Số tiền không hợp lệ', code, paymentId: null };
+      return { status: 'IGNORED', note: 'Số tiền không hợp lệ', code, ...none };
     }
 
     if (!code) {
@@ -548,7 +617,7 @@ export class SepayService {
         status: 'UNMATCHED',
         note: 'Không tìm thấy mã thanh toán trong nội dung CK',
         code,
-        paymentId: null,
+        ...none,
       };
     }
 
@@ -557,7 +626,21 @@ export class SepayService {
       include: { bookings: true },
     });
     if (!payment) {
-      return { status: 'UNMATCHED', note: `Mã ${code} không khớp đơn nào`, code, paymentId: null };
+      // Không phải booking => có thể là đơn mua gói hội viên
+      const subscriptionOrder = await tx.subscription_orders.findUnique({
+        where: { payment_code: code },
+      });
+      if (subscriptionOrder) {
+        const applied = await this.applyToSubscriptionOrder(
+          tx,
+          subscriptionOrder,
+          transferAmount,
+          externalId,
+          followUp,
+        );
+        return { ...applied, code };
+      }
+      return { status: 'UNMATCHED', note: `Mã ${code} không khớp đơn nào`, code, ...none };
     }
 
     const applied = await this.applyToPayment(tx, payment, transferAmount, externalId, followUp);
@@ -574,7 +657,7 @@ export class SepayService {
     transferAmount: number,
     externalId: string,
     followUp: FollowUp,
-  ): Promise<{ status: bank_transaction_status; note?: string; paymentId: string }> {
+  ): Promise<ApplyDecision> {
     const expected = Math.round(Number(payment.amount));
     const payable = payment.status === 'PENDING' && payment.bookings?.status === 'PENDING_PAYMENT';
 
@@ -606,7 +689,7 @@ export class SepayService {
         customerId: payment.customer_id,
         amount: expected,
       };
-      return { status: 'MATCHED', note, paymentId: payment.id };
+      return { status: 'MATCHED', note, paymentId: payment.id, subscriptionOrderId: null };
     }
 
     // 2. Còn lại: chuyển thiếu / đơn đã hết hạn / đơn đã được trả => hoàn toàn bộ khoản này vào ví
@@ -643,13 +726,39 @@ export class SepayService {
       amount: transferAmount,
       reason,
     };
-    return { status: 'REFUNDED_TO_WALLET', note: reason, paymentId: payment.id };
+    return {
+      status: 'REFUNDED_TO_WALLET',
+      note: reason,
+      paymentId: payment.id,
+      subscriptionOrderId: null,
+    };
   }
 
-  private async sendFollowUpNotifications(followUp: {
-    confirmed?: { bookingId: string; customerId: string; amount: number };
-    refunded?: { bookingId: string; customerId: string; amount: number; reason: string };
-  }) {
+  /** Khoản chuyển khoản cho đơn mua gói hội viên: đủ tiền => kích hoạt gói, còn lại => hoàn ví. */
+  private async applyToSubscriptionOrder(
+    tx: Prisma.TransactionClient,
+    order: SubscriptionOrder,
+    transferAmount: number,
+    externalId: string,
+    followUp: FollowUp,
+  ): Promise<ApplyDecision> {
+    const result = await this.subscriptionsService.applyBankTransfer(
+      tx,
+      order,
+      transferAmount,
+      `SEPAY_${externalId}`,
+    );
+    followUp.subscription = result.followUp;
+    return {
+      status: result.status,
+      note: `[Gói ${order.plan_code}]${result.note ? ' ' + result.note : ''}`,
+      paymentId: null,
+      subscriptionOrderId: order.id,
+    };
+  }
+
+  private async sendFollowUpNotifications(followUp: FollowUp) {
+    await this.subscriptionsService.notifyFollowUp(followUp.subscription);
     if (followUp.confirmed) {
       const { bookingId, customerId, amount } = followUp.confirmed;
       await this.paymentsService.sendPaymentSuccessNotifications(bookingId, customerId, amount);
@@ -681,42 +790,11 @@ export class SepayService {
     return null;
   }
 
-  private async generateUniquePaymentCode(prefix: string): Promise<string> {
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const bytes = crypto.randomBytes(CODE_RANDOM_LENGTH);
-      let suffix = '';
-      for (const byte of bytes) suffix += CODE_ALPHABET[byte % CODE_ALPHABET.length];
-      const code = `${prefix}${suffix}`;
-
-      const taken = await this.prisma.payments.findFirst({ where: { transaction_code: code } });
-      if (!taken) return code;
-    }
-    throw new InternalServerErrorException('Không tạo được mã thanh toán, vui lòng thử lại');
-  }
-
   private parseDate(value?: string): Date | null {
     if (!value) return null;
     // SePay gửi "YYYY-MM-DD HH:mm:ss" theo giờ Việt Nam
     const date = new Date(`${value.replace(' ', 'T')}+07:00`);
     return isNaN(date.getTime()) ? null : date;
-  }
-
-  private getBankConfig() {
-    const codePrefix = (
-      this.configService.get<string>('PAYMENT_CODE_PREFIX') || 'PC'
-    ).toUpperCase();
-    if (!/^[A-Z]{2,5}$/.test(codePrefix)) {
-      throw new InternalServerErrorException('PAYMENT_CODE_PREFIX phải gồm 2-5 chữ cái');
-    }
-    return {
-      accountNumber: this.configService.getOrThrow<string>('BANK_ACCOUNT_NUMBER'),
-      accountName: this.configService.getOrThrow<string>('BANK_ACCOUNT_NAME'),
-      bankCode: this.configService.get<string>('BANK_CODE') || 'MBBank',
-      bankName:
-        this.configService.get<string>('BANK_DISPLAY_NAME') || 'MB Bank (Ngân hàng Quân Đội)',
-      qrBaseUrl: this.configService.get<string>('SEPAY_QR_BASE_URL') || 'https://vietqr.app/img', // endpoint ảnh QR theo tài liệu SePay
-      codePrefix,
-    };
   }
 }
 

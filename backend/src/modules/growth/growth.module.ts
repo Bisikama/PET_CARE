@@ -8,6 +8,8 @@ import { PromotionsController } from './promotions/promotions.controller';
 import { AdminPromotionsController } from './promotions/admin-promotions.controller';
 import { SubscriptionsService } from './subscriptions/subscriptions.service';
 import { SubscriptionsController } from './subscriptions/subscriptions.controller';
+import { AdminSubscriptionsController } from './subscriptions/admin-subscriptions.controller';
+import { AdminSubscriptionsService } from './subscriptions/admin-subscriptions.service';
 import { PrismaModule } from '../../database/prisma.module';
 import { WalletsModule } from '../wallets/wallets.module';
 
@@ -20,12 +22,14 @@ import { MailModule } from '../mail/mail.module';
     PromotionsController,
     AdminPromotionsController,
     SubscriptionsController,
+    AdminSubscriptionsController,
   ],
   providers: [
     NotificationsService,
     NotificationGateway,
     PromotionsService,
     SubscriptionsService,
+    AdminSubscriptionsService,
   ],
   exports: [NotificationsService, NotificationGateway, PromotionsService, SubscriptionsService],
 })

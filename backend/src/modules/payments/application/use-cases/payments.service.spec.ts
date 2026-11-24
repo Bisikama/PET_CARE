@@ -36,7 +36,7 @@ describe('PaymentsService', () => {
   };
 
   const mockWalletsService = { processTransaction: jest.fn() };
-  const mockSubscriptionsService = { handleSubscriptionSuccess: jest.fn() };
+  const mockSubscriptionsService = { handleVnpayIpn: jest.fn() };
   const mockNotificationsService = { sendNotification: jest.fn() };
   const mockConfig = {
     get: jest.fn((key: string) => CONFIG[key]),
@@ -173,12 +173,23 @@ describe('PaymentsService', () => {
       expect(mockPrisma.payments.update).not.toHaveBeenCalled();
     });
 
-    it('activates a subscription when orderInfo starts with SUB_', async () => {
-      const payload = { ...basePayload, vnp_OrderInfo: 'SUB_user1_PREMIUM' };
+    it('delegates subscription orders (orderInfo starts with SUB_) to SubscriptionsService', async () => {
+      mockSubscriptionsService.handleVnpayIpn.mockResolvedValue('00');
+      const payload = {
+        ...basePayload,
+        vnp_TxnRef: 'PCABCDEFGH23',
+        vnp_OrderInfo: 'SUB_PCABCDEFGH23 Thanh toan goi PREMIUM',
+      };
       const result = await service.processPaymentCallback({ ...payload, vnp_SecureHash: signVnp(payload) });
 
       expect(result.RspCode).toBe('00');
-      expect(mockSubscriptionsService.handleSubscriptionSuccess).toHaveBeenCalledWith('user1', 'PREMIUM');
+      expect(mockSubscriptionsService.handleVnpayIpn).toHaveBeenCalledWith({
+        paymentCode: 'PCABCDEFGH23',
+        success: true,
+        paidAmount: 100000,
+        transactionNo: '123456',
+      });
+      expect(mockPrisma.payments.update).not.toHaveBeenCalled();
     });
 
     it('holds escrow minus commission and notifies on success', async () => {
