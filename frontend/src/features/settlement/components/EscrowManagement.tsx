@@ -1,43 +1,46 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId, type ComponentProps } from 'react';
 import { usePayoutRequests } from '../hooks/usePayoutRequests';
 import { useSettlementActions } from '../hooks/useSettlementActions';
-import { 
-  ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
-  Search, 
-  DollarSign, 
-  Wallet, 
-  Clock, 
-  Lock, 
-  ArrowUpRight, 
-  Landmark,
-  Copy,
-  Check,
-  AlertTriangle,
-  RotateCw,
-  Info,
-  User,
-  ArrowRight,
-  Shield,
-  CreditCard,
-  Building,
-  CheckCircle,
-  HelpCircle,
-  BadgeCheck,
-  History,
-  FileText
+import type { PayoutRequest } from '../types';
+import {
+  AlertTriangle, ArrowUpRight, Check, CheckCircle2, Clock, Copy, DollarSign, Info,
+  Landmark, RotateCw, Search, Shield, ShieldCheck, Wallet, XCircle,
 } from 'lucide-react';
+import { ModalDialog, SuccessDialog } from '@/components/ui/ModalDialog';
 import { adminService } from '@/features/admin/services/admin.service';
-import { walletService } from '@/features/wallets/services/wallet.service';
 import { bookingService } from '@/features/booking/services/booking.service';
-import { systemAlert, systemConfirm, systemPrompt } from '@/components/ui/SystemDialogProvider';
-import { Wallet as WalletData } from '@/features/wallets/types/wallet.types';
-import { Portal } from '@/components/ui/Portal';
+import { walletService } from '@/features/wallets/services/wallet.service';
+import type { Wallet as WalletData } from '@/features/wallets/types/wallet.types';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 type PayoutFilter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
+
+interface BookingPreview {
+  status?: string;
+  customer?: { fullName?: string };
+  customer_name?: string;
+  provider?: { users?: { fullName?: string } };
+  provider_name?: string;
+  total_price?: number | string;
+  total_amount?: number | string;
+  amount?: number | string;
+}
+
+type SettlementAction =
+  | { kind: 'approve' | 'reject'; request: PayoutRequest }
+  | { kind: 'release' | 'refund'; bookingId: string };
+
+const actionLabels = {
+  approve: { title: 'Xác nhận duyệt giải ngân', confirm: 'Duyệt & Giải ngân', error: 'Duyệt giải ngân thất bại. Vui lòng thử lại.' },
+  reject: { title: 'Từ chối yêu cầu rút tiền', confirm: 'Xác nhận từ chối', error: 'Từ chối yêu cầu thất bại. Vui lòng thử lại.' },
+  release: { title: 'Xác nhận giải phóng ký quỹ', confirm: 'Giải phóng ký quỹ', error: 'Giải phóng ký quỹ thất bại. Vui lòng thử lại.' },
+  refund: { title: 'Xác nhận hoàn tiền', confirm: 'Hoàn tiền', error: 'Hoàn tiền thất bại. Vui lòng thử lại.' },
+};
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
 export const EscrowManagement = () => {
   const { payoutRequests, isLoading, error, refreshPayoutRequests } = usePayoutRequests();
@@ -45,20 +48,19 @@ export const EscrowManagement = () => {
   const [bookingIdInput, setBookingIdInput] = useState('');
   const [stats, setStats] = useState<{ totalRevenue?: number; totalBookings?: number } | null>(null);
   const [adminWallet, setAdminWallet] = useState<WalletData | null>(null);
-  
-  // Payout filter state
+
   const [payoutFilter, setPayoutFilter] = useState<PayoutFilter>('PENDING');
   const [copiedStk, setCopiedStk] = useState<string | null>(null);
-
-  // Booking Lookup State
   const [isLookingUpBooking, setIsLookingUpBooking] = useState(false);
-  const [bookingPreview, setBookingPreview] = useState<any | null>(null);
+  const [bookingPreview, setBookingPreview] = useState<BookingPreview | null>(null);
   const [bookingLookupError, setBookingLookupError] = useState<string | null>(null);
 
-  // Modal State for Admin Withdrawal
+  const [feedback, setFeedback] = useState<Omit<ComponentProps<typeof SuccessDialog>, 'onClose'> | null>(null);
+  const [settlementAction, setSettlementAction] = useState<SettlementAction | null>(null);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawNote, setWithdrawNote] = useState('');
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const fetchAdminWallet = () => {
@@ -92,10 +94,6 @@ export const EscrowManagement = () => {
 
   const pendingTotalAmount = pendingRequests.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-  };
-
   const formatDateTime = (val?: string | null) => {
     if (!val) return '—';
     const d = new Date(val);
@@ -118,7 +116,7 @@ export const EscrowManagement = () => {
 
   const handleLookupBooking = async () => {
     const cleanId = bookingIdInput.trim();
-    if (!cleanId) return;
+    if (!cleanId || isLookingUpBooking) return;
 
     setIsLookingUpBooking(true);
     setBookingLookupError(null);
@@ -126,79 +124,52 @@ export const EscrowManagement = () => {
     try {
       const data = await bookingService.getBooking(cleanId);
       setBookingPreview(data?.data || data);
-    } catch (err: any) {
-      console.warn('Booking not found by ID:', err);
-      setBookingLookupError('Không tìm thấy thông tin cho mã Booking này. Vui lòng kiểm tra lại UUID.');
+    } catch (error) {
+      setBookingLookupError(getApiErrorMessage(error, 'Không thể tra cứu đơn đặt lịch. Vui lòng kiểm tra lại mã.'));
     } finally {
       setIsLookingUpBooking(false);
     }
   };
 
-  const handleRelease = async () => {
-    const cleanId = bookingIdInput.trim();
-    if (!cleanId) return;
-
-    const reason = (
-      await systemPrompt({
-        title: 'Xác nhận giải phóng tiền ký quỹ Escrow',
-        message: `Giải phóng tiền ký quỹ của Booking "${cleanId}" vào Ví của Provider. Vui lòng nhập lý do thực hiện (bắt buộc, sẽ ghi log quản trị):`,
-        placeholder: 'Lý do giải phóng ký quỹ...',
-        confirmText: 'Xác nhận giải phóng',
-        cancelText: 'Kiểm tra lại',
-      })
-    )?.trim();
-    if (!reason) return;
-
-    try {
-      await releaseEscrow(cleanId, reason);
-      systemAlert('Giải phóng tiền ký quỹ Escrow thành công!', { type: 'success' });
+  const handleSettlementAction = async (action: SettlementAction, reason: string) => {
+    if ('request' in action) {
+      const { request, kind } = action;
+      if (kind === 'approve') {
+        await approvePayout(request.id);
+      } else {
+        await rejectPayout(request.id, reason);
+      }
+      setFeedback({
+        title: kind === 'approve' ? 'Đã duyệt giải ngân' : 'Đã từ chối yêu cầu rút tiền',
+        message: `Yêu cầu rút ${formatCurrency(request.amount)} của ${request.providerName || 'đối tác'} đã được xử lý.`,
+      });
+    } else {
+      const { bookingId, kind } = action;
+      const isRelease = kind === 'release';
+      await (isRelease ? releaseEscrow : refundCustomer)(bookingId, reason);
       setBookingIdInput('');
       setBookingPreview(null);
-      fetchAdminWallet();
-    } catch (e: any) {
-      systemAlert(e?.response?.data?.message || e?.message || 'Lỗi giải phóng Escrow. Vui lòng kiểm tra lại ID booking.', {
-        type: 'error',
+      setBookingLookupError(null);
+      setFeedback({
+        title: isRelease ? 'Đã giải phóng ký quỹ' : 'Đã hoàn tiền cho khách hàng',
+        message: `Đã cập nhật giao dịch cho booking ${bookingId}.`,
       });
     }
-  };
-
-  const handleRefund = async () => {
-    const cleanId = bookingIdInput.trim();
-    if (!cleanId) return;
-
-    const reason = (
-      await systemPrompt({
-        title: 'Xác nhận hoàn tiền cho Khách hàng',
-        message: `Hoàn lại 100% số tiền của Booking "${cleanId}" về Ví PetCare của Khách hàng. Thao tác này không thể hoàn tác. Vui lòng nhập lý do hoàn tiền (bắt buộc):`,
-        placeholder: 'Lý do hoàn tiền...',
-        confirmText: 'Xác nhận hoàn tiền',
-        cancelText: 'Kiểm tra lại',
-      })
-    )?.trim();
-    if (!reason) return;
-
-    try {
-      await refundCustomer(cleanId, reason);
-      systemAlert('Hoàn tiền cho khách hàng thành công!', { type: 'success' });
-      setBookingIdInput('');
-      setBookingPreview(null);
-      fetchAdminWallet();
-    } catch (e: any) {
-      systemAlert(e?.response?.data?.message || e?.message || 'Lỗi hoàn tiền. Vui lòng kiểm tra lại ID booking.', {
-        type: 'error',
-      });
-    }
+    setSettlementAction(null);
+    fetchAdminWallet();
   };
 
   const handleAdminWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isWithdrawing) return;
+    setWithdrawError(null);
     const amountNum = Number(withdrawAmount);
     if (!Number.isInteger(amountNum) || amountNum < 1000) {
-      systemAlert('Vui lòng nhập số tiền nguyên từ 1.000 đ trở lên.', { type: 'warning' });
+      setWithdrawError('Vui lòng nhập số tiền nguyên từ 1.000 đ trở lên.');
       return;
     }
     if (adminWallet && amountNum > adminWallet.balance) {
-      systemAlert('Số tiền rút vượt quá số dư ví hoa hồng khả dụng', { type: 'warning' });
+      setWithdrawError('Số tiền rút vượt quá số dư ví hoa hồng khả dụng.');
       return;
     }
 
@@ -208,13 +179,16 @@ export const EscrowManagement = () => {
         amount: amountNum,
         note: withdrawNote || 'Admin rút doanh thu hoa hồng về ngân hàng công ty',
       });
-      systemAlert('Rút tiền hoa hồng về ngân hàng thành công!', { type: 'success' });
       setShowWithdrawModal(false);
       setWithdrawAmount('');
       setWithdrawNote('');
       fetchAdminWallet();
-    } catch (err: any) {
-      systemAlert(err?.response?.data?.message || err?.message || 'Lỗi khi rút tiền', { type: 'error' });
+      setFeedback({
+        title: 'Đã rút tiền hoa hồng',
+        message: `Giao dịch rút ${formatCurrency(amountNum)} từ ví hoa hồng đã được xử lý.`,
+      });
+    } catch (error) {
+      setWithdrawError(getApiErrorMessage(error, 'Rút tiền hoa hồng thất bại. Vui lòng thử lại.'));
     } finally {
       setIsWithdrawing(false);
     }
@@ -240,7 +214,10 @@ export const EscrowManagement = () => {
               </span>
               <button
                 type="button"
-                onClick={() => setShowWithdrawModal(true)}
+                onClick={() => {
+                  setWithdrawError(null);
+                  setShowWithdrawModal(true);
+                }}
                 className="text-xs font-bold text-[#08243D] bg-[#F7C948] hover:bg-[#eab327] px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
               >
                 Rút Tiền <ArrowUpRight className="w-3.5 h-3.5" />
@@ -378,7 +355,7 @@ export const EscrowManagement = () => {
             <Info className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
             <div>
               <strong className="text-slate-800 block mb-0.5">Quy trình giải ngân chuẩn:</strong>
-              1. Bấm nút sao chép STK ➔ 2. Mở App ngân hàng chuyển đúng số tiền ➔ 3. Bấm "Duyệt &amp; Giải ngân" để hệ thống cập nhật số dư.
+              1. Bấm nút sao chép STK ➔ 2. Mở App ngân hàng chuyển đúng số tiền ➔ 3. Bấm <strong>Duyệt &amp; Giải ngân</strong> để hệ thống cập nhật số dư.
             </div>
           </div>
 
@@ -489,24 +466,7 @@ export const EscrowManagement = () => {
                       <div className="flex items-center justify-end gap-2.5 pt-2.5 border-t border-slate-100">
                         <button
                           type="button"
-                          onClick={async () => {
-                            const reason = await systemPrompt({
-                              title: 'Từ chối yêu cầu rút tiền',
-                              message: 'Vui lòng nhập lý do từ chối để đối tác cập nhật lại:',
-                              defaultValue: 'Số tài khoản hoặc tên ngân hàng không khớp',
-                              confirmText: 'Xác nhận từ chối',
-                              cancelText: 'Hủy bỏ',
-                            });
-                            if (!reason) return;
-                            try {
-                              await rejectPayout(req.id, reason);
-                              systemAlert('Đã từ chối yêu cầu rút tiền thành công!', { type: 'success' });
-                            } catch (err: any) {
-                              systemAlert(err.response?.data?.message || err.message || 'Lỗi khi từ chối yêu cầu', {
-                                type: 'error',
-                              });
-                            }
-                          }}
+                          onClick={() => setSettlementAction({ kind: 'reject', request: req })}
                           className="px-3.5 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors cursor-pointer flex items-center gap-1"
                         >
                           <XCircle className="w-3.5 h-3.5" />
@@ -515,27 +475,7 @@ export const EscrowManagement = () => {
 
                         <button
                           type="button"
-                          onClick={async () => {
-                            const ok = await systemConfirm({
-                              title: 'Duyệt & Giải ngân rút tiền',
-                              message: `Xác nhận duyệt chuyển khoản ${new Intl.NumberFormat('vi-VN').format(
-                                req.amount
-                              )} đ cho ${accountName} (STK: ${accountNumber} - ${bankName})?`,
-                              confirmText: 'Xác nhận duyệt & giải ngân',
-                              cancelText: 'Kiểm tra lại',
-                              variant: 'info',
-                            });
-                            if (!ok) return;
-                            try {
-                              await approvePayout(req.id);
-                              systemAlert('Duyệt giải ngân thành công!', { type: 'success' });
-                              fetchAdminWallet();
-                            } catch (err: any) {
-                              systemAlert(err.response?.data?.message || err.message || 'Lỗi khi duyệt giải ngân', {
-                                type: 'error',
-                              });
-                            }
-                          }}
+                          onClick={() => setSettlementAction({ kind: 'approve', request: req })}
                           className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -574,9 +514,11 @@ export const EscrowManagement = () => {
                   <input
                     type="text"
                     value={bookingIdInput}
+                    disabled={isLookingUpBooking}
                     onChange={(e) => {
                       setBookingIdInput(e.target.value);
-                      if (bookingPreview) setBookingPreview(null);
+                      setBookingPreview(null);
+                      setBookingLookupError(null);
                     }}
                     placeholder="Dán mã UUID đơn đặt lịch cần can thiệp..."
                     className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50/70 hover:bg-slate-50 focus:bg-white border border-slate-200/80 rounded-2xl text-xs font-medium text-slate-800 outline-none focus:border-[#08243D] focus:ring-2 focus:ring-[#08243D]/10 transition-all font-mono"
@@ -621,7 +563,7 @@ export const EscrowManagement = () => {
                   <div className="flex justify-between">
                     <span className="text-slate-500">Số tiền ký quỹ:</span>
                     <strong className="text-emerald-700 font-black">
-                      {new Intl.NumberFormat('vi-VN').format(Number(bookingPreview.total_amount || bookingPreview.amount || 0))} đ
+                      {new Intl.NumberFormat('vi-VN').format(Number(bookingPreview.total_price ?? bookingPreview.total_amount ?? bookingPreview.amount ?? 0))} đ
                     </strong>
                   </div>
                 </div>
@@ -632,8 +574,8 @@ export const EscrowManagement = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <button
                 type="button"
-                onClick={handleRelease}
-                disabled={!bookingIdInput.trim()}
+                onClick={() => setSettlementAction({ kind: 'release', bookingId: bookingIdInput.trim() })}
+                disabled={!bookingIdInput.trim() || isLookingUpBooking}
                 className="flex flex-col items-center justify-center p-4.5 bg-teal-50 hover:bg-teal-100/80 border border-teal-200/80 text-teal-800 rounded-2xl gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs group"
               >
                 <div className="w-8 h-8 rounded-full bg-white text-teal-700 flex items-center justify-center font-bold shadow-2xs group-hover:scale-105 transition-transform">
@@ -647,8 +589,8 @@ export const EscrowManagement = () => {
 
               <button
                 type="button"
-                onClick={handleRefund}
-                disabled={!bookingIdInput.trim()}
+                onClick={() => setSettlementAction({ kind: 'refund', bookingId: bookingIdInput.trim() })}
+                disabled={!bookingIdInput.trim() || isLookingUpBooking}
                 className="flex flex-col items-center justify-center p-4.5 bg-rose-50 hover:bg-rose-100/80 border border-rose-200/80 text-rose-800 rounded-2xl gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs group"
               >
                 <div className="w-8 h-8 rounded-full bg-white text-rose-600 flex items-center justify-center font-bold shadow-2xs group-hover:scale-105 transition-transform">
@@ -673,86 +615,166 @@ export const EscrowManagement = () => {
         </div>
       </div>
 
-      {/* ── Admin Withdrawal Modal with Portal ─────────────────────────── */}
+      {settlementAction && (
+        <SettlementActionDialog
+          action={settlementAction}
+          onClose={() => setSettlementAction(null)}
+          onConfirm={(reason) => handleSettlementAction(settlementAction, reason)}
+        />
+      )}
+
+      {feedback && <SuccessDialog {...feedback} onClose={() => setFeedback(null)} />}
+
       {showWithdrawModal && (
-        <Portal>
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 select-none">
-            <div
-              className="fixed inset-0 bg-[#041320]/80 backdrop-blur-md animate-fade-in"
-              onClick={() => !isWithdrawing && setShowWithdrawModal(false)}
-            />
-            <div className="relative z-10 bg-white rounded-3xl p-6 md:p-7 max-w-md w-full shadow-2xl space-y-5 animate-scale-up border border-slate-200/90">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <h3 className="text-base font-bold text-[#08243D] flex items-center gap-2">
-                  <Landmark className="w-5 h-5 text-emerald-600" />
-                  Rút Tiền Doanh Thu Hoa Hồng Sàn
-                </h3>
+        <ModalDialog
+          title="Rút tiền hoa hồng sàn"
+          onClose={() => setShowWithdrawModal(false)}
+          isBusy={isWithdrawing}
+        >
+          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex justify-between items-center">
+            <span className="text-xs font-semibold text-emerald-800">Số dư ví Admin khả dụng:</span>
+            <span className="text-base font-black text-emerald-700">
+              {adminWallet ? formatCurrency(adminWallet.balance) : '0 đ'}
+            </span>
+          </div>
+
+          <form onSubmit={handleAdminWithdraw} className="mt-4" noValidate>
+            <fieldset disabled={isWithdrawing} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="commission-withdraw-amount" className="text-xs font-bold text-slate-700">Số tiền rút (VNĐ)</label>
+                <input
+                  id="commission-withdraw-amount"
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  placeholder="Ví dụ: 100000"
+                  required
+                  min={1000}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="commission-withdraw-note" className="text-xs font-bold text-slate-700">Ghi chú / Lý do rút</label>
+                <input
+                  id="commission-withdraw-note"
+                  type="text"
+                  value={withdrawNote}
+                  onChange={(e) => setWithdrawNote(e.target.value)}
+                  placeholder="Rút tiền hoa hồng về ngân hàng công ty..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                />
+              </div>
+
+              {withdrawError && <p role="alert" className="text-sm font-medium text-rose-700">{withdrawError}</p>}
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowWithdrawModal(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-xs cursor-pointer"
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors cursor-pointer"
                 >
-                  ✕
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50 cursor-pointer shadow-md"
+                >
+                  {isWithdrawing ? 'Đang xử lý...' : 'Xác Nhận Rút'}
                 </button>
               </div>
-
-              <div className="p-4 bg-emerald-50 border border-emerald-200/70 rounded-2xl flex justify-between items-center">
-                <span className="text-xs font-semibold text-emerald-800">Số dư hoa hồng khả dụng:</span>
-                <span className="text-lg font-black text-emerald-700">
-                  {adminWallet ? formatCurrency(adminWallet.balance) : '0 đ'}
-                </span>
-              </div>
-
-              <form onSubmit={handleAdminWithdraw} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#08243D] uppercase tracking-wider block">
-                    Số tiền muốn rút (VNĐ)
-                  </label>
-                  <input
-                    type="number"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="Ví dụ: 100000"
-                    required
-                    min={1000}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:border-[#08243D]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#08243D] uppercase tracking-wider block">
-                    Ghi chú rút tiền
-                  </label>
-                  <input
-                    type="text"
-                    value={withdrawNote}
-                    onChange={(e) => setWithdrawNote(e.target.value)}
-                    placeholder="Rút tiền hoa hồng về tài khoản ngân hàng công ty..."
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#08243D]"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowWithdrawModal(false)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isWithdrawing}
-                    className="flex-1 py-2.5 bg-[#08243D] hover:bg-[#0c2f4e] text-[#F7C948] font-bold rounded-xl text-xs transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
-                  >
-                    {isWithdrawing ? 'Đang chuyển khoản...' : 'Xác Nhận Rút'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </Portal>
+            </fieldset>
+          </form>
+        </ModalDialog>
       )}
     </div>
   );
 };
+
+interface SettlementActionDialogProps {
+  action: SettlementAction;
+  onClose: () => void;
+  onConfirm: (reason: string) => Promise<void>;
+}
+
+function SettlementActionDialog({ action, onClose, onConfirm }: SettlementActionDialogProps) {
+  const { kind } = action;
+  const needsReason = kind !== 'approve';
+  const isDestructive = kind === 'reject' || kind === 'refund';
+  const labels = actionLabels[kind];
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const reasonId = useId();
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (isSubmitting || (needsReason && !reason.trim())) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onConfirm(reason.trim());
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, labels.error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <ModalDialog title={labels.title} onClose={onClose} isBusy={isSubmitting}>
+      <p className="mb-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+        {'request' in action ? (
+          <>
+            Yêu cầu rút <strong>{formatCurrency(action.request.amount)}</strong> của{' '}
+            <strong>{action.request.accountName || action.request.providerName || 'đối tác'}</strong>.
+            {kind === 'approve' && (
+              <> STK <strong>{action.request.accountNumber || action.request.bank_details?.account_number || '—'}</strong>
+                {' · '}{action.request.bankName || action.request.bank_details?.bank_name || 'Ngân hàng'}.
+                Xác nhận sau khi đã chuyển đúng số tiền.</>
+            )}
+          </>
+        ) : (
+          <>Mã booking <strong>{action.bookingId}</strong></>
+        )}
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {needsReason && (
+          <div className="space-y-2">
+            <label htmlFor={reasonId} className="block text-sm font-semibold text-slate-700">
+              {kind === 'reject' ? 'Lý do từ chối (bắt buộc)' : 'Lý do thực hiện (bắt buộc)'}
+            </label>
+            <textarea
+              id={reasonId}
+              required
+              rows={3}
+              value={reason}
+              disabled={isSubmitting}
+              onChange={(event) => setReason(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+            />
+          </div>
+        )}
+        {error && <p role="alert" className="text-sm font-medium text-rose-700">{error}</p>}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 rounded-xl bg-slate-100 px-3 py-2.5 text-sm font-semibold hover:bg-slate-200 disabled:opacity-50"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || (needsReason && !reason.trim())}
+            className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${isDestructive ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+          >
+            {isSubmitting ? 'Đang xử lý...' : labels.confirm}
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
+  );
+}
