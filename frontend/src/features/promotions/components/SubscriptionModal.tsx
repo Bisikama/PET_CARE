@@ -5,7 +5,7 @@ import { Check, CheckCircle2, CreditCard, Crown, Landmark, Loader2, Wallet, X } 
 import { useSubscriptionStore } from '../stores/subscription.store';
 import { SubscriptionTransferPanel } from './SubscriptionTransferPanel';
 import { walletService } from '@/features/wallets/services/wallet.service';
-import type { SubscriptionBankTransferCheckout, SubscriptionPaymentMethod } from '../types/subscription.types';
+import { getPlanBenefits, type SubscriptionBankTransferCheckout, type SubscriptionPaymentMethod } from '../types/subscription.types';
 
 type Method = SubscriptionPaymentMethod;
 
@@ -247,16 +247,19 @@ export const SubscriptionModal: React.FC = () => {
                                 )}
                               </div>
                               {p.description && <p className="text-xs text-slate-500 mt-1">{p.description}</p>}
-                              {p.benefits.length > 0 && (
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                                  {p.benefits.map((b) => (
-                                    <span key={b} className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-                                      <Check className="w-3 h-3 text-teal-600 shrink-0" />
-                                      {b}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                              {(() => {
+                                const bList = getPlanBenefits(p);
+                                return bList.length > 0 ? (
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                                    {bList.map((b) => (
+                                      <span key={b} className="inline-flex items-center gap-1 text-[11px] text-slate-600">
+                                        <Check className="w-3 h-3 text-teal-600 shrink-0" />
+                                        {b}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : null;
+                              })()}
                             </div>
 
                             <div className="text-right shrink-0">
