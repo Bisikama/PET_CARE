@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { computeServicePrice } from '../../../services/domain/service-pricing';
 import { BOOKING_REPOSITORY } from '../../booking.tokens';
 import type { BookingRepositoryPort } from '../ports/booking-repository.port';
 import { SearchProviderDto } from '../../presentation/dto/search-provider.dto';
@@ -36,6 +37,20 @@ export class SearchMatchingProvidersUseCase {
       new Date(dto.date),
     );
 
+    // Giá niêm yết của hệ thống theo cân nặng — giống nhau với mọi đối tác
+    const pricingRules = await this.bookingRepo.findActivePricingRules(dto.serviceId);
+    const petWeight = Number(pet.weight) || 0;
+    if (
+      pricingRules.length > 0 &&
+      computeServicePrice(pricingRules, pet.species, petWeight, { price: 0, durationMinutes: 0 })
+        .requiresQuote
+    ) {
+      throw new BadRequestException(
+        `Gói dịch vụ chưa có giá niêm yết cho thú cưng ${petWeight} kg. ` +
+          'Vui lòng liên hệ PetCare để được báo giá riêng.',
+      );
+    }
+
     // 4. Score and Rank Providers (Flow 25)
     const rankedProviders = providers.map((provider) => {
       const recommendationReasons: string[] = [];
@@ -63,7 +78,10 @@ export class SearchMatchingProvidersUseCase {
 
       // Extract matching service details
       const service = provider.provider_services[0];
-      const price = Number(service.price);
+      const price = computeServicePrice(pricingRules, pet.species, petWeight, {
+        price: Number(service.price),
+        durationMinutes: 0,
+      }).price as number;
 
       // Extract matching slots for the target date
       const now = new Date();

@@ -445,6 +445,12 @@ export class PrismaBookingRepository implements BookingRepositoryPort {
     });
   }
 
+  async findActivePricingRules(serviceId: string) {
+    return this.prisma.service_pricing_rules.findMany({
+      where: { service_id: serviceId, is_active: true, deleted_at: null },
+    });
+  }
+
   async searchMatchingProviders(
     serviceId: string,
     petSpecies: string,

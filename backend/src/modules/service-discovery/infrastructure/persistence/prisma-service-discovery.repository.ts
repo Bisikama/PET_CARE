@@ -1,3 +1,4 @@
+import { computeServicePrice } from '../../../services/domain/service-pricing';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../database/prisma.service';
 import {
@@ -58,17 +59,13 @@ export class PrismaServiceDiscoveryRepository implements IServiceDiscoveryReposi
     });
 
     return services.map((s) => {
-      // Find matching pricing rule
-      const rule = s.pricing_rules.find((r) => {
-        const matchesSpecies = r.pet_species.toLowerCase() === species.toLowerCase();
-        const minW = r.min_weight ? Number(r.min_weight) : 0;
-        const maxW = r.max_weight ? Number(r.max_weight) : 999999;
-        const matchesWeight = weight >= minW && weight <= maxW;
-        return matchesSpecies && matchesWeight;
+      // Giá niêm yết theo loài + cân nặng; không khớp dòng nào => cần báo giá riêng
+      const pricing = computeServicePrice(s.pricing_rules, species, weight, {
+        price: Number(s.base_price),
+        durationMinutes: s.duration_minutes,
       });
-
-      const price = rule ? Number(rule.price) : Number(s.base_price);
-      const duration = rule ? rule.duration_minutes : s.duration_minutes;
+      const price = pricing.price ?? Number(s.base_price);
+      const duration = pricing.durationMinutes;
 
       return {
         id: s.id,
@@ -77,6 +74,7 @@ export class PrismaServiceDiscoveryRepository implements IServiceDiscoveryReposi
         category: s.category,
         durationMinutes: duration,
         price,
+        requiresQuote: pricing.requiresQuote,
         checklist: s.service_checklist_templates.map((t) => t.title),
         cancellationPolicy: s.cancellation_policy
           ? {
@@ -158,6 +156,17 @@ export class PrismaServiceDiscoveryRepository implements IServiceDiscoveryReposi
 
     const matched: MatchedProvider[] = [];
 
+    // Giá niêm yết của hệ thống (giống nhau với mọi đối tác)
+    const service = await this.prisma.services.findUnique({
+      where: { id: params.serviceId },
+      include: { pricing_rules: { where: { is_active: true, deleted_at: null } } },
+    });
+    const systemPricing = computeServicePrice(service?.pricing_rules ?? [], params.species, params.weight, {
+      price: Number(service?.base_price ?? 0),
+      durationMinutes: service?.duration_minutes ?? 60,
+    });
+    if (systemPricing.requiresQuote) return [];
+
     for (const p of providers) {
       // 1. Kiểm tra tài khoản user liên kết hoạt động
       if (!p.users || p.users.status !== 'ACTIVE' || !p.users.isActive) {
@@ -219,8 +228,8 @@ export class PrismaServiceDiscoveryRepository implements IServiceDiscoveryReposi
         ratingAvg: p.rating_avg ? Number(p.rating_avg) : 0,
         totalReviews: p.total_reviews || 0,
         totalCompletedBookings: p.total_completed_bookings || 0,
-        price: Number(matchedCap.price),
-        durationMinutes: matchedCap.price ? 120 : 60, // Fallback if needed, or matchedCap has duration
+        price: systemPricing.price ?? Number(matchedCap.price),
+        durationMinutes: systemPricing.durationMinutes,
         kycStatus: p.kyc_status,
         trustBadges: p.provider_trust_badges
           .filter((b) => !b.revoked_at)
