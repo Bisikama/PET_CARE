@@ -223,7 +223,7 @@ export default function ProviderEarningsRoute() {
       edges={['top', 'left', 'right']}
       style={styles.screen}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
+      <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
       <View style={styles.header}>

@@ -32,7 +32,6 @@ export default function LoginScreen() {
       const res = await authApi.login({ email, password });
       if (res.success && res.data) {
         await login(res.data.accessToken, res.data.user);
-        router.replace('/(customer)/(tabs)/home');
       } else {
         setError(res.message || 'Đăng nhập thất bại');
       }

@@ -24,7 +24,7 @@ export function OTPInput({
   style,
 }: OTPInputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   const hasError = !!error;
 

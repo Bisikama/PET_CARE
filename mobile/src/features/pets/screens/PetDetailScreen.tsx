@@ -233,7 +233,7 @@ export default function PetDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor="#071A2F" />
+      <StatusBar barStyle="light-content" />
 
       {/* Top Floating Nav Header */}
       <View style={styles.topNav}>

@@ -818,7 +818,7 @@ export function ProviderStartServiceScreen() {
 
   return (
     <Screen style={styles.screen} backgroundColor="#F8F9FF">
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Top Header Navigation */}
       <View style={styles.header}>

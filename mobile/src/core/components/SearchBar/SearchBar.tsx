@@ -7,7 +7,7 @@ export interface SearchBarProps extends Omit<InputProps, 'leftIcon' | 'rightIcon
   onClear?: () => void;
 }
 
-export const SearchBar = forwardRef<TextInput, SearchBarProps>(
+export const SearchBar = forwardRef<React.ComponentRef<typeof TextInput>, SearchBarProps>(
   ({ value, onClear, style, ...props }, ref) => {
     return (
       <Input

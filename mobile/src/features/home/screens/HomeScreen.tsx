@@ -130,7 +130,7 @@ export default function HomeScreen() {
       edges={['top', 'left', 'right']}
       style={styles.screen}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.default} />
+      <StatusBar barStyle="dark-content" />
 
       <ScrollView
         style={styles.scrollView}

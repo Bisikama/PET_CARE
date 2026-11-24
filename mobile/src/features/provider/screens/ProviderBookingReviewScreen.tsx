@@ -297,7 +297,7 @@ export function ProviderBookingReviewScreen() {
 
   return (
     <Screen style={styles.screen} backgroundColor="#F8F9FF">
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Top Navigation Header */}
       <View style={styles.header}>

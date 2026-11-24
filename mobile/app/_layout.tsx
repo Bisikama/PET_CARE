@@ -20,7 +20,7 @@ export {
 
 export const unstable_settings = {
   // Set initial route to the root index.
-  initialRouteName: 'index',
+  anchor: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -83,18 +83,9 @@ function MainLayout() {
     } else if (isAuthenticated) {
       const isProvider = user?.role === 'PROVIDER';
 
-      if (inAuthGroup) {
-        // Redirect to appropriate landing screen after login
-        if (isProvider) {
-          router.replace('/(provider)/(tabs)/jobs' as any);
-        } else {
-          router.replace('/(customer)/(tabs)/home' as any);
-        }
-      } else if (isProvider && inCustomerGroup) {
-        // Redirect provider away from customer screens
+      if (isProvider && !inProviderGroup) {
         router.replace('/(provider)/(tabs)/jobs' as any);
-      } else if (!isProvider && inProviderGroup) {
-        // Redirect customer away from provider screens
+      } else if (!isProvider && !inCustomerGroup) {
         router.replace('/(customer)/(tabs)/home' as any);
       }
     }
