@@ -288,7 +288,7 @@ export default function ServiceDetailScreen() {
       edges={['top', 'left', 'right']}
       style={styles.screen}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.default} />
+      <StatusBar barStyle="dark-content" />
 
       {/* 1. Header Navigation */}
       <ServiceDetailHeader

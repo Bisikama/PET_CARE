@@ -44,7 +44,6 @@ export default function VerifyOtpScreen() {
       const res = await authApi.verifyOtp({ email, otp });
       if (res.success && res.data) {
         await login(res.data.accessToken, res.data.user);
-        router.replace('/(customer)/(tabs)/home');
       } else {
         setError(res.message || 'Mã OTP không hợp lệ');
       }

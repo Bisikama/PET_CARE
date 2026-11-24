@@ -245,7 +245,7 @@ export default function ExploreScreen() {
       edges={['top', 'left', 'right']}
       style={styles.screen}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.default} />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <ExploreHeader

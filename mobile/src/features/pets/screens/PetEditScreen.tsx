@@ -193,7 +193,7 @@ export default function PetEditScreen() {
       edges={['top', 'left', 'right']}
       style={styles.screen}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.default} />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
