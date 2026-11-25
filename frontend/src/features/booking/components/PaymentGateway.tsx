@@ -1,17 +1,42 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronRight, ShieldCheck, CreditCard, QrCode, ArrowLeft, Landmark, Crown } from 'lucide-react';
+import {
+  ChevronRight,
+  ShieldCheck,
+  CreditCard,
+  QrCode,
+  ArrowLeft,
+  Landmark,
+  Crown,
+  CheckCircle2,
+  CalendarDays,
+  PlusCircle,
+  Sparkles,
+} from 'lucide-react';
 import { useBookingStore } from '../stores/booking.store';
 import { usePayment } from '../hooks/usePayment';
 import { bookingService } from '../services/booking.service';
 import type { BankTransferCheckout } from '../services/payment.service';
 import { VietQrTransferPanel } from './VietQrTransferPanel';
+import { extractBookingDisplayInfo } from './CustomerBookingList';
 import { useWallet } from '@/features/wallets/hooks/useWallet';
 import { useRouter } from 'next/navigation';
 import { systemConfirm } from '@/components/ui/SystemDialogProvider';
+import { Portal } from '@/components/ui/Portal';
 
-export function PaymentGateway() {
+interface PaymentGatewayProps {
+  onViewBookings?: () => void;
+}
+
+interface PaymentSuccessInfo {
+  methodLabel: string;
+  transactionCode: string;
+  transferContent?: string;
+  paidAt: string;
+}
+
+export function PaymentGateway({ onViewBookings }: PaymentGatewayProps = {}) {
   const { setStep, createdBookingId, resetBooking } = useBookingStore();
   const {
     createCheckoutUrl,
@@ -26,11 +51,19 @@ export function PaymentGateway() {
   // Số tiền thật của đơn (đã gồm phí di chuyển, đã trừ giảm giá lúc tạo đơn). null = chưa tải được
   const [totalAmount, setTotalAmount] = React.useState<number | null>(null);
   const [memberInfo, setMemberInfo] = React.useState<{ tierLabel: string; discountAmount: number } | null>(null);
+  const [bookingSummary, setBookingSummary] = React.useState<{
+    serviceName: string;
+    petName: string | null;
+    providerName: string;
+  } | null>(null);
   const [isFetchingBooking, setIsFetchingBooking] = React.useState(true);
 
   // Chuyển khoản VietQR: giữ lại mã đã tạo để mở lại không sinh mã mới
   const [qrCheckout, setQrCheckout] = React.useState<BankTransferCheckout | null>(null);
   const [showQrPanel, setShowQrPanel] = React.useState(false);
+
+  // Popup xác nhận thanh toán thành công
+  const [paymentSuccess, setPaymentSuccess] = React.useState<PaymentSuccessInfo | null>(null);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -42,8 +75,16 @@ export function PaymentGateway() {
       try {
         const bookingDetails = await bookingService.getBooking(createdBookingId);
         const fetchedBooking = bookingDetails?.data?.booking || bookingDetails?.data || bookingDetails;
-        if (isMounted && fetchedBooking?.total_price !== undefined && fetchedBooking?.total_price !== null) {
-          setTotalAmount(Number(fetchedBooking.total_price));
+        if (isMounted && fetchedBooking) {
+          if (fetchedBooking.total_price !== undefined && fetchedBooking.total_price !== null) {
+            setTotalAmount(Number(fetchedBooking.total_price));
+          }
+          const displayInfo = extractBookingDisplayInfo(fetchedBooking);
+          setBookingSummary({
+            serviceName: displayInfo.serviceName,
+            petName: displayInfo.petName,
+            providerName: displayInfo.providerName,
+          });
         }
         const snap = fetchedBooking?.price_snapshot || fetchedBooking?.priceSnapshot || {};
         if (isMounted && snap?.memberDiscountAmount) {
@@ -97,9 +138,19 @@ export function PaymentGateway() {
   };
 
   const handleQrPaid = React.useCallback(() => {
-    resetBooking();
-    router.push('/bookings');
-  }, [resetBooking, router]);
+    setPaymentSuccess({
+      methodLabel: 'Chuyển khoản ngân hàng (VietQR)',
+      transactionCode: qrCheckout?.paymentCode || (createdBookingId ? `#${createdBookingId.slice(0, 8).toUpperCase()}` : 'VIETQR'),
+      transferContent: qrCheckout?.transferContent,
+      paidAt: new Date().toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    });
+  }, [qrCheckout, createdBookingId]);
 
   const handleQrBack = React.useCallback(async () => {
     const ok = await systemConfirm({
@@ -117,9 +168,33 @@ export function PaymentGateway() {
     if (!createdBookingId) return;
     const success = await checkoutWithWallet({ bookingId: createdBookingId, amount: finalAmount });
     if (success) {
-      resetBooking();
+      setPaymentSuccess({
+        methodLabel: 'Ví Điện Tử PetCare',
+        transactionCode: `WALLET-${createdBookingId.slice(0, 8).toUpperCase()}`,
+        paidAt: new Date().toLocaleString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      });
+    }
+  };
+
+  const handleFinishToBookingsList = () => {
+    setPaymentSuccess(null);
+    resetBooking();
+    if (onViewBookings) {
+      onViewBookings();
+    } else {
       router.push('/bookings');
     }
+  };
+
+  const handleFinishNewBooking = () => {
+    setPaymentSuccess(null);
+    resetBooking();
   };
 
   const formatPrice = (price: number) => {
@@ -302,6 +377,130 @@ export function PaymentGateway() {
           <ArrowLeft className="w-4 h-4" />
           Quay lại kiểm tra Hóa đơn
         </button>
+      )}
+
+      {/* Popup Biên Lai Xác Nhận Thanh Toán Đặt Lịch Thành Công */}
+      {paymentSuccess && (
+        <Portal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#041320]/75 p-4 backdrop-blur-xs animate-fade-in">
+            <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200/80 animate-scale-up">
+              {/* Top Celebratory Header */}
+              <div className="relative overflow-hidden bg-[#08243D] px-6 py-7 text-center text-white">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(247,201,72,0.18),transparent_70%)] pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-400/40 mb-3">
+                    <span className="absolute inset-0 rounded-full bg-emerald-400/25 animate-ping" />
+                    <CheckCircle2 className="h-9 w-9 text-emerald-400 relative z-10" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F7C948]/15 border border-[#F7C948]/40 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#F7C948] mb-2">
+                    <Sparkles className="w-3 h-3" />
+                    Safe-Pay Escrow Active
+                  </span>
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    Thanh Toán Đặt Lịch Thành Công!
+                  </h3>
+                  <p className="mt-1.5 text-xs text-slate-300 max-w-sm leading-relaxed">
+                    Khoản thanh toán của bạn đã được hệ thống Ký quỹ (Escrow) bảo hộ an toàn 100%. Chuyên viên chăm sóc đã nhận thông báo lịch hẹn.
+                  </p>
+                </div>
+              </div>
+
+              {/* Receipt Body */}
+              <div className="p-6 space-y-5">
+                <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-4 space-y-3 text-xs">
+                  <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/70">
+                    <span className="text-slate-500 font-medium">Số tiền đã thanh toán</span>
+                    <span className="text-lg font-black text-emerald-600 tabular-nums">
+                      {formatPrice(finalAmount)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Mã giao dịch</span>
+                    <span className="font-mono font-bold text-[#08243D] bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                      {paymentSuccess.transactionCode}
+                    </span>
+                  </div>
+
+                  {bookingSummary && (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500 font-medium">Gói dịch vụ</span>
+                        <span className="font-bold text-[#08243D] text-right">
+                          {bookingSummary.serviceName}
+                          {bookingSummary.petName ? ` (${bookingSummary.petName})` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500 font-medium">Chuyên viên chăm sóc</span>
+                        <span className="font-semibold text-slate-700 text-right">
+                          {bookingSummary.providerName}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Phương thức</span>
+                    <span className="font-semibold text-slate-800">{paymentSuccess.methodLabel}</span>
+                  </div>
+
+                  {paymentSuccess.transferContent && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500 font-medium shrink-0">Nội dung CK</span>
+                      <span className="font-mono text-[11px] font-semibold text-slate-700 text-right break-all">
+                        {paymentSuccess.transferContent}
+                      </span>
+                    </div>
+                  )}
+
+                  {memberInfo && (
+                    <div className="flex items-center justify-between gap-3 text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-xl px-3 py-2">
+                      <span className="inline-flex items-center gap-1.5 font-bold">
+                        <Crown className="w-3.5 h-3.5 text-amber-600" />
+                        Đặc quyền {memberInfo.tierLabel}
+                      </span>
+                      <span className="font-bold tabular-nums">-{formatPrice(memberInfo.discountAmount)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-200/70">
+                    <span className="text-slate-500 font-medium">Thời gian xác nhận</span>
+                    <span className="font-medium text-slate-700">{paymentSuccess.paidAt}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Trạng thái</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                      <CheckCircle2 className="w-3 h-3" />
+                      ĐÃ THANH TOÁN & KÝ QUỸ
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleFinishToBookingsList}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#08243D] py-3.5 px-4 text-xs font-bold text-[#F7C948] hover:bg-[#0c3254] transition-colors cursor-pointer shadow-xs"
+                  >
+                    <CalendarDays className="w-4 h-4" />
+                    Xem lịch hẹn của tôi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinishNewBooking}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-3.5 px-4 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-[#08243D] transition-colors cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Đặt thêm lịch mới
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );
