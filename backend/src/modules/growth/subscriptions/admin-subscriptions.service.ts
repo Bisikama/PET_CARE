@@ -185,7 +185,10 @@ export class AdminSubscriptionsService {
         method: o.method,
         status: o.status,
         paymentCode: o.payment_code,
-        transferContent: o.transfer_content,
+        transferContent:
+          o.transfer_content && !o.transfer_content.toLowerCase().includes('thanh vien')
+            ? `${o.payment_code} Thanh toan goi thanh vien ${o.plan_code}`
+            : o.transfer_content,
         gatewayRef: o.gateway_ref,
         paidAt: o.paid_at,
         createdAt: o.created_at,

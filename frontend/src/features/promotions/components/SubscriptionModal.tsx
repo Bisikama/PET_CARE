@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, CheckCircle2, CreditCard, Crown, Landmark, Loader2, Wallet, X } from 'lucide-react';
+import { Check, CheckCircle2, CreditCard, Crown, Landmark, Loader2, Sparkles, Wallet, X, CalendarDays } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useSubscriptionStore } from '../stores/subscription.store';
 import { SubscriptionTransferPanel } from './SubscriptionTransferPanel';
 import { walletService } from '@/features/wallets/services/wallet.service';
+import { Portal } from '@/components/ui/Portal';
 import { getPlanBenefits, type SubscriptionBankTransferCheckout, type SubscriptionPaymentMethod } from '../types/subscription.types';
 
 type Method = SubscriptionPaymentMethod;
@@ -39,11 +41,22 @@ export const SubscriptionModal: React.FC = () => {
     cancelOrder,
     fetchMySubscription,
   } = useSubscriptionStore();
+  const router = useRouter();
 
   const [planCode, setPlanCode] = useState<string | null>(null);
   const [method, setMethod] = useState<Method>('BANK_TRANSFER');
   const [transfer, setTransfer] = useState<SubscriptionBankTransferCheckout | null>(null);
   const [success, setSuccess] = useState(false);
+  const [paidReceipt, setPaidReceipt] = useState<{
+    planName: string;
+    planCode: string;
+    amount: number;
+    durationDays: number;
+    methodLabel: string;
+    paymentCode?: string;
+    transferContent?: string;
+    paidAt: string;
+  } | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
@@ -54,6 +67,7 @@ export const SubscriptionModal: React.FC = () => {
     setMethod(targetMethod);
     setTransfer(null);
     setSuccess(false);
+    setPaidReceipt(null);
 
     // Lấy số dư Ví PetCare để hiển thị trực quan cho khách
     walletService
@@ -71,10 +85,30 @@ export const SubscriptionModal: React.FC = () => {
   }, [isOpen, selectedPlanCode, initialMethod, autoStartTransfer]);
 
   const handlePaid = useCallback(() => {
+    setPaidReceipt((prev) =>
+      transfer
+        ? {
+            planName: transfer.planName,
+            planCode: transfer.planCode,
+            amount: transfer.amount,
+            durationDays: transfer.durationDays,
+            methodLabel: 'Chuyển khoản ngân hàng (VietQR)',
+            paymentCode: transfer.paymentCode,
+            transferContent: transfer.transferContent,
+            paidAt: new Date().toLocaleString('vi-VN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          }
+        : prev,
+    );
     setTransfer(null);
     setSuccess(true);
     fetchMySubscription();
-  }, [fetchMySubscription]);
+  }, [transfer, fetchMySubscription]);
 
   if (!isOpen) return null;
 
@@ -102,7 +136,23 @@ export const SubscriptionModal: React.FC = () => {
       const checkout = await checkoutBankTransfer(plan.code);
       if (checkout) setTransfer(checkout);
     } else if (method === 'WALLET') {
-      if (await checkoutWallet(plan.code)) setSuccess(true);
+      if (await checkoutWallet(plan.code)) {
+        setPaidReceipt({
+          planName: plan.name,
+          planCode: plan.code,
+          amount: plan.price,
+          durationDays: plan.durationDays,
+          methodLabel: 'Ví Điện Tử PetCare',
+          paidAt: new Date().toLocaleString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        });
+        setSuccess(true);
+      }
     } else {
       const url = await checkoutVnPay(plan.code);
       if (url) window.location.href = url;
@@ -110,8 +160,9 @@ export const SubscriptionModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white shadow-xl border border-slate-200/70">
+    <Portal>
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#041320]/75 p-4 backdrop-blur-xs animate-fade-in">
+        <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white shadow-2xl border border-slate-200/70">
         {/* Luxury Navy Header */}
         <div className="bg-[#08243D] px-6 py-5 text-white flex items-start justify-between gap-4 rounded-t-3xl">
           <div className="flex items-center gap-3">
@@ -158,25 +209,131 @@ export const SubscriptionModal: React.FC = () => {
           )}
 
           {success ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-9 h-9 text-emerald-600" />
+            <div className="space-y-5 py-2 animate-scale-up">
+              <div className="relative overflow-hidden rounded-2xl bg-[#08243D] px-6 py-6 text-center text-white">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(247,201,72,0.18),transparent_70%)] pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-400/40 mb-3">
+                    <span className="absolute inset-0 rounded-full bg-emerald-400/25 animate-ping" />
+                    <CheckCircle2 className="w-9 h-9 text-emerald-400 relative z-10" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F7C948]/15 border border-[#F7C948]/40 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#F7C948] mb-2">
+                    <Sparkles className="w-3 h-3" />
+                    VIP Membership Activated
+                  </span>
+                  <h4 className="text-xl font-bold text-white">
+                    Thanh Toán & Kích Hoạt Thành Công!
+                  </h4>
+                  <p className="mt-1 text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                    Đặc quyền <strong className="text-[#F7C948]">{paidReceipt?.planName || plan?.name}</strong> đã được kích hoạt vào tài khoản của bạn.
+                  </p>
+                </div>
               </div>
-              <h4 className="mt-4 text-lg font-bold text-[#08243D]">Kích hoạt gói hội viên thành công!</h4>
-              <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto">
-                {plan?.name} đã được kích hoạt
-                {mySubscription
-                  ? `, hiệu lực sử dụng đến ngày ${new Date(mySubscription.expiresAt).toLocaleDateString('vi-VN')}`
-                  : ''}
-                .
-              </p>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="mt-6 rounded-xl bg-[#08243D] px-7 py-2.5 text-xs font-bold text-[#F7C948] hover:bg-[#0c3254] cursor-pointer"
-              >
-                Hoàn tất
-              </button>
+
+              {/* Biên lai chi tiết */}
+              <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-4 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/70">
+                  <span className="text-slate-500 font-medium">Số tiền đã thanh toán</span>
+                  <span className="text-lg font-black text-emerald-600 tabular-nums">
+                    {formatPrice(paidReceipt?.amount ?? plan?.price ?? 0)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-500 font-medium">Gói thành viên</span>
+                  <span className="font-bold text-[#08243D]">
+                    {paidReceipt?.planName || plan?.name} ({paidReceipt?.planCode || plan?.code})
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-500 font-medium">Thời hạn gói</span>
+                  <span className="font-semibold text-slate-800">
+                    +{paidReceipt?.durationDays ?? plan?.durationDays ?? 30} ngày sử dụng
+                  </span>
+                </div>
+
+                {paidReceipt?.paymentCode && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Mã đơn thanh toán</span>
+                    <span className="font-mono font-bold text-[#08243D] bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                      {paidReceipt.paymentCode}
+                    </span>
+                  </div>
+                )}
+
+                {paidReceipt?.transferContent && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium shrink-0">Nội dung CK</span>
+                    <span className="font-mono text-[11px] font-semibold text-slate-700 text-right break-all">
+                      {paidReceipt.transferContent}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-500 font-medium">Phương thức</span>
+                  <span className="font-semibold text-slate-800">
+                    {paidReceipt?.methodLabel || 'Chuyển khoản / Ví PetCare'}
+                  </span>
+                </div>
+
+                {(mySubscription?.expiresAt || estimatedEndDate) && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Hiệu lực đến ngày</span>
+                    <span className="font-bold text-teal-700">
+                      {new Date(mySubscription?.expiresAt || estimatedEndDate!).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-200/70">
+                  <span className="text-slate-500 font-medium">Trạng thái</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                    <CheckCircle2 className="w-3 h-3" />
+                    ĐANG HOẠT ĐỘNG (ACTIVE)
+                  </span>
+                </div>
+              </div>
+
+              {/* Đặc quyền mở khóa */}
+              {plan && (
+                <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-4 space-y-2">
+                  <p className="text-xs font-bold text-[#08243D] flex items-center gap-1.5">
+                    <Crown className="w-4 h-4 text-amber-600" />
+                    Đặc quyền đã được kích hoạt tự động:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {getPlanBenefits(plan).map((b) => (
+                      <div key={b} className="flex items-start gap-1.5 text-[11px] text-slate-700">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{b}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeModal();
+                    router.push('/bookings?view=new');
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#08243D] px-5 py-3.5 text-xs font-bold text-[#F7C948] hover:bg-[#0c3254] transition-colors cursor-pointer"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Đặt lịch ngay để hưởng ưu đãi
+                </button>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Hoàn tất & Đóng
+                </button>
+              </div>
             </div>
           ) : isSubmitting && autoStartTransfer && !transfer ? (
             <div className="flex flex-col items-center justify-center py-14 gap-3">
@@ -387,5 +544,6 @@ export const SubscriptionModal: React.FC = () => {
         </div>
       </div>
     </div>
+    </Portal>
   );
 };
