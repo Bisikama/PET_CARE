@@ -41,7 +41,7 @@ export interface SubscriptionOrder {
   createdAt: string;
 }
 
-/** Thông tin chuyển khoản VietQR khi mua gói. Nội dung CK: "PC… Thanh toan goi <MÃ GÓI>". */
+/** Thông tin chuyển khoản VietQR khi mua gói. Nội dung CK: "PC… Thanh toan goi thanh vien <MÃ GÓI>". */
 export interface SubscriptionBankTransferCheckout {
   orderId: string;
   planCode: string;

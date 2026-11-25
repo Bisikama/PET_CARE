@@ -47,8 +47,8 @@ export type SubscriptionFollowUp =
   | { kind: 'ACTIVATED'; userId: string; planName: string; endDate: Date; orderId: string }
   | { kind: 'REFUNDED'; userId: string; planName: string; amount: number; reason: string; orderId: string };
 
-/** Nội dung mô tả in sau mã thanh toán, VD "PCABCD234567 Thanh toan goi BASIC". */
-export const planTransferDescription = (planCode: string) => `Thanh toan goi ${planCode}`;
+/** Nội dung mô tả in sau mã thanh toán, VD "PCABCD234567 Thanh toan goi thanh vien BASIC". */
+export const planTransferDescription = (planCode: string) => `Thanh toan goi thanh vien ${planCode}`;
 
 const DEFAULT_PLAN_BENEFITS: Record<string, string[]> = {
   BASIC: [
@@ -188,6 +188,18 @@ export class SubscriptionsService {
       orderBy: { created_at: 'desc' },
     });
 
+    const expectedTransferContent = buildTransferContent(
+      (reusable ?? { payment_code: '' }).payment_code,
+      planTransferDescription(plan.code),
+    );
+    if (reusable && reusable.transfer_content !== expectedTransferContent) {
+      reusable.transfer_content = expectedTransferContent;
+      await this.prisma.subscription_orders.update({
+        where: { id: reusable.id },
+        data: { transfer_content: expectedTransferContent },
+      });
+    }
+
     const order =
       reusable ??
       (await this.prisma.subscription_orders.create({
@@ -195,7 +207,9 @@ export class SubscriptionsService {
       }));
 
     const transferContent =
-      order.transfer_content || buildTransferContent(order.payment_code, planTransferDescription(plan.code));
+      order.transfer_content && order.transfer_content.toLowerCase().includes('thanh vien')
+        ? order.transfer_content
+        : buildTransferContent(order.payment_code, planTransferDescription(plan.code));
 
     return {
       ...buildBankTransferInstructions(bank, order.payment_code, amount, transferContent),
@@ -563,6 +577,10 @@ export class SubscriptionsService {
   }
 
   private toOrderView(o: SubscriptionOrder) {
+    const transferContent =
+      o.transfer_content && !o.transfer_content.toLowerCase().includes('thanh vien')
+        ? buildTransferContent(o.payment_code, planTransferDescription(o.plan_code))
+        : o.transfer_content;
     return {
       id: o.id,
       planCode: o.plan_code,
@@ -572,7 +590,7 @@ export class SubscriptionsService {
       method: o.method,
       status: o.status,
       paymentCode: o.payment_code,
-      transferContent: o.transfer_content,
+      transferContent,
       paidAt: o.paid_at,
       createdAt: o.created_at,
     };

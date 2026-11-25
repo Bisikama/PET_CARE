@@ -55,7 +55,7 @@ export function SubscriptionPlanFormModal({ plan, isOpen, onClose, onSubmit }: P
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const code = form.code.trim().toUpperCase();
-  const transferPreview = `PCXXXXXXXXXX Thanh toan goi ${code || '<MÃ GÓI>'}`;
+  const transferPreview = `PCXXXXXXXXXX Thanh toan goi thanh vien ${code || '<MÃ GÓI>'}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

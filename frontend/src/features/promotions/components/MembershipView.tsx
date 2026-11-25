@@ -3,6 +3,7 @@
 import * as React from 'react';
 import {
   Check,
+  CheckCircle2,
   Clock,
   Copy,
   CreditCard,
@@ -18,7 +19,10 @@ import {
   Zap,
   HelpCircle,
   ChevronRight,
+  CalendarDays,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Portal } from '@/components/ui/Portal';
 import { useSubscription } from '../hooks/useSubscription';
 import { SubscriptionModal, formatPlanPeriod } from './SubscriptionModal';
 import { getPlanBenefits, type SubscriptionOrder, type SubscriptionOrderStatus, type SubscriptionPaymentMethod } from '../types/subscription.types';
@@ -138,10 +142,12 @@ export function MembershipView() {
     cancelOrder,
   } = useSubscription();
 
+  const router = useRouter();
   const [orderFilter, setOrderFilter] = React.useState<'ALL' | SubscriptionOrderStatus>('ALL');
   const [checkingOrderId, setCheckingOrderId] = React.useState<string | null>(null);
   const [cancellingOrderId, setCancellingOrderId] = React.useState<string | null>(null);
   const [confirmCancelOrder, setConfirmCancelOrder] = React.useState<SubscriptionOrder | null>(null);
+  const [paidOrderPopup, setPaidOrderPopup] = React.useState<SubscriptionOrder | null>(null);
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
   const [checkFeedback, setCheckFeedback] = React.useState<{ orderId: string; text: string; tone: 'amber' | 'emerald' } | null>(null);
 
@@ -203,6 +209,7 @@ export function MembershipView() {
     setCheckingOrderId(null);
     if (!updated) return;
     if (updated.status === 'PAID') {
+      setPaidOrderPopup(updated);
       setCheckFeedback({
         orderId: order.id,
         text: `Đơn ${order.paymentCode} đã được thanh toán và kích hoạt gói thành công!`,
@@ -958,6 +965,121 @@ export function MembershipView() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Popup Biên Lai Xác Nhận Thanh Toán Gói Thành Viên Thành Công */}
+      {paidOrderPopup && (
+        <Portal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#041320]/75 p-4 backdrop-blur-xs animate-fade-in">
+            <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200/80 animate-scale-up">
+              <div className="relative overflow-hidden bg-[#08243D] px-6 py-7 text-center text-white">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(247,201,72,0.18),transparent_70%)] pointer-events-none" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-400/40 mb-3">
+                    <span className="absolute inset-0 rounded-full bg-emerald-400/25 animate-ping" />
+                    <CheckCircle2 className="h-9 w-9 text-emerald-400 relative z-10" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F7C948]/15 border border-[#F7C948]/40 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#F7C948] mb-2">
+                    <Sparkles className="w-3 h-3" />
+                    VIP Membership Activated
+                  </span>
+                  <h4 className="text-xl font-bold text-white">
+                    Thanh Toán Gói Thành Viên Thành Công!
+                  </h4>
+                  <p className="mt-1 text-xs text-slate-300 max-w-sm leading-relaxed">
+                    Đặc quyền <strong className="text-[#F7C948]">{paidOrderPopup.planName}</strong> đã được kích hoạt vào tài khoản của bạn.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-4 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/70">
+                    <span className="text-slate-500 font-medium">Số tiền đã thanh toán</span>
+                    <span className="text-lg font-black text-emerald-600 tabular-nums">
+                      {formatPrice(paidOrderPopup.amount)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Gói thành viên</span>
+                    <span className="font-bold text-[#08243D]">
+                      {paidOrderPopup.planName} ({paidOrderPopup.planCode})
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Thời hạn gói</span>
+                    <span className="font-semibold text-slate-800">
+                      +{paidOrderPopup.durationDays} ngày sử dụng
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Mã đơn thanh toán</span>
+                    <span className="font-mono font-bold text-[#08243D] bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                      {paidOrderPopup.paymentCode}
+                    </span>
+                  </div>
+
+                  {paidOrderPopup.transferContent && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500 font-medium shrink-0">Nội dung CK</span>
+                      <span className="font-mono text-[11px] font-semibold text-slate-700 text-right break-all">
+                        {paidOrderPopup.transferContent}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-slate-500 font-medium">Phương thức</span>
+                    <span className="font-semibold text-slate-800">
+                      {METHOD_LABEL[paidOrderPopup.method]}
+                    </span>
+                  </div>
+
+                  {mySubscription?.expiresAt && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500 font-medium">Hiệu lực đến ngày</span>
+                      <span className="font-bold text-teal-700">
+                        {formatDate(mySubscription.expiresAt)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-200/70">
+                    <span className="text-slate-500 font-medium">Trạng thái</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                      <CheckCircle2 className="w-3 h-3" />
+                      ĐÃ THANH TOÁN & KÍCH HOẠT
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaidOrderPopup(null);
+                      router.push('/bookings?view=new');
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#08243D] py-3.5 px-4 text-xs font-bold text-[#F7C948] hover:bg-[#0c3254] transition-colors cursor-pointer"
+                  >
+                    <CalendarDays className="w-4 h-4" />
+                    Đặt lịch ngay để hưởng ưu đãi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaidOrderPopup(null)}
+                    className="rounded-xl border border-slate-200 bg-white py-3.5 px-6 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Portal>
       )}
 
       <SubscriptionModal />
