@@ -1,7 +1,12 @@
 import axiosInstance from '@/lib/axios';
-import { PayoutRequest } from '../types';
+import { PayoutRequest, PlatformWalletInfo } from '../types';
 
 export const settlementService = {
+  getPlatformWallet: async (): Promise<PlatformWalletInfo> => {
+    const response = await axiosInstance.get('/admin/settlements/platform-wallet');
+    return response.data?.data || response.data;
+  },
+
   getPayoutRequests: async (): Promise<PayoutRequest[]> => {
     const response = await axiosInstance.get('/admin/settlements/payout-requests');
     return response.data?.data || response.data || [];

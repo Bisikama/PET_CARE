@@ -186,7 +186,7 @@ export default function BookingsPage() {
           {currentStep === 5 && <ProviderDetail />}
           {currentStep === 6 && <TimeSelection />}
           {currentStep === 8 && <BookingInvoice />}
-          {currentStep === 9 && <PaymentGateway />}
+          {currentStep === 9 && <PaymentGateway onViewBookings={() => setView('list')} />}
         </div>
       )}
     </div>

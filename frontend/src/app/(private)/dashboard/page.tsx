@@ -29,7 +29,7 @@ import { PetList, usePetStore } from '@/features/pet';
 import { useMeStore, CustomerBookingAction } from '@/features/me';
 import { ProviderHeader, useProvider, AddAreaModal, AddCapabilityModal, AddCertificateModal, BookingActionDetail, useProviderBookingStore } from '@/features/provider';
 import { providerService } from '@/features/provider/services/provider.service';
-import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager } from '@/features/admin';
+import { AdminHeader, PartnerVerificationList, AdminDashboardStats, AdminUserManagement, AdminAuditLogsList, AdminServicesManager, AdminSystemConfigs, AdminShiftMonitor } from '@/features/admin';
 import { AdminDisputeList } from '@/features/admin-care/components';
 import { PromotionsView, AdminPromotionsManager, AdminSubscriptionsManager, MembershipView } from '@/features/promotions';
 import { ServiceDetailModal } from '@/features/services';
@@ -102,6 +102,8 @@ function DashboardContent() {
           <PartnerVerificationList key={adminRefreshKey} />
         ) : adminTab === 'services-manager' ? (
           <AdminServicesManager key={adminRefreshKey} />
+        ) : adminTab === 'monitor-shifts' ? (
+          <AdminShiftMonitor key={adminRefreshKey} />
         ) : adminTab === 'limits' ? (
           <AdminUserManagement key={adminRefreshKey} />
         ) : adminTab === 'logs' ? (
@@ -110,6 +112,8 @@ function DashboardContent() {
           <AdminPromotionsManager key={adminRefreshKey} />
         ) : adminTab === 'subscriptions' ? (
           <AdminSubscriptionsManager key={adminRefreshKey} />
+        ) : adminTab === 'configs' ? (
+          <AdminSystemConfigs key={adminRefreshKey} />
         ) : adminTab === 'escrow' ? (
           <EscrowManagement key={adminRefreshKey} />
         ) : adminTab === 'bank-transactions' ? (

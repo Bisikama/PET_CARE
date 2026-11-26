@@ -11,15 +11,19 @@ export class ForgotPasswordUseCase {
   ) {}
 
   async execute(email: string) {
-    const frontendUrl = this.configService
+    const origins = this.configService
       .getOrThrow<string>('FRONTEND_URL')
-      .split(',')[0]
-      ?.trim()
-      .replace(/\/$/, '');
+      .split(',')
+      .map((origin) => origin.trim().replace(/\/$/, ''))
+      .filter(Boolean);
 
-    if (!frontendUrl) {
+    if (origins.length === 0) {
       throw new Error('FRONTEND_URL must contain at least one origin');
     }
+
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production';
+    const frontendUrl =
+      (isProd ? origins.find((o) => !/localhost|127\.0\.0\.1/i.test(o)) : undefined) || origins[0];
 
     const redirectTo = `${frontendUrl}/reset-password`;
 

@@ -17,10 +17,12 @@ import {
   ShieldCheck,
   Award,
   Lock,
-  Unlock
+  Unlock,
+  Download
 } from 'lucide-react';
 import { adminService } from '../services/admin.service';
 import { Portal } from '@/components/ui/Portal';
+import { exportToCsv } from '@/utils/exportCsv';
 
 export function AdminAuditLogsList() {
   const [logs, setLogs] = React.useState<any[]>([]);
@@ -89,6 +91,7 @@ export function AdminAuditLogsList() {
     AUTO_GRANT_BADGE: { label: 'Tự động cấp phù hiệu', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
     GRANT_BADGE: { label: 'Cấp phù hiệu thủ công', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700' },
     REVOKE_BADGE: { label: 'Thu hồi phù hiệu', bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700' },
+    UPDATE_SYSTEM_CONFIGS: { label: 'Cập nhật cấu hình hệ thống', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
   };
 
   return (
@@ -106,14 +109,40 @@ export function AdminAuditLogsList() {
             </p>
           </div>
 
-          <button
-            onClick={fetchLogs}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-sm transition-all cursor-pointer disabled:opacity-50 self-start sm:self-auto"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Tải lại nhật ký
-          </button>
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            <button
+              type="button"
+              disabled={logs.length === 0}
+              onClick={() =>
+                exportToCsv(
+                  `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`,
+                  [
+                    { header: 'Thời gian', value: (l) => formatDate(l.created_at) },
+                    { header: 'Hành động', value: (l) => actionBadgeColors[l.action]?.label || l.action },
+                    { header: 'Mã hành động', value: (l) => l.action },
+                    { header: 'Đối tượng', value: (l) => l.target_type },
+                    { header: 'Target ID', value: (l) => l.target_id },
+                    { header: 'Người thực hiện', value: (l) => l.actor?.fullName || l.actor?.email || l.actor_id },
+                    { header: 'Lý do', value: (l) => l.reason || '' },
+                  ],
+                  logs,
+                )
+              }
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-2xl shadow-2xs transition-all cursor-pointer disabled:opacity-40"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Xuất CSV
+            </button>
+
+            <button
+              onClick={fetchLogs}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-2xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Tải lại nhật ký
+            </button>
+          </div>
         </div>
 
         {/* Filter Controls */}

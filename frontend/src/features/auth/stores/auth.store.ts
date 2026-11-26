@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getAuthToken, setAuthToken, removeAuthToken } from '@/lib/auth';
+import { extractRawErrorCode, getApiErrorMessage } from '@/lib/api-error';
 import { authService } from '../services/auth.service';
 import { User } from '../types';
 
@@ -9,6 +10,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  errorCode: string | null;
   login: (credentials: Record<string, any>) => Promise<boolean>;
   loginWithGoogle: (idToken: string, nonce?: string) => Promise<boolean>;
   registerUser: (data: Record<string, any>) => Promise<boolean>;
@@ -26,11 +28,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   isLoading: typeof window !== 'undefined' ? !!getAuthToken() : false,
   error: null,
+  errorCode: null,
 
   setUser: (user) => set({ user }),
 
   login: async (credentials) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, errorCode: null });
     try {
       const response = await authService.login(credentials);
       
@@ -43,14 +46,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        errorCode: null,
       });
       return true;
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || 'Có lỗi xảy ra trong quá trình đăng nhập.';
+      const errorMessage = getApiErrorMessage(err, 'Có lỗi xảy ra trong quá trình đăng nhập.');
       set({
         isLoading: false,
         error: errorMessage,
+        errorCode: extractRawErrorCode(err),
         isAuthenticated: false,
         user: null,
         accessToken: null,
@@ -61,7 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loginWithGoogle: async (idToken, nonce) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, errorCode: null });
     try {
       const response = await authService.loginWithGoogle({ idToken, nonce });
       
@@ -74,6 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        errorCode: null,
       });
       return true;
     } catch (err: any) {
@@ -105,14 +110,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isAuthenticated: true,
           isLoading: false,
           error: null,
+          errorCode: null,
         });
         return true;
       } catch (parseErr) {
-        const errorMessage =
-          err?.response?.data?.message || err?.message || 'Đăng nhập bằng Google thất bại.';
+        const errorMessage = getApiErrorMessage(err, 'Đăng nhập bằng Google thất bại.');
         set({
           isLoading: false,
           error: errorMessage,
+          errorCode: extractRawErrorCode(err),
           isAuthenticated: false,
           user: null,
           accessToken: null,
@@ -124,14 +130,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   registerUser: async (data) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, errorCode: null });
     try {
       // 1. Call register API
       const registerResponse = await authService.register(data);
       
       // If Backend requires OTP verification, stop here and return true (UI will redirect to /verify-otp)
       if (registerResponse && (registerResponse as any).requiresEmailConfirmation) {
-        set({ isLoading: false, error: null });
+        set({ isLoading: false, error: null, errorCode: null });
         return true;
       }
 
@@ -150,21 +156,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        errorCode: null,
       });
       return true;
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || 'Có lỗi xảy ra trong quá trình đăng ký.';
+      const errorMessage = getApiErrorMessage(err, 'Có lỗi xảy ra trong quá trình đăng ký.');
       set({
         isLoading: false,
         error: errorMessage,
+        errorCode: extractRawErrorCode(err),
       });
       return false;
     }
   },
 
   verifyEmailOtp: async (email, otp) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, errorCode: null });
     try {
       const response = await authService.verifyEmailOtp(email, otp);
       
@@ -177,31 +184,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        errorCode: null,
       });
       return true;
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || 'Xác thực OTP không thành công.';
+      const errorMessage = getApiErrorMessage(err, 'Xác thực OTP không thành công.');
       set({
         isLoading: false,
         error: errorMessage,
+        errorCode: extractRawErrorCode(err),
       });
       return false;
     }
   },
 
   resendOtp: async (email) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, errorCode: null });
     try {
       await authService.resendConfirmationOtp(email);
-      set({ isLoading: false, error: null });
+      set({ isLoading: false, error: null, errorCode: null });
       return true;
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || 'Gửi lại mã OTP thất bại.';
+      const errorMessage = getApiErrorMessage(err, 'Gửi lại mã OTP thất bại.');
       set({
         isLoading: false,
         error: errorMessage,
+        errorCode: extractRawErrorCode(err),
       });
       return false;
     }
@@ -267,5 +275,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  clearError: () => set({ error: null }),
+  clearError: () => set({ error: null, errorCode: null }),
 }));

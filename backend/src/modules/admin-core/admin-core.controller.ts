@@ -12,6 +12,7 @@ import { GetDeactivationRequestsDto } from './dto/get-deactivation-requests.dto'
 import { RejectDeactivationRequestDto } from './dto/reject-deactivation-request.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { GetAdminBookingsDto } from './dto/get-admin-bookings.dto';
 import { AccessTokenGuard } from '../../common/guards/access-token.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -26,12 +27,31 @@ export class AdminCoreController {
   constructor(private readonly adminCoreService: AdminCoreService) {}
 
   @Get('dashboard/stats')
-  @ApiOperation({ summary: 'Lấy thống kê tổng quan (Dashboard Admin)' })
+  @ApiOperation({ summary: 'Lấy thống kê tổng quan & biểu đồ theo thời gian (Dashboard Admin)' })
   @ApiResponse({ status: 200, description: 'Trả về các số liệu thống kê.' })
   @ApiResponse({ status: 401, description: 'Chưa xác thực (Unauthorized).' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập (Forbidden, yêu cầu role ADMIN).' })
-  async getDashboardStats() {
-    return this.adminCoreService.getDashboardStats();
+  async getDashboardStats(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return this.adminCoreService.getDashboardStats(fromDate, toDate);
+  }
+
+  @Get('bookings')
+  @ApiOperation({ summary: 'Giám sát danh sách ca làm / booking trên toàn hệ thống (Admin)' })
+  @ApiResponse({ status: 200, description: 'Danh sách ca làm kèm tổng hợp theo trạng thái.' })
+  async getBookings(@Query() queryDto: GetAdminBookingsDto) {
+    return this.adminCoreService.getBookings(queryDto);
+  }
+
+  @Get('bookings/:id')
+  @ApiOperation({ summary: 'Xem chi tiết ca làm (checklist, bằng chứng, log trạng thái, thanh toán)' })
+  @ApiParam({ name: 'id', description: 'ID của booking', type: String })
+  @ApiResponse({ status: 200, description: 'Chi tiết ca làm.' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy booking.' })
+  async getBookingDetail(@Param('id') id: string) {
+    return this.adminCoreService.getBookingDetail(id);
   }
 
   @Get('users')

@@ -321,6 +321,34 @@ describe('PaymentsService', () => {
       });
     });
 
+    it('prioritizes COMMISSION_RATE from system_configs over .env', async () => {
+      mockPrisma.system_configs.findUnique.mockResolvedValueOnce({
+        key: 'COMMISSION_RATE',
+        value: '0.15',
+      });
+
+      await expect(service.calculateCommissionPreview(200000)).resolves.toEqual({
+        amount: 200000,
+        commissionRate: 0.15,
+        commissionPercent: 15,
+        platformFee: 30000,
+        providerAmount: 170000,
+      });
+    });
+
+    it('falls back to 15% (0.15) when neither DB nor .env sets COMMISSION_RATE', async () => {
+      mockPrisma.system_configs.findUnique.mockResolvedValueOnce(null);
+      mockConfig.get.mockReturnValueOnce(undefined);
+
+      await expect(service.calculateCommissionPreview(200000)).resolves.toEqual({
+        amount: 200000,
+        commissionRate: 0.15,
+        commissionPercent: 15,
+        platformFee: 30000,
+        providerAmount: 170000,
+      });
+    });
+
     it('rejects an invalid amount', async () => {
       await expect(service.calculateCommissionPreview(-1)).rejects.toThrow(BadRequestException);
       await expect(service.calculateCommissionPreview(NaN)).rejects.toThrow(BadRequestException);

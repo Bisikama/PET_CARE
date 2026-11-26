@@ -89,7 +89,7 @@ export interface SubscriptionBankTransferCheckout {
   bankCode: string;
   accountNumber: string;
   accountName: string;
-  /** VD: "PCABCD234567 Thanh toan goi BASIC" */
+  /** VD: "PCABCD234567 Thanh toan goi thanh vien BASIC" */
   transferContent: string;
   qrImageUrl: string;
 }
