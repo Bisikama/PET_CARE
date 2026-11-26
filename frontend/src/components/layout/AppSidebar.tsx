@@ -22,7 +22,8 @@ import {
   Wallet,
   Landmark,
   Crown,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 import { removeAuthToken } from '@/lib/auth';
 import { useAuthStore } from '@/features/auth/stores/auth.store';
@@ -89,6 +90,7 @@ export const AppSidebar = () => {
         { name: 'Nhật Ký Hệ Thống', href: `${ROUTES.DASHBOARD}?tab=logs`, icon: Database },
         { name: 'Mã Khuyến Mãi', href: `${ROUTES.DASHBOARD}?tab=promotions`, icon: Tag },
         { name: 'Gói Hội Viên', href: `${ROUTES.DASHBOARD}?tab=subscriptions`, icon: Crown },
+        { name: 'Cấu Hình Hệ Thống', href: `${ROUTES.DASHBOARD}?tab=configs`, icon: Settings },
       ]
     }
   ];

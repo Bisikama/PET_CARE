@@ -12,6 +12,8 @@ export * from './components/AdminUserManagement';
 export * from './components/AdminAuditLogsList';
 export * from './components/AdminUsersManagerTable';
 export * from './components/AdminServicesManager';
+export * from './components/AdminSystemConfigs';
+export * from './components/AdminShiftMonitor';
 export * from './hooks/useAdminUsersManager';
 
 
