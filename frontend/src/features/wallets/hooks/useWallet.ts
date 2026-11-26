@@ -24,7 +24,7 @@ export const useWallet = (options?: { pollingIntervalMs?: number }) => {
       setWallet(data);
     } catch (err: any) {
       if (!silent) {
-        setError(err.response?.data?.message || 'Failed to fetch wallet');
+        setError(getApiErrorMessage(err, 'Không thể tải thông tin ví.'));
       }
     } finally {
       if (!silent) {
@@ -83,7 +83,7 @@ export const useWalletTransactions = () => {
       const data = await walletService.getMyTransactions();
       setTransactions(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch transactions');
+      setError(getApiErrorMessage(err, 'Không thể tải lịch sử giao dịch.'));
     } finally {
       setLoading(false);
     }
@@ -115,7 +115,7 @@ export const usePayoutRequests = () => {
       const data = await walletService.getMyPayoutRequests();
       setPayoutRequests(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch payout requests');
+      setError(getApiErrorMessage(err, 'Không thể tải danh sách yêu cầu rút tiền.'));
     } finally {
       setLoading(false);
     }

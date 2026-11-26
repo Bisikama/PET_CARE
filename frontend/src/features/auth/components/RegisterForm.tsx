@@ -54,8 +54,8 @@ export function RegisterForm() {
     if (success) {
       router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(data.email)}`);
     } else {
-      const currentError = useAuthStore.getState().error;
-      if (currentError === 'EMAIL_CONFIRMATION_PENDING') {
+      const { error: currentError, errorCode } = useAuthStore.getState();
+      if (errorCode === 'EMAIL_CONFIRMATION_PENDING' || currentError === 'EMAIL_CONFIRMATION_PENDING') {
         clearError();
         router.push(`${ROUTES.VERIFY_OTP}?email=${encodeURIComponent(data.email)}`);
       }

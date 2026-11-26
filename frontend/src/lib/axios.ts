@@ -1,5 +1,33 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import { getAuthToken, setAuthToken, removeAuthToken } from './auth';
+import { extractRawErrorCode, translateRawErrorMessage } from './api-error';
+
+const normalizeAxiosError = (error: any) => {
+  if (!error || typeof error !== 'object') return error;
+
+  if (!error.response) {
+    error.message = 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    return error;
+  }
+
+  const rawCode = extractRawErrorCode(error);
+  const rawMessage = error.response.data?.message ?? error.message;
+  const friendlyMessage = translateRawErrorMessage(rawMessage, error.response.status);
+
+  if (rawCode) {
+    error.errorCode = rawCode;
+  }
+
+  if (error.response.data && typeof error.response.data === 'object') {
+    if (rawCode) {
+      error.response.data.errorCode = rawCode;
+    }
+    error.response.data.message = friendlyMessage;
+  }
+
+  error.message = friendlyMessage;
+  return error;
+};
 
 const getBaseURL = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -63,7 +91,7 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if (!error.response) {
-      return Promise.reject(error);
+      return Promise.reject(normalizeAxiosError(error));
     }
 
     const isAuthEndpoint =
@@ -115,13 +143,13 @@ axiosInstance.interceptors.response.use(
       } catch (refreshErr) {
         processQueue(refreshErr, null);
         removeAuthToken();
-        return Promise.reject(refreshErr);
+        return Promise.reject(normalizeAxiosError(refreshErr));
       } finally {
         isRefreshing = false;
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(normalizeAxiosError(error));
   }
 );
 

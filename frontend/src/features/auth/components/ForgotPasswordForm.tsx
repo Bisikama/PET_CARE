@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { AlertCircle, ArrowRight, ArrowLeft, Mail } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import { authService } from '../services/auth.service';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 const forgotPasswordSchema = z.object({
   email: z.string().min(1, 'Email không được để trống').email('Email không hợp lệ'),
@@ -49,9 +50,7 @@ export function ForgotPasswordForm() {
         router.push(`${ROUTES.RESET_PASSWORD}?email=${encodeURIComponent(data.email)}`);
       }, 3000);
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi yêu cầu lại mật khẩu.';
-      setError(errorMessage);
+      setError(getApiErrorMessage(err, 'Có lỗi xảy ra khi yêu cầu đặt lại mật khẩu. Vui lòng thử lại.'));
     } finally {
       setIsLoading(false);
     }
