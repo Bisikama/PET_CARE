@@ -514,6 +514,30 @@ export class SettlementsService {
   }
 
   /**
+   * Lấy tỷ lệ hoa hồng nền tảng (COMMISSION_RATE): DB -> .env -> 15% (0.15)
+   */
+  private async resolveCommissionRate(tx?: Prisma.TransactionClient): Promise<number> {
+    const prismaClient = tx || this.prisma;
+    const config = await prismaClient.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+    if (config) {
+      const dbRate = parseFloat(config.value);
+      if (!isNaN(dbRate) && dbRate >= 0 && dbRate <= 1) {
+        return dbRate;
+      }
+    }
+
+    const envCommission = this.configService.get<string>('COMMISSION_RATE');
+    if (envCommission) {
+      const envRate = parseFloat(envCommission);
+      if (!isNaN(envRate) && envRate >= 0 && envRate <= 1) {
+        return envRate;
+      }
+    }
+
+    return 0.15;
+  }
+
+  /**
    * Đảm bảo provider_amount và platform_fee luôn được tính toán hợp lệ (Safe Fallback)
    */
   private async ensureValidPaymentAmounts(
@@ -524,12 +548,7 @@ export class SettlementsService {
     let platformFee = Number(payment.platform_fee || 0);
 
     if (providerAmount <= 0 && Number(payment.amount) > 0) {
-      const envCommission = this.configService.get<string>('COMMISSION_RATE');
-      let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
-      if (isNaN(commissionRate)) {
-        const config = await tx.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
-        commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
-      }
+      const commissionRate = await this.resolveCommissionRate(tx);
       platformFee = Math.round(Number(payment.amount) * commissionRate);
       providerAmount = Math.max(0, Number(payment.amount) - platformFee);
 
@@ -578,12 +597,7 @@ export class SettlementsService {
     });
 
     // Lấy thông tin cấu hình tỷ lệ hoa hồng
-    const envCommission = this.configService.get<string>('COMMISSION_RATE');
-    let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
-    if (isNaN(commissionRate)) {
-      const config = await this.prisma.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
-      commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
-    }
+    const commissionRate = await this.resolveCommissionRate();
 
     // Thống kê tổng hoa hồng đã thu (các giao dịch CREDIT vào ví sàn)
     const totalPlatformFeeAgg = await this.prisma.wallet_transactions.aggregate({

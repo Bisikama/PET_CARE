@@ -51,17 +51,27 @@ export class PaymentsService {
 
   /**
    * Lấy tỷ lệ hoa hồng nền tảng (COMMISSION_RATE)
-   * Thứ tự ưu tiên: .env -> system_configs (DB) -> mặc định 10% (0.1)
+   * Thứ tự ưu tiên: system_configs (DB) -> .env -> mặc định 15% (0.15)
    */
   async getCommissionRate(tx?: Prisma.TransactionClient): Promise<number> {
-    const envCommission = this.configService.get<string>('COMMISSION_RATE');
-    let commissionRate = envCommission ? parseFloat(envCommission) : NaN;
-    if (isNaN(commissionRate)) {
-      const prismaClient = tx || this.prisma;
-      const config = await prismaClient.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
-      commissionRate = config && !isNaN(parseFloat(config.value)) ? parseFloat(config.value) : 0.1;
+    const prismaClient = tx || this.prisma;
+    const config = await prismaClient.system_configs.findUnique({ where: { key: 'COMMISSION_RATE' } });
+    if (config) {
+      const dbRate = parseFloat(config.value);
+      if (!isNaN(dbRate) && dbRate >= 0 && dbRate <= 1) {
+        return dbRate;
+      }
     }
-    return commissionRate;
+
+    const envCommission = this.configService.get<string>('COMMISSION_RATE');
+    if (envCommission) {
+      const envRate = parseFloat(envCommission);
+      if (!isNaN(envRate) && envRate >= 0 && envRate <= 1) {
+        return envRate;
+      }
+    }
+
+    return 0.15;
   }
 
   /**
@@ -661,7 +671,7 @@ export class PaymentsService {
     return Math.max(0, amount - discountAmount);
   }
 
-  /** Chia số tiền thành phí nền tảng và phần của provider. COMMISSION_RATE: .env -> DB -> 10%. */
+  /** Chia số tiền thành phí nền tảng và phần của provider. COMMISSION_RATE: DB -> .env -> 15%. */
   private async splitAmount(amount: number, tx: Tx) {
     const commissionRate = await this.getCommissionRate(tx);
     const platformFee = Math.round(amount * commissionRate);
