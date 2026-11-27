@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { AlertCircle, ArrowRight, ArrowLeft, KeyRound, Lock, Eye, EyeOff } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
 import { authService } from '../services/auth.service';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 const resetPasswordSchema = z
   .object({
@@ -119,9 +120,7 @@ export function ResetPasswordForm() {
         router.push(ROUTES.LOGIN);
       }, 3000);
     } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || 'Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại mã OTP.';
-      setError(errorMessage);
+      setError(getApiErrorMessage(err, 'Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại mã OTP.'));
     } finally {
       setIsLoading(false);
     }

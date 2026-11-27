@@ -8,6 +8,7 @@ import { GetDeactivationRequestsDto } from '../../dto/get-deactivation-requests.
 import { RejectDeactivationRequestDto } from '../../dto/reject-deactivation-request.dto';
 import { CreateUserDto } from '../../dto/create-user.dto';
 import { UpdateUserDto } from '../../dto/update-user.dto';
+import { GetAdminBookingsDto } from '../../dto/get-admin-bookings.dto';
 import { Role, user_status, provider_status, booking_status, deactivation_status } from '@prisma/client';
 import { SettlementsService } from '../../../settlements/application/use-cases/settlements.service';
 import { NotificationsService } from '../../../growth/notifications/notifications.service';
@@ -28,13 +29,38 @@ export class AdminCoreService {
     private readonly storageService: SupabaseStorageService,
   ) {}
 
-  async getDashboardStats() {
+  async getDashboardStats(fromDate?: string, toDate?: string) {
+    const now = new Date();
+    const parsedEnd = toDate ? new Date(toDate) : now;
+    const end = isNaN(parsedEnd.getTime()) ? new Date(now) : new Date(parsedEnd);
+    end.setHours(23, 59, 59, 999);
+
+    const parsedStart = fromDate ? new Date(fromDate) : new Date(end.getTime() - 29 * 86_400_000);
+    let start = isNaN(parsedStart.getTime())
+      ? new Date(end.getTime() - 29 * 86_400_000)
+      : new Date(parsedStart);
+    start.setHours(0, 0, 0, 0);
+
+    if (start > end) {
+      start = new Date(end.getTime() - 29 * 86_400_000);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    // Cap series range to 90 days max
+    const maxRangeMs = 89 * 86_400_000;
+    if (end.getTime() - start.getTime() > maxRangeMs) {
+      start = new Date(end.getTime() - maxRangeMs);
+      start.setHours(0, 0, 0, 0);
+    }
+
     const [
       totalUsers,
       totalProviders,
       totalBookings,
       openDisputes,
       totalRevenueAgg,
+      totalCommissionAgg,
+      rangeBookings,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.provider_profiles.count(),
@@ -46,15 +72,254 @@ export class AdminCoreService {
         _sum: { total_price: true },
         where: { status: 'COMPLETED' },
       }),
+      this.prisma.payments.aggregate({
+        _sum: { platform_fee: true },
+        where: { status: { in: ['PAID_HELD_IN_ESCROW', 'RELEASED_TO_PROVIDER'] } },
+      }),
+      this.prisma.bookings.findMany({
+        where: {
+          created_at: {
+            gte: start,
+            lte: end,
+          },
+        },
+        select: {
+          created_at: true,
+          total_price: true,
+          status: true,
+        },
+      }),
     ]);
+
+    const toDateKey = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const dailyMap = new Map<string, { date: string; label: string; revenue: number; bookings: number }>();
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const key = toDateKey(cursor);
+      const label = `${String(cursor.getDate()).padStart(2, '0')}/${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+      dailyMap.set(key, { date: key, label, revenue: 0, bookings: 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const bookingsByStatus: Record<string, number> = {};
+    let periodRevenue = 0;
+
+    for (const b of rangeBookings) {
+      bookingsByStatus[b.status] = (bookingsByStatus[b.status] || 0) + 1;
+      const price = Number(b.total_price || 0);
+      if (b.status === 'COMPLETED') {
+        periodRevenue += price;
+      }
+      if (b.created_at) {
+        const key = toDateKey(new Date(b.created_at));
+        const bucket = dailyMap.get(key);
+        if (bucket) {
+          bucket.bookings += 1;
+          if (b.status === 'COMPLETED') {
+            bucket.revenue += price;
+          }
+        }
+      }
+    }
 
     return {
       totalUsers,
       totalProviders,
       totalBookings,
       openDisputes,
-      totalRevenue: totalRevenueAgg._sum.total_price || 0,
+      totalRevenue: totalRevenueAgg._sum?.total_price || 0,
+      totalCommission: Number(totalCommissionAgg._sum?.platform_fee || 0),
+      periodBookings: rangeBookings.length,
+      periodRevenue,
+      bookingsByStatus,
+      revenueSeries: Array.from(dailyMap.values()),
+      range: {
+        fromDate: toDateKey(start),
+        toDate: toDateKey(end),
+      },
     };
+  }
+
+  async getBookings(queryDto: GetAdminBookingsDto) {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      search,
+      fromDate,
+      toDate,
+      providerId,
+      customerId,
+    } = queryDto;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (providerId) where.provider_id = providerId;
+    if (customerId) where.customer_id = customerId;
+
+    if (fromDate || toDate) {
+      where.requested_date = {};
+      if (fromDate) where.requested_date.gte = new Date(fromDate);
+      if (toDate) where.requested_date.lte = new Date(toDate);
+    }
+
+    if (search && search.trim()) {
+      const trimmed = search.trim();
+      const orConditions: any[] = [
+        { users: { fullName: { contains: trimmed, mode: 'insensitive' } } },
+        { users: { email: { contains: trimmed, mode: 'insensitive' } } },
+        { provider_profiles: { users: { fullName: { contains: trimmed, mode: 'insensitive' } } } },
+        { provider_profiles: { users: { email: { contains: trimmed, mode: 'insensitive' } } } },
+      ];
+
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+        orConditions.push({ id: trimmed });
+      }
+
+      where.OR = orConditions;
+    }
+
+    const [bookings, total, statusGroups] = await Promise.all([
+      this.prisma.bookings.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        include: {
+          users: {
+            select: { id: true, fullName: true, email: true, phone: true },
+          },
+          provider_profiles: {
+            select: {
+              id: true,
+              users: {
+                select: { id: true, fullName: true, email: true, phone: true },
+              },
+            },
+          },
+          payments: {
+            select: {
+              id: true,
+              status: true,
+              amount: true,
+              platform_fee: true,
+              provider_amount: true,
+              method: true,
+              paid_at: true,
+            },
+          },
+          booking_pets: {
+            select: {
+              id: true,
+              pet_name: true,
+              species: true,
+              breed: true,
+              booking_services: {
+                select: {
+                  id: true,
+                  service_name: true,
+                  price: true,
+                  duration_minutes: true,
+                  booking_checklist_items: {
+                    select: { id: true, status: true },
+                  },
+                },
+              },
+            },
+          },
+          _count: {
+            select: { booking_media: true },
+          },
+        },
+      }),
+      this.prisma.bookings.count({ where }),
+      this.prisma.bookings.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+    ]);
+
+    const statusCounts: Record<string, number> = {};
+    for (const row of statusGroups) {
+      statusCounts[row.status] = row._count._all;
+    }
+
+    const summary = {
+      inProgress:
+        (statusCounts[booking_status.IN_PROGRESS] || 0) +
+        (statusCounts[booking_status.CHECKED_IN] || 0) +
+        (statusCounts[booking_status.PROVIDER_ARRIVED] || 0),
+      awaitingConfirmation: statusCounts[booking_status.AWAITING_CUSTOMER_CONFIRMATION] || 0,
+      disputed:
+        (statusCounts[booking_status.DISPUTED] || 0) +
+        (statusCounts[booking_status.INCIDENT_REPORTED] || 0),
+      completed: statusCounts[booking_status.COMPLETED] || 0,
+      pendingAcceptance:
+        (statusCounts[booking_status.PENDING_PROVIDER_ACCEPTANCE] || 0) +
+        (statusCounts[booking_status.ACCEPTED] || 0),
+    };
+
+    return {
+      data: bookings,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      summary,
+    };
+  }
+
+  async getBookingDetail(bookingId: string) {
+    const booking = await this.prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: {
+        users: {
+          select: { id: true, fullName: true, email: true, phone: true },
+        },
+        provider_profiles: {
+          select: {
+            id: true,
+            users: {
+              select: { id: true, fullName: true, email: true, phone: true },
+            },
+          },
+        },
+        customer_addresses: true,
+        payments: true,
+        booking_pets: {
+          include: {
+            booking_services: {
+              include: {
+                booking_checklist_items: {
+                  orderBy: { created_at: 'asc' },
+                },
+              },
+            },
+          },
+        },
+        booking_media: {
+          orderBy: { created_at: 'desc' },
+        },
+        booking_status_logs: {
+          orderBy: { created_at: 'asc' },
+        },
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return booking;
   }
 
   async getUsers(queryDto: GetUsersDto) {

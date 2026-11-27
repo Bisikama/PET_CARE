@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { SupabaseAuthService } from '../../supabase-auth.service';
 import { ResetPasswordDto } from '../../dto/reset-password.dto';
 import { UsersService } from '../../../users/application/use-cases/users.service';
@@ -22,12 +22,37 @@ export class ResetPasswordUseCase {
     }
 
     const normalizedEmail = this.supabaseAuthService.normalizeEmail(input.email);
+    const trimmedToken = input.token.trim();
+    const isJwtToken = trimmedToken.startsWith('eyJ') && trimmedToken.split('.').length === 3;
 
-    // Xác thực OTP và lấy session tạm từ Supabase
-    const session = await this.supabaseAuthService.verifyRecoveryOtp(normalizedEmail, input.token);
+    let accessToken: string;
+    if (isJwtToken) {
+      let supabaseUser: any;
+      try {
+        const result = await this.supabaseAuthService.getUserByAccessToken(trimmedToken);
+        supabaseUser = result?.user;
+      } catch (err) {
+        if (err instanceof UnauthorizedException) {
+          throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
+        }
+        throw err;
+      }
+
+      if (
+        !supabaseUser?.email ||
+        this.supabaseAuthService.normalizeEmail(supabaseUser.email) !== normalizedEmail
+      ) {
+        throw new BadRequestException(AUTH_ERRORS.OTP_INVALID_OR_EXPIRED);
+      }
+      accessToken = trimmedToken;
+    } else {
+      // Xác thực OTP 6 số và lấy session tạm từ Supabase
+      const session = await this.supabaseAuthService.verifyRecoveryOtp(normalizedEmail, trimmedToken);
+      accessToken = session.access_token;
+    }
 
     // Dùng access_token tạm để đổi mật khẩu
-    await this.supabaseAuthService.updatePassword(session.access_token, input.password);
+    await this.supabaseAuthService.updatePassword(accessToken, input.password);
 
     // Thu hồi toàn bộ refresh token để bắt đăng nhập lại
     const user = await this.usersService.findByEmail(normalizedEmail);

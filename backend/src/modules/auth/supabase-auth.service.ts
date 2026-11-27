@@ -5,6 +5,8 @@ import {
   BadRequestException,
   ConflictException,
   ServiceUnavailableException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -133,7 +135,20 @@ export class SupabaseAuthService {
       redirectTo,
     });
     if (error) {
-      console.error(`Supabase resetPassword error for ${email}:`, error);
+      console.error(`Supabase resetPassword error for ${email}:`, {
+        message: error.message,
+        status: error.status,
+        code: (error as any).code,
+      });
+
+      if (error.status === 429 || (error as any).code === 'over_email_send_rate_limit') {
+        throw new HttpException(
+          'Bạn đã yêu cầu gửi email quá nhiều lần. Vui lòng thử lại sau ít phút.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+
+      throw new ServiceUnavailableException(AUTH_ERRORS.PROVIDER_UNAVAILABLE);
     }
   }
 

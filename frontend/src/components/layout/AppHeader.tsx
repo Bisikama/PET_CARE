@@ -53,6 +53,8 @@ export const AppHeader = () => {
             return 'Mã Khuyến Mãi';
           case 'subscriptions':
             return 'Gói Hội Viên';
+          case 'configs':
+            return 'Cấu Hình Hệ Thống';
           default:
             return 'Duyệt Hồ Sơ eKYC';
         }

@@ -43,7 +43,7 @@ const order = (overrides: any = {}) => ({
   method: 'BANK_TRANSFER',
   status: 'PENDING',
   payment_code: 'PCABCDEFGH23',
-  transfer_content: 'PCABCDEFGH23 Thanh toan goi BASIC',
+  transfer_content: 'PCABCDEFGH23 Thanh toan goi thanh vien BASIC',
   gateway_ref: null,
   subscription_id: null,
   paid_at: null,
@@ -109,10 +109,10 @@ describe('SubscriptionsService', () => {
       const result = await service.checkoutBankTransfer(USER_ID, 'basic');
 
       expect(result.paymentCode).toMatch(/^PC[A-Z2-9]{10}$/);
-      expect(result.transferContent).toBe(`${result.paymentCode} Thanh toan goi BASIC`);
+      expect(result.transferContent).toBe(`${result.paymentCode} Thanh toan goi thanh vien BASIC`);
       expect(result.amount).toBe(99000);
       expect(result.planCode).toBe('BASIC');
-      expect(result.qrImageUrl).toContain('des=' + result.paymentCode + '+Thanh+toan+goi+BASIC');
+      expect(result.qrImageUrl).toContain('des=' + result.paymentCode + '+Thanh+toan+goi+thanh+vien+BASIC');
       expect(mockPrisma.subscription_orders.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           user_id: USER_ID,

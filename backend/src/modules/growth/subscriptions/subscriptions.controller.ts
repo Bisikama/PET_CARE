@@ -22,7 +22,7 @@ export class SubscriptionsController {
 
   @Post('checkout-bank-transfer')
   @ApiOperation({
-    summary: 'Mua gói bằng chuyển khoản VietQR (nội dung CK: "<mã> Thanh toan goi <MÃ GÓI>")',
+    summary: 'Mua gói bằng chuyển khoản VietQR (nội dung CK: "<mã> Thanh toan goi thanh vien <MÃ GÓI>")',
   })
   @ApiResponse({ status: 201, description: 'Thông tin tài khoản nhận, số tiền, nội dung CK và ảnh VietQR.' })
   @ApiResponse({ status: 404, description: 'Gói không tồn tại hoặc đã ngừng bán.' })

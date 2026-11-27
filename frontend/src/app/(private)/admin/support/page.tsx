@@ -1,12 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { ShieldCheck, MessageSquare, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AdminTicketList, AdminDisputeList } from '@/features/admin-care/components';
 
 export default function AdminSupportPage() {
-  const [activeTab, setActiveTab] = useState<'tickets' | 'disputes'>('tickets');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabParam = searchParams.get('tab');
+
+  const [activeTab, setActiveTab] = useState<'tickets' | 'disputes'>(
+    tabParam === 'disputes' ? 'disputes' : 'tickets',
+  );
+
+  useEffect(() => {
+    setActiveTab(tabParam === 'disputes' ? 'disputes' : 'tickets');
+  }, [tabParam]);
+
+  const handleTabChange = (nextTab: 'tickets' | 'disputes') => {
+    setActiveTab(nextTab);
+    const nextUrl = nextTab === 'disputes' ? `${pathname}?tab=disputes` : pathname;
+    router.replace(nextUrl);
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-fade-in">
@@ -29,7 +47,7 @@ export default function AdminSupportPage() {
       {/* Tabs Selection */}
       <div className="flex items-center gap-3 border-b border-slate-200 pb-2">
         <button
-          onClick={() => setActiveTab('tickets')}
+          onClick={() => handleTabChange('tickets')}
           className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all ${
             activeTab === 'tickets'
               ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
@@ -41,7 +59,7 @@ export default function AdminSupportPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('disputes')}
+          onClick={() => handleTabChange('disputes')}
           className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all ${
             activeTab === 'disputes'
               ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'

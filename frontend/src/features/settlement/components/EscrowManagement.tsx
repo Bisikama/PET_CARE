@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useId, type ComponentProps } from 'react';
 import { usePayoutRequests } from '../hooks/usePayoutRequests';
 import { useSettlementActions } from '../hooks/useSettlementActions';
-import type { PayoutRequest } from '../types';
+import { settlementService } from '../services/settlement.service';
+import type { PayoutRequest, PlatformWalletInfo } from '../types';
 import {
-  AlertTriangle, ArrowUpRight, Check, CheckCircle2, Clock, Copy, DollarSign, Info,
+  AlertTriangle, ArrowUpRight, Check, CheckCircle2, Clock, Copy, DollarSign, Download, Info,
   Landmark, RotateCw, Search, Shield, ShieldCheck, Wallet, XCircle,
 } from 'lucide-react';
+import { exportToCsv } from '@/utils/exportCsv';
 import { ModalDialog, SuccessDialog } from '@/components/ui/ModalDialog';
 import { adminService } from '@/features/admin/services/admin.service';
 import { bookingService } from '@/features/booking/services/booking.service';
@@ -48,6 +50,7 @@ export const EscrowManagement = () => {
   const [bookingIdInput, setBookingIdInput] = useState('');
   const [stats, setStats] = useState<{ totalRevenue?: number; totalBookings?: number } | null>(null);
   const [adminWallet, setAdminWallet] = useState<WalletData | null>(null);
+  const [platformWallet, setPlatformWallet] = useState<PlatformWalletInfo | null>(null);
 
   const [payoutFilter, setPayoutFilter] = useState<PayoutFilter>('PENDING');
   const [copiedStk, setCopiedStk] = useState<string | null>(null);
@@ -67,6 +70,10 @@ export const EscrowManagement = () => {
     walletService.getMyWallet()
       .then((res) => setAdminWallet(res))
       .catch((err) => console.error('Error fetching admin wallet:', err));
+
+    settlementService.getPlatformWallet()
+      .then((res) => setPlatformWallet(res))
+      .catch((err) => console.error('Error fetching platform wallet:', err));
   };
 
   useEffect(() => {
@@ -159,6 +166,8 @@ export const EscrowManagement = () => {
     fetchAdminWallet();
   };
 
+  const availableBalance = platformWallet?.wallet.balance ?? adminWallet?.balance ?? 0;
+
   const handleAdminWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isWithdrawing) return;
@@ -168,7 +177,7 @@ export const EscrowManagement = () => {
       setWithdrawError('Vui lòng nhập số tiền nguyên từ 1.000 đ trở lên.');
       return;
     }
-    if (adminWallet && amountNum > adminWallet.balance) {
+    if ((platformWallet || adminWallet) && amountNum > availableBalance) {
       setWithdrawError('Số tiền rút vượt quá số dư ví hoa hồng khả dụng.');
       return;
     }
@@ -210,7 +219,11 @@ export const EscrowManagement = () => {
           <div className="space-y-2">
             <div className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-baseline justify-between flex-wrap gap-2">
               <span className="text-[#F7C948]">
-                {adminWallet ? formatCurrency(adminWallet.balance || 0) : '0 đ'}
+                {platformWallet
+                  ? formatCurrency(platformWallet.wallet.balance)
+                  : adminWallet
+                    ? formatCurrency(adminWallet.balance || 0)
+                    : '0 đ'}
               </span>
               <button
                 type="button"
@@ -224,8 +237,16 @@ export const EscrowManagement = () => {
               </button>
             </div>
             <p className="text-[11px] text-slate-300 font-normal">
-              Hoa hồng 10% thực nhận trích tự động sau khi ca làm hoàn tất
+              Hoa hồng {platformWallet?.commissionPercent ?? 15}% thực nhận trích tự động sau khi ca làm hoàn tất
             </p>
+            {platformWallet && (
+              <p className="text-[11px] text-slate-400 font-medium">
+                Tổng hoa hồng tích lũy:{' '}
+                <strong className="text-emerald-400">
+                  {formatCurrency(platformWallet.totalCommissionCollected || 0)}
+                </strong>
+              </p>
+            )}
           </div>
         </div>
 
@@ -307,14 +328,40 @@ export const EscrowManagement = () => {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={refreshPayoutRequests}
-              className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl transition-colors cursor-pointer self-start sm:self-auto font-semibold"
-            >
-              <RotateCw className="w-3.5 h-3.5 text-slate-500" />
-              Làm mới
-            </button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                disabled={filteredRequests.length === 0}
+                onClick={() =>
+                  exportToCsv(
+                    `payout-requests-${new Date().toISOString().slice(0, 10)}.csv`,
+                    [
+                      { header: 'Mã yêu cầu', value: (r) => r.id },
+                      { header: 'Đối tác', value: (r) => r.accountName || r.providerName || '' },
+                      { header: 'Ngân hàng', value: (r) => r.bankName || r.bank_details?.bank_name || '' },
+                      { header: 'Số tài khoản', value: (r) => r.accountNumber || r.bank_details?.account_number || '' },
+                      { header: 'Số tiền (VNĐ)', value: (r) => r.amount },
+                      { header: 'Trạng thái', value: (r) => r.status },
+                      { header: 'Ngày tạo', value: (r) => formatDateTime(r.created_at || r.requestedAt) },
+                    ],
+                    filteredRequests,
+                  )
+                }
+                className="text-xs text-slate-700 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200/80 rounded-xl transition-colors cursor-pointer font-semibold disabled:opacity-40"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                Xuất CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={refreshPayoutRequests}
+                className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl transition-colors cursor-pointer font-semibold"
+              >
+                <RotateCw className="w-3.5 h-3.5 text-slate-500" />
+                Làm mới
+              </button>
+            </div>
           </div>
 
           {/* Quick Filter Tabs */}
@@ -615,6 +662,84 @@ export const EscrowManagement = () => {
         </div>
       </div>
 
+      {/* ── Platform Wallet Recent Transactions ──────────────────────────── */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between gap-4 bg-slate-50/50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#08243D]/5 border border-slate-200 flex items-center justify-center text-[#08243D]">
+              <Landmark className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-[#08243D]">
+                Lịch Sử Giao Dịch Ví Sàn (20 giao dịch gần nhất)
+              </h4>
+              <p className="text-[11px] text-slate-400">
+                Biến động thu hoa hồng tự động và các lệnh rút doanh thu về ngân hàng công ty.
+              </p>
+            </div>
+          </div>
+          {platformWallet && (
+            <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full shrink-0">
+              {platformWallet.recentTransactions.length} giao dịch
+            </span>
+          )}
+        </div>
+
+        {!platformWallet || platformWallet.recentTransactions.length === 0 ? (
+          <div className="p-10 text-center text-xs text-slate-400 font-medium">
+            Chưa có giao dịch nào được ghi nhận trên ví doanh thu sàn.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="px-6 py-3">Thời gian</th>
+                  <th className="px-6 py-3">Loại</th>
+                  <th className="px-6 py-3">Mô tả</th>
+                  <th className="px-6 py-3 text-right">Số tiền</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {platformWallet.recentTransactions.map((tx) => {
+                  const isCredit = tx.type === 'CREDIT' || tx.type === 'ESCROW_RELEASE';
+                  const amountVal = Number(tx.amount) || 0;
+                  return (
+                    <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="px-6 py-3.5 text-slate-500 whitespace-nowrap">
+                        {formatDateTime(tx.created_at)}
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            isCredit
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border-rose-200'
+                          }`}
+                        >
+                          {tx.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-slate-700 font-medium max-w-md">
+                        {tx.description || (tx.reference_id ? `Mã tham chiếu: ${tx.reference_id}` : 'Giao dịch ví sàn')}
+                      </td>
+                      <td
+                        className={`px-6 py-3.5 text-right font-black whitespace-nowrap ${
+                          isCredit ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {isCredit ? '+' : '-'}
+                        {formatCurrency(Math.abs(amountVal))}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {settlementAction && (
         <SettlementActionDialog
           action={settlementAction}
@@ -634,7 +759,7 @@ export const EscrowManagement = () => {
           <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex justify-between items-center">
             <span className="text-xs font-semibold text-emerald-800">Số dư ví Admin khả dụng:</span>
             <span className="text-base font-black text-emerald-700">
-              {adminWallet ? formatCurrency(adminWallet.balance) : '0 đ'}
+              {formatCurrency(availableBalance)}
             </span>
           </div>
 

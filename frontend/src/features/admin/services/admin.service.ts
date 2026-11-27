@@ -1,5 +1,12 @@
 import axiosInstance from '@/lib/axios';
 
+export interface SystemConfigItem {
+  key: string;
+  value: string;
+  description?: string | null;
+  updated_at?: string;
+}
+
 export const adminService = {
   getProviders: async (params?: {
     page?: number;
@@ -48,14 +55,20 @@ export const adminService = {
     return response.data;
   },
 
-  getDashboardStats: async (): Promise<{
+  getDashboardStats: async (params?: { fromDate?: string; toDate?: string }): Promise<{
     totalUsers: number;
     totalProviders: number;
     totalBookings: number;
     openDisputes: number;
     totalRevenue: number;
+    totalCommission?: number;
+    periodBookings?: number;
+    periodRevenue?: number;
+    bookingsByStatus?: Record<string, number>;
+    revenueSeries?: Array<{ date: string; label: string; revenue: number; bookings: number }>;
+    range?: { fromDate: string; toDate: string };
   }> => {
-    const response = await axiosInstance.get('/admin/dashboard/stats');
+    const response = await axiosInstance.get('/admin/dashboard/stats', { params });
     return response.data;
   },
 
@@ -95,8 +108,12 @@ export const adminService = {
     return response.data;
   },
 
-  getDeactivationRequests: async (): Promise<any[]> => {
-    const response = await axiosInstance.get('/admin/users/deactivation-requests');
+  getDeactivationRequests: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<any> => {
+    const response = await axiosInstance.get('/admin/users/deactivation-requests', { params });
     return response.data;
   },
 
@@ -135,13 +152,37 @@ export const adminService = {
     return response.data;
   },
 
-  getConfigs: async (): Promise<any> => {
+  getConfigs: async (): Promise<SystemConfigItem[]> => {
     const response = await axiosInstance.get('/admin/configs');
+    return response.data?.data ?? response.data ?? [];
+  },
+
+  updateConfigs: async (
+    configs:
+      | { key: string; value: string }[]
+      | { configs: { key: string; value: string }[] },
+  ): Promise<any> => {
+    const payload = Array.isArray(configs) ? { configs } : configs;
+    const response = await axiosInstance.patch('/admin/configs', payload);
     return response.data;
   },
 
-  updateConfigs: async (configs: any): Promise<any> => {
-    const response = await axiosInstance.patch('/admin/configs', configs);
+  getBookings: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    fromDate?: string;
+    toDate?: string;
+    providerId?: string;
+    customerId?: string;
+  }): Promise<any> => {
+    const response = await axiosInstance.get('/admin/bookings', { params });
+    return response.data;
+  },
+
+  getBookingDetail: async (id: string): Promise<any> => {
+    const response = await axiosInstance.get(`/admin/bookings/${id}`);
     return response.data;
   },
 };

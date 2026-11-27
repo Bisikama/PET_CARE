@@ -32,6 +32,8 @@ describe('AdminCoreController', () => {
     updateUserAvatar: jest.fn(),
     getUserSessions: jest.fn(),
     revokeUserSessions: jest.fn(),
+    getBookings: jest.fn(),
+    getBookingDetail: jest.fn(),
   };
 
   beforeEach(async () => {

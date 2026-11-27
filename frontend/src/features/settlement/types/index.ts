@@ -67,6 +67,29 @@ export interface BankTransactionList {
   summary: Record<BankTransactionStatus, { count: number; amount: number }>;
 }
 
+export interface PlatformWalletTransaction {
+  id: string;
+  wallet_id: string;
+  amount: string | number;
+  type: string;
+  reference_id?: string | null;
+  description?: string | null;
+  created_at: string;
+}
+
+export interface PlatformWalletInfo {
+  adminUserId: string;
+  wallet: {
+    id: string;
+    balance: number;
+    pendingBalance: number;
+  };
+  commissionRate: number;
+  commissionPercent: number;
+  totalCommissionCollected: number;
+  recentTransactions: PlatformWalletTransaction[];
+}
+
 export type ResolveBankTransactionInput =
   | { action: 'ASSIGN'; paymentCode?: string; bookingId?: string; reason: string }
   | { action: 'CREDIT_WALLET'; customerEmail: string; reason: string }

@@ -150,7 +150,7 @@ export function AdminSubscriptionsManager() {
           </h2>
           <p className="text-sm text-slate-500 mt-1">
             Các gói hệ thống bán ra: giá, thời hạn, mở/ngừng bán và doanh số. Nội dung CK của khách có dạng{' '}
-            <span className="font-mono text-slate-700">PC… Thanh toan goi &lt;MÃ GÓI&gt;</span>.
+            <span className="font-mono text-slate-700">PC… Thanh toan goi thanh vien &lt;MÃ GÓI&gt;</span>.
           </p>
         </div>
         <div className="flex gap-2">
